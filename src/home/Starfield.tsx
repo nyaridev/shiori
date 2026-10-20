@@ -22,9 +22,9 @@ interface Layer {
 const TILE = 1400;
 
 const LAYERS = [
-  { depth: 0.04, count: 320, size: [0.5, 1.1], light: [0.3, 0.7] },
-  { depth: 0.12, count: 130, size: [0.8, 1.6], light: [0.45, 0.9] },
-  { depth: 0.28, count: 45, size: [1.3, 2.3], light: [0.7, 1] },
+  { depth: 0.1, count: 320, size: [0.5, 1.1], light: [0.3, 0.7] },
+  { depth: 0.26, count: 130, size: [0.8, 1.6], light: [0.45, 0.9] },
+  { depth: 0.5, count: 45, size: [1.3, 2.3], light: [0.7, 1] },
 ] as const;
 
 /** Soft violet puffs: position and size as fractions of the window, alpha, and how fast each one wanders. */
