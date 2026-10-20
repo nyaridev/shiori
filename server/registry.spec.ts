@@ -75,7 +75,7 @@ describe("dev mode", () => {
     mkdirSync(join(template, "pages"), { recursive: true });
     writeFileSync(join(template, "wiki.json"), JSON.stringify({ schema: 1, id: "{{id}}", title: "{{title}}" }));
     writeFileSync(join(template, "theme.json"), JSON.stringify({ colors: { accent: "{{accent}}" } }));
-    writeFileSync(join(template, "cover.svg"), "<svg>{{initial}}</svg>");
+    writeFileSync(join(template, "cover.svg"), '<svg fill="{{accent}}"/>');
     writeFileSync(join(template, "pages", "index.md"), "# {{title}}");
     wiki(join(app, "wikis", "alpha"), "alpha");
 

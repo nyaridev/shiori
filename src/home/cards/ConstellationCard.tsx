@@ -1,34 +1,20 @@
-// The deck card (after Genshin's character cards): the art on a night-violet backdrop, a constellation that draws
-// itself in, glimmers, fades and is replaced by a new random one, and a cream name plate.
-import { useEffect, useMemo, useState } from "react";
+// The deck card (after Genshin's character cards): the art on a night-violet backdrop and a living constellation.
+// Each cycle the stars fade in, the lines trace outward from the first star (each star flares as a line reaches it),
+// a shooting star may cross, then it all fades and a new random constellation takes its place.
+import { useEffect, useId, useMemo, useState } from "react";
 import type { WikiCard } from "../../../shared/api.ts";
+import { type Sky, skyFor } from "./sky.ts";
 import "./card.css";
 
-interface Star {
-  x: number;
-  y: number;
-  r: number;
-}
+/** How long one constellation stays (ms) before the next one, and how long it takes to fade. */
+const life = () => 11000 + Math.random() * 7000;
+const FADE = 1200;
 
-/** 5–7 stars spread left to right across the upper part of the art, joined in order. */
-function randomConstellation(): Star[] {
-  const count = 5 + Math.floor(Math.random() * 3);
-  return Array.from({ length: count }, (_, i) => ({
-    x: 12 + (i / (count - 1)) * 76 + (Math.random() - 0.5) * 16,
-    y: 12 + Math.random() * 50,
-    r: 0.6 + Math.random() * 0.7,
-  }));
-}
-
-/** How long one constellation stays before the next one replaces it (ms), and its fade-out. */
-const life = () => 9000 + Math.random() * 7000;
-const FADE = 900;
-
-function useConstellation() {
+function useSky(): { sky: Sky; generation: number; leaving: boolean } {
   const [generation, setGeneration] = useState(0);
   const [leaving, setLeaving] = useState(false);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a new generation draws a new constellation.
-  const stars = useMemo(randomConstellation, [generation]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new generation draws a new sky.
+  const sky = useMemo(skyFor, [generation]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: each generation schedules the next one.
   useEffect(() => {
     let swap = 0;
@@ -44,13 +30,14 @@ function useConstellation() {
       window.clearTimeout(swap);
     };
   }, [generation]);
-  return { stars, generation, leaving };
+  return { sky, generation, leaving };
 }
 
-export function ConstellationCard({ card }: { card: WikiCard }) {
-  const { stars, generation, leaving } = useConstellation();
-  const line = stars.map((s) => `${s.x.toFixed(1)},${s.y.toFixed(1)}`).join(" ");
+const delay = (s: number) => ({ "--delay": `${s.toFixed(2)}s` }) as React.CSSProperties;
 
+export function ConstellationCard({ card }: { card: WikiCard }) {
+  const { sky, generation, leaving } = useSky();
+  const trail = `trail${useId().replace(/\W/g, "")}-${generation}`;
   return (
     <div className="cc">
       <div className="cc-art">
@@ -63,17 +50,42 @@ export function ConstellationCard({ card }: { card: WikiCard }) {
           preserveAspectRatio="xMidYMid slice"
           aria-hidden="true"
         >
-          <polyline className="cc-line" points={line} pathLength={1} />
-          {stars.map((s, i) => (
-            <circle
-              // biome-ignore lint/suspicious/noArrayIndexKey: stars never reorder within a constellation.
-              key={i}
-              cx={s.x}
-              cy={s.y}
-              r={s.r}
-              style={{ "--i": i, "--n": stars.length } as React.CSSProperties}
+          <defs>
+            <linearGradient id={trail} gradientUnits="userSpaceOnUse" {...sky.meteor.gradient}>
+              <stop offset="0" stopColor="#fff" stopOpacity="0" />
+              <stop offset="1" stopColor="#fff" stopOpacity="0.9" />
+            </linearGradient>
+          </defs>
+          {sky.dust.map((d) => (
+            <circle key={`d${d.x}-${d.y}`} className="cc-dust" cx={d.x} cy={d.y} r={d.r} style={delay(d.delay)} />
+          ))}
+          {sky.edges.map((e) => (
+            <line
+              key={`e${e.from}-${e.to}`}
+              className="cc-line"
+              x1={sky.stars[e.from].x}
+              y1={sky.stars[e.from].y}
+              x2={sky.stars[e.to].x}
+              y2={sky.stars[e.to].y}
+              pathLength={1}
+              style={delay(e.start)}
             />
           ))}
+          {sky.stars.map((s) => (
+            <g key={`s${s.x}-${s.y}`} style={{ ...delay(s.lit), "--appear": `${s.appear.toFixed(2)}s` } as never}>
+              <circle className="cc-ring" cx={s.x} cy={s.y} r={s.r * 4} />
+              <circle className="cc-star" cx={s.x} cy={s.y} r={s.r} />
+            </g>
+          ))}
+          {sky.meteor.show && (
+            <line
+              className="cc-meteor"
+              {...sky.meteor.line}
+              stroke={`url(#${trail})`}
+              pathLength={1}
+              style={delay(sky.meteor.at)}
+            />
+          )}
         </svg>
       </div>
       <div className="cc-plate">

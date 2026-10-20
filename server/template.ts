@@ -25,7 +25,6 @@ function fill(dir: string, vars: TemplateVars) {
     title: esc(vars.title),
     tagline: esc(vars.tagline),
     accent: vars.accent,
-    initial: [...vars.title][0]?.toUpperCase() ?? "?",
     shiori: slashes(vars.shiori),
   };
   for (const name of readdirSync(dir)) {

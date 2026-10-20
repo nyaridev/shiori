@@ -9,6 +9,10 @@
       <stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/>
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
+    <linearGradient id="sigil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.7"/>
+    </linearGradient>
   </defs>
   <rect width="600" height="900" fill="#0c0c0f"/>
   <rect width="600" height="900" fill="url(#fade)"/>
@@ -17,7 +21,19 @@
     <circle cx="300" cy="380" r="120" stroke-opacity="0.34"/>
     <circle cx="300" cy="380" r="190" stroke-opacity="0.2"/>
     <circle cx="300" cy="380" r="270" stroke-opacity="0.1"/>
+    <circle cx="300" cy="380" r="150" stroke-opacity="0.18" stroke-dasharray="3 14"/>
   </g>
-  <text x="300" y="380" dy="0.35em" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif"
-    font-size="150" font-weight="700" fill="#ffffff" fill-opacity="0.94">{{initial}}</text>
+  <!-- The emblem: an eight-pointed star, the long points on the axes and short ones between. -->
+  <g transform="translate(300 380)" fill="url(#sigil)">
+    <path d="M0 -150 L18 -18 L150 0 L18 18 L0 150 L-18 18 L-150 0 L-18 -18 Z" fill-opacity="0.92"/>
+    <path d="M0 -80 L10 -10 L80 0 L10 10 L0 80 L-10 10 L-80 0 L-10 -10 Z" transform="rotate(45)" fill-opacity="0.6"/>
+    <circle r="9" fill="#0c0c0f" fill-opacity="0.55"/>
+    <circle r="4" fill="#ffffff"/>
+  </g>
+  <g fill="#ffffff">
+    <circle cx="300" cy="190" r="4" fill-opacity="0.7"/>
+    <circle cx="300" cy="570" r="4" fill-opacity="0.7"/>
+    <circle cx="110" cy="380" r="4" fill-opacity="0.7"/>
+    <circle cx="490" cy="380" r="4" fill-opacity="0.7"/>
+  </g>
 </svg>
