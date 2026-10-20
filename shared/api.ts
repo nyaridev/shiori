@@ -12,6 +12,8 @@ export interface WikiCard {
   accent: string;
   /** `local` lives in the app's `wikis/` folder, `linked` anywhere else (wikis.local.json). */
   source: "local" | "linked";
+  /** Number of pages; the deck shows it as the card's level. */
+  pages: number;
 }
 
 export interface NavNode {

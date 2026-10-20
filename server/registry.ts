@@ -93,7 +93,7 @@ export function discover(appRoot: string): Discovery {
   return { wikis, broken };
 }
 
-export function toCard(wiki: Wiki): WikiCard {
+export function toCard(wiki: Wiki, pages: number): WikiCard {
   let version = 0;
   try {
     version = Math.round(statSync(join(wiki.root, wiki.manifest.cover)).mtimeMs);
@@ -105,6 +105,7 @@ export function toCard(wiki: Wiki): WikiCard {
     coverUrl: `${fileUrl(wiki.id, wiki.manifest.cover)}?v=${version}`,
     accent: themeAccent(wiki.theme),
     source: wiki.source,
+    pages,
   };
 }
 

@@ -60,12 +60,17 @@ export function buildApp({ registry, live, staticDir }: AppOptions) {
   const wikiOr404 = (c: Context): Wiki | Response =>
     registry.get(c.req.param("id") ?? "") ?? c.json({ error: "no such wiki" }, 404);
 
-  app.get("/api/wikis", (c) => c.json({ wikis: registry.all().map(toCard) }));
+  app.get("/api/wikis", (c) => c.json({ wikis: registry.all().map((w) => toCard(w, pagesOf(w).length)) }));
 
   app.get("/api/wikis/:id", (c) => {
     const w = wikiOr404(c);
     if (w instanceof Response) return w;
-    const detail: WikiDetail = { ...toCard(w), theme: w.theme, nav: buildNav(pagesOf(w)), problems: w.problems };
+    const detail: WikiDetail = {
+      ...toCard(w, pagesOf(w).length),
+      theme: w.theme,
+      nav: buildNav(pagesOf(w)),
+      problems: w.problems,
+    };
     return c.json(detail);
   });
 

@@ -1,0 +1,33 @@
+/* A night-sky rarity backdrop: deep violet into the accent, with the art laid over it. */
+.gc-co {
+  --rarity-a: color-mix(in oklab, var(--accent) 12%, #191433);
+  --rarity-b: color-mix(in oklab, var(--accent) 25%, #5b3f86);
+}
+.gc-co .gc-img {
+  mix-blend-mode: luminosity;
+  opacity: 0.55;
+}
+.gc-co-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.gc-co-sky polyline {
+  fill: none;
+  stroke: rgb(255 240 200 / 0.45);
+  stroke-width: 0.35;
+  vector-effect: non-scaling-stroke;
+}
+.gc-co-sky circle {
+  fill: #fff6dc;
+  filter: drop-shadow(0 0 1.5px #ffe7a6);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.deck-card[data-center] .gc-co-sky circle {
+  animation: gc-twinkle 2.4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.35s);
+}
