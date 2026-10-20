@@ -51,13 +51,6 @@
   will-change: transform, opacity;
   transform-style: preserve-3d;
 }
-.deck-card[data-hidden] {
-  visibility: hidden !important;
-}
-.deck[data-opening] .deck-card:not([data-hidden]) {
-  transition: opacity 360ms ease-in;
-  opacity: 0 !important;
-}
 
 /* The card face comes from the chosen style (cards/); this wrapper adds the hover lift and the accent glow. */
 .deck-card-inner {
@@ -88,23 +81,6 @@
 .deck:not([data-dragging]) .deck-card[data-center]:hover .deck-card-inner {
   transform: scale(1.025);
   cursor: pointer;
-}
-
-.deck-expand {
-  position: fixed;
-  z-index: 100;
-  overflow: hidden;
-  background: #000;
-}
-.deck-expand img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.deck-expand-black {
-  position: absolute;
-  inset: 0;
-  background: #000;
 }
 
 .deck-message {

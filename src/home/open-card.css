@@ -1,0 +1,19 @@
+/* The layer a card grows into when it opens (openCard.ts). It lives on <body>, above everything. */
+.sh-open {
+  position: fixed;
+  z-index: 200;
+  overflow: hidden;
+  border-radius: 10px;
+  pointer-events: none;
+  will-change: left, top, width, height;
+}
+/* The cloned card face fills the layer; no outline or shadow while it grows. */
+.sh-open > .cc {
+  border-radius: 0;
+  box-shadow: none;
+}
+.sh-open-veil {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}

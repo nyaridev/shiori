@@ -1,4 +1,3 @@
-import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
 import type { PageData } from "../../shared/api.ts";
@@ -55,10 +54,9 @@ export function WikiLayout() {
       </div>
     );
   }
-  const ready = Boolean(wiki.data && (page.data || page.error));
 
   return (
-    <div className="sh-wiki">
+    <div className="sh-wiki" data-enter={fromDeck || undefined}>
       {wiki.data && (
         <>
           <div className="sh-wiki-sidebar" data-open={navOpen || undefined}>
@@ -92,12 +90,6 @@ export function WikiLayout() {
           onCloseRail={() => setRailOpen(false)}
         />
       )}
-      <motion.div
-        className="sh-wiki-curtain"
-        initial={{ opacity: fromDeck ? 1 : 0 }}
-        animate={{ opacity: ready ? 0 : fromDeck ? 1 : 0 }}
-        transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
-      />
     </div>
   );
 }

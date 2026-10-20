@@ -189,13 +189,27 @@ a.sh-nav-link.active {
   color: var(--text);
 }
 
-/* Curtain: the black the deck transition hands over, fading out once the page is ready. */
-.sh-wiki-curtain {
-  position: fixed;
-  inset: 0;
-  background: #000;
-  pointer-events: none;
-  z-index: 80;
+/* Arriving from the deck: the card's layer fades away over the page while its parts settle in. */
+.sh-wiki[data-enter] .sh-wiki-sidebar {
+  animation: sh-enter-side 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.sh-wiki[data-enter] .sh-wiki-main {
+  animation: sh-enter-up 600ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both;
+}
+.sh-wiki[data-enter] .sh-wiki-rail {
+  animation: sh-enter-up 600ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both;
+}
+@keyframes sh-enter-side {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+@keyframes sh-enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
 }
 
 .sh-wiki-mobilebar,

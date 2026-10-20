@@ -8,6 +8,7 @@ import { useResource } from "../lib/useResource.ts";
 import { CARD_ASPECT, Card } from "./cards/index.ts";
 import "./deck.css";
 import { bestMatch, matchScore } from "./match.ts";
+import { openCard } from "./openCard.ts";
 import { Search } from "./Search.tsx";
 import { Starfield } from "./Starfield.tsx";
 import { useDeck } from "./useDeck.ts";
@@ -53,39 +54,41 @@ function DeckMessage({ children }: { children: React.ReactNode }) {
   );
 }
 
-interface Opening {
-  card: WikiCard;
-  rect: DOMRect;
-  radius: string;
-}
-
 function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
   const navigate = useNavigate();
   const stage = useRef<HTMLDivElement>(null);
   const slotEls = useRef<(HTMLDivElement | null)[]>([]);
-  const [opening, setOpening] = useState<Opening | null>(null);
+  const [opening, setOpening] = useState(false);
+  const openingRef = useRef(false);
   // The deck keeps its first layout while open; new or removed wikis show up on the next visit.
   const [initial] = useState(() => ({ n: wikis.length, start }));
   const n = Math.min(initial.n, wikis.length);
 
   const [query, setQuery] = useState("");
+  useEffect(() => {
+    document.title = "Shiori";
+  }, []);
 
   const { count, center, dragging, travel, controls } = useDeck({
     stage,
     slots: slotEls,
     n,
     start: initial.start,
-    disabled: opening !== null,
+    disabled: opening,
     onOpen: (slot) => {
-      const el = slotEls.current[slot];
       const card = wikis[slot % n];
-      if (!el || !card) return;
+      if (!card || openingRef.current) return;
+      openingRef.current = true;
+      setOpening(true);
       try {
         sessionStorage.setItem(LAST, card.id);
       } catch {}
-      const face = el.querySelector(".deck-card-inner > *");
-      const radius = face ? getComputedStyle(face).borderTopLeftRadius : "14px";
-      setOpening({ card, rect: el.getBoundingClientRect(), radius });
+      const transition = openCard({ slots: slotEls.current, slot, wikiId: card.id, accent: card.accent });
+      void transition.ready.then(() => {
+        navigate(`/w/${card.id}`, { state: { fromDeck: true } });
+        // Let the wiki paint under the layer, then fade the layer away.
+        requestAnimationFrame(() => requestAnimationFrame(transition.reveal));
+      });
     },
   });
 
@@ -103,7 +106,6 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
       className="deck deck-scope"
       style={{ "--card-aspect": CARD_ASPECT } as CSSProperties}
       data-dragging={dragging || undefined}
-      data-opening={opening ? "" : undefined}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -114,7 +116,7 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
         onChange={setQuery}
         found={best >= 0}
         onSubmit={() => best >= 0 && controls.current.openCenter()}
-        disabled={opening !== null}
+        disabled={opening}
       />
       <div className="deck-vignette" />
 
@@ -128,7 +130,6 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
             }}
             className="deck-card"
             data-slot={i}
-            data-hidden={opening && i % n === wikis.indexOf(opening.card) ? "" : undefined}
             data-dim={(query.trim() && matchScore(card, query) === 0) || undefined}
             aria-current={card.id === current.id || undefined}
             style={{ "--accent": card.accent } as CSSProperties}
@@ -139,30 +140,6 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
           </div>
         ))}
       </section>
-
-      {opening && (
-        <motion.div
-          className="deck-expand"
-          initial={{
-            left: opening.rect.left,
-            top: opening.rect.top,
-            width: opening.rect.width,
-            height: opening.rect.height,
-            borderRadius: opening.radius,
-          }}
-          animate={{ left: 0, top: 0, width: window.innerWidth, height: window.innerHeight, borderRadius: 0 }}
-          transition={{ duration: 0.62, ease: [0.76, 0, 0.24, 1] }}
-        >
-          <img src={opening.card.coverUrl} alt="" />
-          <motion.div
-            className="deck-expand-black"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.36, duration: 0.34, ease: "easeIn" }}
-            onAnimationComplete={() => navigate(`/w/${opening.card.id}`, { state: { fromDeck: true } })}
-          />
-        </motion.div>
-      )}
     </motion.div>
   );
 }

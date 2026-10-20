@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { peek } from "./cache.ts";
 
 export interface Resource<T> {
   data: T | undefined;
@@ -8,9 +9,12 @@ export interface Resource<T> {
   reload: () => void;
 }
 
-/** Loads `load()` whenever `key` changes. A null key loads nothing. */
+/** Loads `load()` whenever `key` changes. A null key loads nothing. Data primed in the cache shows at once. */
 export function useResource<T>(key: string | null, load: () => Promise<T>): Resource<T> {
-  const [state, setState] = useState<{ key: string | null; data?: T; error: Error | null }>({ key: null, error: null });
+  const [state, setState] = useState<{ key: string | null; data?: T; error: Error | null }>(() => {
+    const primed = key === null ? undefined : peek<T>(key);
+    return primed === undefined ? { key: null, error: null } : { key, data: primed, error: null };
+  });
   const [tick, setTick] = useState(0);
   const loadRef = useRef(load);
   loadRef.current = load;

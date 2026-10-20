@@ -47,7 +47,7 @@ set of components. Each wiki only nudges the design tokens with its `theme.json`
 | `cli/wiki.ts` | The agent CLI (`pnpm wiki`); `server/template.ts` copies the template for it and for dev mode |
 | `shared/` | Used by server, CLI and UI: `schema.ts` (wiki.json, frontmatter), `theme.ts` (theme.json → tokens), `quote.ts` (comment anchors), `api.ts` (types) |
 | `src/ui/` | The primitives: Radix wrappers and hand-made parts, styled only with tokens (`ui.css`) |
-| `src/home/` | The deck: `useDeck.ts` (input + per-frame layout), `physics.ts`, `Deck.tsx`, `Starfield.tsx` (purple haze + parallax star layers behind the deck), `Search.tsx` + `match.ts` (type anywhere to search); `cards/` is the card: `ConstellationCard.tsx` (art, name plate) and `sky.ts` (the random constellation each cycle draws) |
+| `src/home/` | The deck: `useDeck.ts` (input + per-frame layout), `physics.ts`, `Deck.tsx`, `Starfield.tsx` (purple haze + parallax star layers behind the deck), `Search.tsx` + `match.ts` (type anywhere to search), `openCard.ts` (the card-to-wiki transition: a layer on `<body>` that outlives the route change; it prefetches the wiki into `lib/cache.ts`); `cards/` is the card: `ConstellationCard.tsx` (art, name plate) and `sky.ts` (the random constellation each cycle draws) |
 | `src/wiki/` | Wiki layout, sidebar, TOC; `markdown/` renders server hast with `elements.tsx` |
 | `src/comments/` | Selection → composer, highlights (CSS Custom Highlight API), thread list |
 | `src/dev/` | `/dev/ui`: every primitive and element in the default theme |
