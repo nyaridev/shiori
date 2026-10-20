@@ -1,0 +1,66 @@
+/* Design tokens. Themes (theme.json → shared/theme.ts) override the base values on <html>; the derived tokens below
+   follow automatically. Components use only these variables. */
+:root {
+  color-scheme: dark;
+
+  /* Base: a theme can change these */
+  --bg: #0f1012;
+  --surface: #16171a;
+  --raised: #1e2024;
+  --border: #2b2e33;
+  --text: #e9e7e2;
+  --muted: #8e9198;
+  --accent: #e8b86d;
+  --accent-text: #1c1407;
+  --r-sm: 6px;
+  --r-md: 9px;
+  --r-lg: 14px;
+  --bw: 1px;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.18);
+  --shadow-2: 0 1px 2px rgb(0 0 0 / 0.16), 0 12px 32px -8px rgb(0 0 0 / 0.35);
+  --font-body: "Inter Variable", system-ui, sans-serif;
+  --font-heading: "Inter Variable", system-ui, sans-serif;
+
+  /* Derived */
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --text-soft: color-mix(in oklab, var(--text) 82%, var(--bg));
+  --border-strong: color-mix(in oklab, var(--border) 60%, var(--text));
+  --hover: color-mix(in oklab, var(--text) 6%, transparent);
+  --press: color-mix(in oklab, var(--text) 10%, transparent);
+  --accent-soft: color-mix(in oklab, var(--accent) 16%, transparent);
+  --accent-line: color-mix(in oklab, var(--accent) 45%, transparent);
+  --accent-hover: color-mix(in oklab, var(--accent) 88%, var(--text));
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-line);
+
+  --tone-note: color-mix(in oklab, var(--muted) 70%, var(--text));
+  --tone-tip: #6fbf8e;
+  --tone-good: #6fbf8e;
+  --tone-warning: #e0b04f;
+  --tone-warn: #e0b04f;
+  --tone-danger: #e0705f;
+  --tone-bad: #e0705f;
+
+  /* Fixed scale */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --t-xs: 0.75rem;
+  --t-sm: 0.8125rem;
+  --t-md: 0.9375rem;
+  --t-lg: 1.0625rem;
+  --t-xl: 1.375rem;
+  --t-2xl: 2rem;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --fast: 120ms;
+}
+
+/* The deck is always dark and unthemed. */
+.deck-scope {
+  --bg: #08080a;
+  --text: #f1efe9;
+  --muted: #8a8a90;
+}

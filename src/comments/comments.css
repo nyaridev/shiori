@@ -1,0 +1,161 @@
+::highlight(ld-comment) {
+  background-color: color-mix(in oklab, var(--accent) 20%, transparent);
+  text-decoration: underline 2px color-mix(in oklab, var(--accent) 70%, transparent);
+  text-underline-offset: 4px;
+}
+::highlight(ld-comment-active) {
+  background-color: color-mix(in oklab, var(--accent) 42%, transparent);
+  color: var(--text);
+}
+::highlight(ld-pending) {
+  background-color: color-mix(in oklab, var(--accent) 34%, transparent);
+}
+
+.ld-comment-bubble {
+  position: fixed;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  translate: -50% calc(-100% - 8px);
+  padding: 6px 11px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  box-shadow: var(--shadow-2);
+  cursor: pointer;
+  animation: ld-bubble 160ms var(--ease);
+}
+.ld-comment-bubble:hover {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+@keyframes ld-bubble {
+  from {
+    opacity: 0;
+    translate: -50% calc(-100% - 2px);
+  }
+}
+.ld-comment-anchor {
+  position: fixed;
+  pointer-events: none;
+}
+
+.ld-composer {
+  display: grid;
+  gap: var(--s-2);
+}
+.ld-composer-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+.ld-composer-hint {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+/* Thread list */
+.ld-threads {
+  display: grid;
+  gap: var(--s-2);
+}
+.ld-threads-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  margin-bottom: var(--s-1);
+}
+.ld-threads-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.ld-thread {
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  transition:
+    border-color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+.ld-thread:hover {
+  border-color: var(--border-strong);
+}
+.ld-thread.is-active {
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow-2);
+}
+.ld-thread[data-status="resolved"],
+.ld-thread[data-status="wontfix"] {
+  opacity: 0.75;
+}
+.ld-thread-main {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: var(--s-3);
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.ld-thread-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.ld-thread-time {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.ld-thread-quote {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  padding-left: var(--s-2);
+  border-left: 2px solid var(--accent-line);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-style: italic;
+}
+.ld-thread-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: var(--t-sm);
+}
+.ld-thread-body {
+  display: grid;
+  gap: var(--s-2);
+  padding: 0 var(--s-3) var(--s-3);
+}
+.ld-message {
+  font-size: var(--t-sm);
+}
+.ld-message p {
+  margin: 2px 0 0;
+  white-space: pre-wrap;
+}
+.ld-message-author {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 650;
+}
+.ld-message[data-author="agent"] .ld-message-author {
+  color: var(--accent);
+}
+.ld-thread-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-1);
+}

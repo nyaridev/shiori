@@ -1,0 +1,473 @@
+/* Primitives. Every value comes from tokens.css, so a wiki theme reshapes them without touching this file. */
+
+.ld-icon {
+  flex: none;
+  display: block;
+}
+
+.ld-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* Button */
+.ld-button {
+  --h: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  height: var(--h);
+  padding: 0 var(--s-3);
+  border: var(--bw) solid transparent;
+  border-radius: var(--r-md);
+  font-size: var(--t-sm);
+  font-weight: 560;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease),
+    transform var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+.ld-button[data-size="sm"] {
+  --h: 28px;
+  padding: 0 var(--s-2);
+  font-size: var(--t-xs);
+  border-radius: var(--r-sm);
+}
+.ld-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.ld-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ld-button[data-variant="solid"] {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    var(--shadow-1);
+}
+.ld-button[data-variant="solid"]:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.ld-button[data-variant="soft"] {
+  background: var(--raised);
+  border-color: var(--border);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--text) 5%, transparent),
+    var(--shadow-1);
+}
+.ld-button[data-variant="soft"]:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+.ld-button[data-variant="outline"] {
+  background: transparent;
+  border-color: var(--border);
+}
+.ld-button[data-variant="outline"]:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--border-strong);
+}
+.ld-button[data-variant="ghost"] {
+  background: transparent;
+  color: var(--text-soft);
+}
+.ld-button[data-variant="ghost"]:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text);
+}
+.ld-icon-button {
+  width: var(--h);
+  padding: 0;
+}
+
+/* Fields */
+.ld-field {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px var(--s-3);
+  background: var(--surface);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  font-size: var(--t-sm);
+  line-height: 1.4;
+  transition:
+    border-color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+.ld-field::placeholder {
+  color: var(--muted);
+}
+.ld-field:hover {
+  border-color: var(--border-strong);
+}
+.ld-field:focus,
+.ld-field:focus-visible {
+  outline: none;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.ld-textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+.ld-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  width: auto;
+  min-width: 160px;
+  cursor: pointer;
+  text-align: left;
+}
+.ld-select-icon {
+  color: var(--muted);
+}
+
+/* Badge and key */
+.ld-badge {
+  --tone: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--tone) 14%, transparent);
+  color: color-mix(in oklab, var(--tone) 75%, var(--text));
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 0.1em;
+  line-height: 1;
+}
+.ld-badge::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+.ld-badge[data-tone="accent"] {
+  --tone: var(--accent);
+}
+.ld-badge[data-tone="good"] {
+  --tone: var(--tone-good);
+}
+.ld-badge[data-tone="warn"] {
+  --tone: var(--tone-warn);
+}
+.ld-badge[data-tone="bad"] {
+  --tone: var(--tone-bad);
+}
+.ld-kbd {
+  display: inline-block;
+  min-width: 22px;
+  padding: 1px 6px;
+  border: var(--bw) solid var(--border);
+  border-bottom-width: calc(var(--bw) + 2px);
+  border-radius: var(--r-sm);
+  background: var(--raised);
+  font-family: var(--font-mono);
+  font-size: 0.75em;
+  line-height: 1.5;
+  text-align: center;
+  vertical-align: 0.08em;
+}
+
+/* Surface */
+.ld-surface {
+  background: var(--raised);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-2);
+}
+.ld-separator {
+  flex: none;
+  background: var(--border);
+  border: 0;
+}
+.ld-separator[data-orientation="horizontal"] {
+  height: var(--bw);
+  width: 100%;
+  margin: var(--s-2) 0;
+}
+.ld-separator[data-orientation="vertical"] {
+  width: var(--bw);
+  align-self: stretch;
+}
+
+/* Callout */
+.ld-callout {
+  --tone: var(--tone-note);
+  display: flex;
+  gap: var(--s-3);
+  margin: var(--s-4) 0;
+  padding: var(--s-3) var(--s-4);
+  border: var(--bw) solid color-mix(in oklab, var(--tone) 30%, transparent);
+  border-left: 3px solid var(--tone);
+  border-radius: var(--r-md);
+  background: color-mix(in oklab, var(--tone) 8%, var(--surface));
+}
+.ld-callout[data-tone="tip"] {
+  --tone: var(--tone-tip);
+}
+.ld-callout[data-tone="warning"] {
+  --tone: var(--tone-warning);
+}
+.ld-callout[data-tone="danger"] {
+  --tone: var(--tone-danger);
+}
+.ld-callout-icon {
+  color: var(--tone);
+  padding-top: 3px;
+}
+.ld-callout-body {
+  min-width: 0;
+}
+.ld-callout-body > :first-child {
+  margin-top: 0;
+}
+.ld-callout-body > :last-child {
+  margin-bottom: 0;
+}
+.ld-callout-title {
+  font-weight: 650;
+  margin: 0 0 var(--s-1);
+}
+
+/* Tooltip */
+.ld-tooltip {
+  padding: 5px 9px;
+  border-radius: var(--r-sm);
+  background: var(--text);
+  color: var(--bg);
+  font-size: var(--t-xs);
+  font-weight: 550;
+  box-shadow: var(--shadow-2);
+  animation: ld-pop 120ms var(--ease);
+  z-index: 60;
+}
+
+/* Popover, menu, dialog */
+.ld-popover {
+  padding: var(--s-3);
+  z-index: 50;
+  animation: ld-pop 140ms var(--ease);
+}
+.ld-menu {
+  min-width: 180px;
+  padding: var(--s-1);
+  border-radius: var(--r-md);
+  z-index: 50;
+  animation: ld-pop 120ms var(--ease);
+}
+.ld-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 6px var(--s-2);
+  border-radius: var(--r-sm);
+  font-size: var(--t-sm);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+.ld-menu-item[data-highlighted] {
+  background: var(--hover);
+}
+.ld-menu-item[data-danger] {
+  color: var(--tone-danger);
+}
+.ld-menu-check {
+  margin-left: auto;
+  color: var(--accent);
+}
+.ld-menu-label {
+  padding: 6px var(--s-2) 2px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.ld-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 40;
+  animation: ld-fade 160ms var(--ease);
+}
+.ld-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(440px, calc(100vw - 32px));
+  translate: -50% -50%;
+  padding: var(--s-5);
+  z-index: 41;
+  animation: ld-pop 180ms var(--ease);
+}
+.ld-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.ld-dialog-title {
+  margin: 0;
+  font-size: var(--t-lg);
+}
+.ld-dialog-description {
+  margin: var(--s-2) 0 var(--s-4);
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+/* Tabs */
+.ld-tabs {
+  margin: var(--s-4) 0;
+}
+.ld-tabs-list {
+  display: flex;
+  gap: var(--s-1);
+  border-bottom: var(--bw) solid var(--border);
+}
+.ld-tabs-trigger {
+  position: relative;
+  padding: var(--s-2) var(--s-3);
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 560;
+  cursor: pointer;
+}
+.ld-tabs-trigger:hover {
+  color: var(--text);
+}
+.ld-tabs-trigger[data-state="active"] {
+  color: var(--text);
+}
+.ld-tabs-trigger[data-state="active"]::after {
+  content: "";
+  position: absolute;
+  left: var(--s-2);
+  right: var(--s-2);
+  bottom: calc(-1 * var(--bw));
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.ld-tabs-panel {
+  padding-top: var(--s-3);
+}
+.ld-tabs-panel[data-state="inactive"] {
+  display: none;
+}
+.ld-segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: var(--bw) solid var(--border);
+}
+.ld-segmented-item {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: calc(var(--r-md) - 3px);
+  background: none;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+.ld-segmented-item[data-state="active"] {
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: var(--shadow-1);
+}
+
+/* Switch and checkbox */
+.ld-toggle-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-sm);
+}
+.ld-toggle-row label {
+  cursor: pointer;
+}
+.ld-switch {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  flex: none;
+  padding: 0;
+  border: var(--bw) solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: background var(--fast) var(--ease);
+}
+.ld-switch[data-state="checked"] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.ld-switch-thumb {
+  display: block;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: var(--text);
+  transition: translate 160ms var(--ease);
+}
+.ld-switch[data-state="checked"] .ld-switch-thumb {
+  translate: 14px 0;
+  background: var(--accent-text);
+}
+.ld-checkbox {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  padding: 0;
+  border: var(--bw) solid var(--border-strong);
+  border-radius: calc(var(--r-sm) - 1px);
+  background: var(--surface);
+  color: var(--accent-text);
+  cursor: pointer;
+}
+.ld-checkbox[data-state="checked"] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.ld-switch:disabled,
+.ld-checkbox:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@keyframes ld-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(2px);
+  }
+}
+@keyframes ld-fade {
+  from {
+    opacity: 0;
+  }
+}

@@ -1,0 +1,94 @@
+# ADR-0001: Loredeck architecture
+
+**Status:** Accepted
+**Date:** 2026-10-20
+**Deciders:** Nari (owner), Claude (implementer)
+
+## Context
+
+Nari wants one app that hosts a wiki per project, written and maintained by agents. The FOUMA wiki
+(`A:/Projects/Games/FOUMA/wiki`) already proved the core idea for one game: Markdown pages, SQLite, comments
+anchored to text and an agent CLI. Loredeck generalizes it to many wikis. The requirements:
+
+- A wiki has a fixed structure and component set, created from a template. Each one gets its own theme, which only
+  nudges the shared design (shape, colors), never the behavior.
+- Wikis live in `wikis/` (git-ignored except `_template/`) or in any other folder.
+- People can't edit pages. They select text and comment; comments are stored in the wiki's folder, never in the app.
+- The home screen is a deck of tall 1:4 cards: fling to spin, soft sounds, snap to center, click to expand into the
+  wiki. No header or footer.
+- It runs in the browser (`start-web.bat`, `start-dev.bat`) and in its own borderless window (`start-app.bat`).
+- A page showing every primitive in the default theme.
+
+## Decision
+
+| Layer | Choice | Why |
+|---|---|---|
+| UI | React 19 + Vite 8, TypeScript strict | House stack (`apps/CLAUDE.md`); Radix is React-only |
+| Primitives | Radix (`radix-ui`), wrapped once in `src/ui/` | Accessible behavior with no look; the wrappers give it ours |
+| Styling | Plain CSS with design tokens (custom properties) | Themes only swap token values. Tailwind (the house default) was left out: tokens are the theming mechanism, and utility classes would duplicate them |
+| Motion | Motion for the expand transition and fades; hand-written physics for the deck | Writing the deck transforms straight to the DOM keeps the spin at frame rate with no React renders |
+| Sound | Web Audio, synthesized | Very soft, no files or licenses |
+| Server | Hono on Node 25, run from TypeScript source (type stripping) | House server; no build step for server code |
+| Comments | `node:sqlite`, one `data/wiki.db` per wiki, with W3C text-quote anchors | No native module to compile on Windows; data stays with the wiki |
+| Content | Markdown + frontmatter → unified (GFM, directives) → hast on the server → React components | One renderer for every wiki, with validated custom elements |
+| Highlights | CSS Custom Highlight API | Comment highlights never touch the page DOM, so React and anchors stay simple |
+| Live updates | `fs.watch` (recursive) → server-sent events | Agent edits and CLI replies appear without reloading |
+| Desktop | Tauri 2 window, no decorations; the UI draws the title bar | Same app as the browser; the window starts the Node server itself |
+
+### Theme contract
+
+`theme.json` accepts only `mode` (dark/light), eight hex colors, and presets for radius, border, shadow and two font
+slots. `shared/theme.ts` turns it into CSS variables on `<html>` (so portals get them too). Everything else is the
+app's. This keeps every wiki recognizably the same app while letting it feel like its project.
+
+### Storage
+
+| Data | Where | In git |
+|---|---|---|
+| Pages, assets, cover, theme | The wiki folder | The wiki's own repo, if any |
+| Comments | `<wiki>/data/wiki.db` (with a `data/.gitignore`) | Never |
+| Linked wiki folders | `wikis.local.json` in the app | No (machine-specific) |
+| Template | `wikis/_template/` | Yes |
+
+## Options Considered
+
+### Option A: React + Radix + Hono (chosen)
+| Dimension | Assessment |
+|---|---|
+| Complexity | Medium: a client and a small server, both TypeScript |
+| Cost | Free, local only |
+| Scalability | Hundreds of pages per wiki and dozens of wikis with no index needed yet |
+| Familiarity | House stack; PrepKit uses the same Tauri setup |
+
+**Pros:** Radix as requested, matches every other app here, one language end to end.
+**Cons:** More wiring than SvelteKit for server routes; the FOUMA wiki code can't be reused as-is (it's Svelte).
+
+### Option B: Fork the FOUMA wiki (SvelteKit + Bits UI)
+| Dimension | Assessment |
+|---|---|
+| Complexity | Low to start, high to generalize: FOUMA's game-specific sync, batches and roadmap are woven in |
+| Familiarity | Proven on this machine |
+
+**Pros:** Comments, anchors and a CLI already work.
+**Cons:** Not Radix, not the house stack, and stripping the game-sync features is as much work as starting clean.
+The ideas (text-quote anchors, CLI inbox loop, directive elements) were carried over instead.
+
+### Option C: A static site generator (Astro, VitePress) per wiki
+**Pros:** Great Markdown tooling.
+**Cons:** Comments, live reload of agent edits, the deck and per-wiki themes all fight a build-per-site model.
+
+## Consequences
+
+- Easier: adding a wiki is a template copy; restyling one is a small JSON file; agents work with plain files and
+  one CLI.
+- Harder: themes can't do anything outside the contract. That's on purpose, and the contract can grow with new
+  presets.
+- Revisit: search (SQLite FTS per wiki or a shared index), code highlighting, and a JSON backup of comments (as in
+  FOUMA ADR-0006) when wikis carry important discussions.
+
+## Action Items
+
+1. [x] Server, CLI, template, deck, wiki view, comments, `/dev/ui`, Tauri window.
+2. [ ] Search across a wiki's pages.
+3. [ ] Comment backups to JSON.
+4. [ ] Code highlighting (Shiki) in code blocks.

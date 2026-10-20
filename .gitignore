@@ -1,0 +1,33 @@
+# Dependencies and builds
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Wikis: only the template is tracked. Each wiki keeps its own git, if any.
+wikis/*
+!wikis/_template/
+wikis.local.json
+
+# Comment databases (also ignored inside each wiki)
+*.db
+*.db-wal
+*.db-shm
+
+# Local settings and secrets
+.env
+.env.*
+!.env.example
+CLAUDE.local.md
+.claude/settings.local.json
+
+# OS and editor noise
+Thumbs.db
+.DS_Store
+*.log
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Desktop shell (Tauri)
+src-tauri/target/
+src-tauri/gen/

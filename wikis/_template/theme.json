@@ -1,0 +1,13 @@
+{
+  "mode": "dark",
+  "colors": {
+    "accent": "{{accent}}"
+  },
+  "radius": "medium",
+  "border": "thin",
+  "shadow": "soft",
+  "font": {
+    "body": "sans",
+    "heading": "sans"
+  }
+}
