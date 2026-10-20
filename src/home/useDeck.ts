@@ -25,6 +25,8 @@ interface Options {
 
 export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange }: Options) {
   const count = slotCount(n);
+  /** How far the deck has moved in total, in px (never wraps). The starfield follows it for parallax. */
+  const travel = useRef(0);
   const [center, setCenter] = useState(() => mod(start, Math.max(n, 1)));
   const [dragging, setDragging] = useState(false);
   const live = useRef({ disabled, onOpen, onMuteChange });
@@ -40,6 +42,7 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange
     let raf = 0;
     let last = 0;
     let lastCenter = Math.round(s.x);
+    let prevX = s.x;
 
     const measure = () => {
       pitch = (slots.current[0]?.offsetWidth ?? 180) + GAP;
@@ -70,10 +73,12 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange
     };
 
     const afterMove = () => {
+      travel.current += (s.x - prevX) * pitch;
       if (s.x >= count || s.x < 0) {
         const k = Math.floor(s.x / count) * count;
         s = { ...s, x: s.x - k, target: s.target - k };
       }
+      prevX = s.x;
       const c = Math.round(s.x);
       if (c !== lastCenter) {
         lastCenter = c;
@@ -216,5 +221,5 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange
     };
   }, [stage, slots, n, count, start]);
 
-  return { count, center, dragging };
+  return { count, center, dragging, travel };
 }

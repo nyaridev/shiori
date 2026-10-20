@@ -30,8 +30,7 @@
   pointer-events: none;
 }
 
-/* The art: the shader cosmos, the cover laid over it in screen mode, then the constellation. The gradient is the
-   fallback when WebGL isn't available. */
+/* The art: a night-violet backdrop tinted by the accent, the cover laid over it, then the constellation. */
 .cc-art {
   position: relative;
   flex: 1 1 auto;
@@ -43,9 +42,9 @@
     linear-gradient(165deg, #191433, #3b2a63);
 }
 .cc-img {
-  mix-blend-mode: screen;
-  opacity: 0.5;
-  mask-image: linear-gradient(to bottom, #000 55%, transparent 95%);
+  mix-blend-mode: luminosity;
+  opacity: 0.55;
+  mask-image: linear-gradient(to bottom, #000 62%, transparent 92%);
 }
 
 .cc-sky {

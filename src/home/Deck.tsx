@@ -8,6 +8,7 @@ import { useResource } from "../lib/useResource.ts";
 import { Icon } from "../ui/index.ts";
 import { CARD_ASPECT, Card } from "./cards/index.ts";
 import "./deck.css";
+import { Starfield } from "./Starfield.tsx";
 import { isMuted, whoosh } from "./sound.ts";
 import { useDeck } from "./useDeck.ts";
 
@@ -68,7 +69,7 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
   const [initial] = useState(() => ({ n: wikis.length, start }));
   const n = Math.min(initial.n, wikis.length);
 
-  const { count, center, dragging } = useDeck({
+  const { count, center, dragging, travel } = useDeck({
     stage,
     slots: slotEls,
     n,
@@ -102,18 +103,7 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <AnimatePresence>
-        <motion.img
-          key={current.id}
-          className="deck-ambient"
-          src={current.coverUrl}
-          alt=""
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.32 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.8 }}
-        />
-      </AnimatePresence>
+      <Starfield travel={travel} />
       <div className="deck-vignette" />
 
       <section ref={stage} className="deck-stage" aria-label="Wikis: drag, scroll or use the arrow keys, Enter opens">

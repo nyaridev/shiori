@@ -1,8 +1,7 @@
-// The deck card (after Genshin's character cards): a living cosmos behind the art, a constellation that draws
+// The deck card (after Genshin's character cards): the art on a night-violet backdrop, a constellation that draws
 // itself in, glimmers, fades and is replaced by a new random one, and a cream name plate.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { WikiCard } from "../../../shared/api.ts";
-import { attachCosmos } from "./cosmos.ts";
 import "./card.css";
 
 interface Star {
@@ -49,19 +48,12 @@ function useConstellation() {
 }
 
 export function ConstellationCard({ card }: { card: WikiCard }) {
-  const sky = useRef<HTMLCanvasElement>(null);
-  const [seed] = useState(() => Math.random() * 100);
   const { stars, generation, leaving } = useConstellation();
   const line = stars.map((s) => `${s.x.toFixed(1)},${s.y.toFixed(1)}`).join(" ");
-
-  useEffect(() => {
-    if (sky.current) return attachCosmos(sky.current, card.accent, seed);
-  }, [card.accent, seed]);
 
   return (
     <div className="cc">
       <div className="cc-art">
-        <canvas ref={sky} className="cc-fill cc-cosmos" />
         <img className="cc-fill cc-img" src={card.coverUrl} alt="" draggable={false} />
         <svg
           key={generation}
