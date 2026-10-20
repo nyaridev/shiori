@@ -84,66 +84,6 @@
   cursor: pointer;
 }
 
-/* Dev only: the card style picker. */
-.deck-dev {
-  position: absolute;
-  top: 14px;
-  left: 50%;
-  z-index: 95;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 4px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  border-radius: 999px;
-  background: rgb(14 15 20 / 0.72);
-  backdrop-filter: blur(12px);
-  translate: -50% 0;
-  cursor: default;
-}
-:root[data-shell="desktop"] .deck-dev {
-  top: 44px;
-}
-.deck-dev-tag {
-  padding: 0 8px 0 10px;
-  color: #e8b86d;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.deck-dev-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 11px 0 6px;
-  border: 0;
-  border-radius: 999px;
-  background: none;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.deck-dev-item:hover {
-  color: var(--text);
-}
-.deck-dev-item[data-active] {
-  background: rgb(255 255 255 / 0.1);
-  color: var(--text);
-}
-.deck-dev-item kbd {
-  display: grid;
-  place-items: center;
-  width: 17px;
-  height: 17px;
-  border-radius: 5px;
-  background: rgb(255 255 255 / 0.08);
-  font-family: "JetBrains Mono Variable", monospace;
-  font-size: 10px;
-}
-
 .deck-toast,
 .deck-muted {
   position: absolute;

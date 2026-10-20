@@ -6,9 +6,8 @@ import { api } from "../lib/api.ts";
 import { useLive } from "../lib/live.ts";
 import { useResource } from "../lib/useResource.ts";
 import { Icon } from "../ui/index.ts";
-import { useCardStyle } from "./cards/index.ts";
+import { CARD_ASPECT, Card } from "./cards/index.ts";
 import "./deck.css";
-import { StylePicker } from "./StylePicker.tsx";
 import { isMuted, whoosh } from "./sound.ts";
 import { useDeck } from "./useDeck.ts";
 
@@ -65,7 +64,6 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
   const slotEls = useRef<(HTMLDivElement | null)[]>([]);
   const [opening, setOpening] = useState<Opening | null>(null);
   const [toast, setToast] = useState<{ muted: boolean; key: number } | null>(null);
-  const [style, setStyle] = useCardStyle();
   // The deck keeps its first layout while open; new or removed wikis show up on the next visit.
   const [initial] = useState(() => ({ n: wikis.length, start }));
   const n = Math.min(initial.n, wikis.length);
@@ -97,7 +95,7 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
   return (
     <motion.div
       className="deck deck-scope"
-      style={{ "--card-aspect": style.aspect } as CSSProperties}
+      style={{ "--card-aspect": CARD_ASPECT } as CSSProperties}
       data-dragging={dragging || undefined}
       data-opening={opening ? "" : undefined}
       initial={{ opacity: 0 }}
@@ -133,13 +131,11 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
             style={{ "--accent": card.accent } as CSSProperties}
           >
             <div className="deck-card-inner">
-              <style.Card card={card} />
+              <Card card={card} />
             </div>
           </div>
         ))}
       </section>
-
-      {import.meta.env.DEV && !opening && <StylePicker value={style.id} onChange={setStyle} />}
 
       <AnimatePresence>
         {toast && (
