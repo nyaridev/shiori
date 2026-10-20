@@ -15,7 +15,7 @@ anchored to text and an agent CLI. Shiori generalizes it to many wikis. The requ
 - Wikis live in `wikis/` (git-ignored except `_template/`) or in any other folder.
 - People can't edit pages. They select text and comment; comments are stored in the wiki's folder, never in the app.
 - The home screen is a deck of portrait cards (about 2:3; the card style sets the exact shape): fling to spin, soft
-  sounds, snap to center, click to expand into the wiki. No header or footer.
+  snap to center, click to expand into the wiki. No header or footer. (Soft sounds were tried and removed.)
 - It runs in the browser (`start-web.bat`, `start-dev.bat`) and in its own borderless window (`start-app.bat`).
 - A page showing every primitive in the default theme.
 
@@ -27,7 +27,6 @@ anchored to text and an agent CLI. Shiori generalizes it to many wikis. The requ
 | Primitives | Radix (`radix-ui`), wrapped once in `src/ui/` | Accessible behavior with no look; the wrappers give it ours |
 | Styling | Plain CSS with design tokens (custom properties) | Themes only swap token values. Tailwind (the house default) was left out: tokens are the theming mechanism, and utility classes would duplicate them |
 | Motion | Motion for the expand transition and fades; hand-written physics for the deck | Writing the deck transforms straight to the DOM keeps the spin at frame rate with no React renders |
-| Sound | Web Audio, synthesized | Very soft, no files or licenses |
 | Server | Hono on Node 25, run from TypeScript source (type stripping) | House server; no build step for server code |
 | Comments | `node:sqlite`, one `data/wiki.db` per wiki, with W3C text-quote anchors | No native module to compile on Windows; data stays with the wiki |
 | Content | Markdown + frontmatter → unified (GFM, directives) → hast on the server → React components | One renderer for every wiki, with validated custom elements |

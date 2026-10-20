@@ -341,7 +341,7 @@ function ToggleDemo() {
     <>
       <Row label="Switch">
         <Switch checked={a} onChange={setA}>
-          Sound
+          Animations
         </Switch>
         <Switch checked={b} onChange={setB}>
           Reduced motion

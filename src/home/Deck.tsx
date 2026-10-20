@@ -1,15 +1,13 @@
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { type CSSProperties, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type { WikiCard } from "../../shared/api.ts";
 import { api } from "../lib/api.ts";
 import { useLive } from "../lib/live.ts";
 import { useResource } from "../lib/useResource.ts";
-import { Icon } from "../ui/index.ts";
 import { CARD_ASPECT, Card } from "./cards/index.ts";
 import "./deck.css";
 import { Starfield } from "./Starfield.tsx";
-import { isMuted, whoosh } from "./sound.ts";
 import { useDeck } from "./useDeck.ts";
 
 const LAST = "shiori:last";
@@ -64,7 +62,6 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
   const stage = useRef<HTMLDivElement>(null);
   const slotEls = useRef<(HTMLDivElement | null)[]>([]);
   const [opening, setOpening] = useState<Opening | null>(null);
-  const [toast, setToast] = useState<{ muted: boolean; key: number } | null>(null);
   // The deck keeps its first layout while open; new or removed wikis show up on the next visit.
   const [initial] = useState(() => ({ n: wikis.length, start }));
   const n = Math.min(initial.n, wikis.length);
@@ -82,12 +79,10 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
       try {
         sessionStorage.setItem(LAST, card.id);
       } catch {}
-      whoosh();
       const face = el.querySelector(".deck-card-inner > *");
       const radius = face ? getComputedStyle(face).borderTopLeftRadius : "14px";
       setOpening({ card, rect: el.getBoundingClientRect(), radius });
     },
-    onMuteChange: (muted) => setToast({ muted, key: Date.now() }),
   });
 
   const slots = useMemo(() => Array.from({ length: count }, (_, i) => wikis[i % n]), [count, wikis, n]);
@@ -126,27 +121,6 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
           </div>
         ))}
       </section>
-
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            key={toast.key}
-            className="deck-toast"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            onAnimationComplete={() => setTimeout(() => setToast((t) => (t?.key === toast.key ? null : t)), 900)}
-          >
-            <Icon name={toast.muted ? "mute" : "sound"} size={16} />
-            {toast.muted ? "Sound off" : "Sound on"}
-          </motion.div>
-        )}
-      </AnimatePresence>
-      {isMuted() && !toast && (
-        <span className="deck-muted" title="Sound off (press M)">
-          <Icon name="mute" size={16} />
-        </span>
-      )}
 
       {opening && (
         <motion.div

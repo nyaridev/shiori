@@ -15,8 +15,6 @@ const PATHS = {
   undo: "M9 7 4 12l5 5M4 12h11a5 5 0 0 1 0 10h-2",
   dots: "M5 12h.01M12 12h.01M19 12h.01",
   search: "m20 20-4.5-4.5M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13Z",
-  sound: "M4 9.5h3.5L12 5.5v13l-4.5-4H4v-5Zm12 0a3.5 3.5 0 0 1 0 5m2.5-8a7 7 0 0 1 0 11",
-  mute: "M4 9.5h3.5L12 5.5v13l-4.5-4H4v-5Zm12 0 5 5m0-5-5 5",
   minimize: "M6 12h12",
   maximize: "M6 6h12v12H6z",
   restore: "M8 8h10v10H8zM6 16V6h10",

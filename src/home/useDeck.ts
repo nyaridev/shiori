@@ -2,7 +2,6 @@
 // transforms straight to the DOM (no React render per frame). React only hears about the centered card.
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { clamp, MAX_SPEED, type MotionState, mod, offset, step } from "./physics.ts";
-import { tick, toggleMute, unlockAudio } from "./sound.ts";
 
 const GAP = 22;
 /** Fewer real cards than this get repeated, so the loop always fills the screen. */
@@ -20,17 +19,16 @@ interface Options {
   start: number;
   disabled: boolean;
   onOpen: (slot: number) => void;
-  onMuteChange: (muted: boolean) => void;
 }
 
-export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange }: Options) {
+export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
   const count = slotCount(n);
   /** How far the deck has moved in total, in px (never wraps). The starfield follows it for parallax. */
   const travel = useRef(0);
   const [center, setCenter] = useState(() => mod(start, Math.max(n, 1)));
   const [dragging, setDragging] = useState(false);
-  const live = useRef({ disabled, onOpen, onMuteChange });
-  live.current = { disabled, onOpen, onMuteChange };
+  const live = useRef({ disabled, onOpen });
+  live.current = { disabled, onOpen };
 
   useEffect(() => {
     const el = stage.current;
@@ -82,7 +80,6 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange
       const c = Math.round(s.x);
       if (c !== lastCenter) {
         lastCenter = c;
-        tick(Math.min(1, Math.abs(s.v) / 22 + 0.25));
         setCenter(mod(c, count) % n);
       }
       layout();
@@ -121,7 +118,6 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange
     } | null = null;
     const down = (e: PointerEvent) => {
       if (live.current.disabled || e.button !== 0) return;
-      unlockAudio();
       el.setPointerCapture(e.pointerId);
       drag = {
         id: e.pointerId,
@@ -180,12 +176,10 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange
 
     const key = (e: KeyboardEvent) => {
       if (live.current.disabled || e.altKey || e.ctrlKey || e.metaKey) return;
-      unlockAudio();
       const base = s.mode === "settle" ? s.target : Math.round(s.x);
       if (e.key === "ArrowRight" || e.key === "ArrowDown") snapTo(base + 1);
       else if (e.key === "ArrowLeft" || e.key === "ArrowUp") snapTo(base - 1);
       else if (e.key === "Enter" || e.key === " ") live.current.onOpen(mod(Math.round(s.x), count));
-      else if (e.key === "m" || e.key === "M") live.current.onMuteChange(toggleMute());
       else return;
       e.preventDefault();
     };

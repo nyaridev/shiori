@@ -15,7 +15,7 @@ Every wiki has the same structure and components, and its own light theme (color
 | `start-dev.bat` | Hot-reload dev mode on http://localhost:4410 |
 
 Needs Node 25+ and pnpm. On the deck: drag and release to spin, scroll, or use the arrow keys; click or press
-Enter on the centered card. **M** mutes the sound. `/dev/ui` shows every UI primitive in the default theme.
+Enter on the centered card. `/dev/ui` shows every UI primitive in the default theme.
 
 ## Wikis
 
