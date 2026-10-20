@@ -1,0 +1,46 @@
+/* Halfway between the top of the screen and the top of the middle card. */
+.deck-search {
+  position: absolute;
+  top: calc((50% - var(--card-h) / 2) / 2);
+  left: 50%;
+  z-index: 50;
+  width: min(420px, 70vw);
+  translate: -50% calc(-50% + 6px);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 260ms ease,
+    translate 260ms ease;
+}
+.deck-search[data-visible] {
+  opacity: 1;
+  translate: -50% -50%;
+  pointer-events: auto;
+}
+
+.deck-search input {
+  width: 100%;
+  padding: 4px 2px 8px;
+  border: 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.35);
+  border-radius: 0;
+  background: transparent;
+  color: #f3efe6;
+  caret-color: #e6c27a;
+  font-family: "Nunito Sans Variable", system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  outline: none;
+  box-shadow: none;
+  transition: border-color 200ms ease;
+  cursor: text;
+}
+.deck-search input:focus {
+  border-bottom-color: rgb(255 255 255 / 0.7);
+}
+.deck-search[data-missing] input {
+  border-bottom-color: rgb(239 107 115 / 0.6);
+  color: rgb(243 239 230 / 0.6);
+}

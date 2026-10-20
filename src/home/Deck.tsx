@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type { WikiCard } from "../../shared/api.ts";
 import { api } from "../lib/api.ts";
@@ -7,6 +7,8 @@ import { useLive } from "../lib/live.ts";
 import { useResource } from "../lib/useResource.ts";
 import { CARD_ASPECT, Card } from "./cards/index.ts";
 import "./deck.css";
+import { bestMatch, matchScore } from "./match.ts";
+import { Search } from "./Search.tsx";
 import { Starfield } from "./Starfield.tsx";
 import { useDeck } from "./useDeck.ts";
 
@@ -66,7 +68,9 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
   const [initial] = useState(() => ({ n: wikis.length, start }));
   const n = Math.min(initial.n, wikis.length);
 
-  const { count, center, dragging, travel } = useDeck({
+  const [query, setQuery] = useState("");
+
+  const { count, center, dragging, travel, controls } = useDeck({
     stage,
     slots: slotEls,
     n,
@@ -86,6 +90,12 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
   });
 
   const slots = useMemo(() => Array.from({ length: count }, (_, i) => wikis[i % n]), [count, wikis, n]);
+
+  // Searching spins the deck to the best match.
+  const best = useMemo(() => bestMatch(wikis.slice(0, n), query), [wikis, n, query]);
+  useEffect(() => {
+    if (best >= 0) controls.current.goTo(best);
+  }, [best, controls]);
   const current = wikis[center] ?? wikis[0];
 
   return (
@@ -99,6 +109,13 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
       transition={{ duration: 0.5 }}
     >
       <Starfield travel={travel} />
+      <Search
+        query={query}
+        onChange={setQuery}
+        found={best >= 0}
+        onSubmit={() => best >= 0 && controls.current.openCenter()}
+        disabled={opening !== null}
+      />
       <div className="deck-vignette" />
 
       <section ref={stage} className="deck-stage" aria-label="Wikis: drag, scroll or use the arrow keys, Enter opens">
@@ -112,6 +129,7 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
             className="deck-card"
             data-slot={i}
             data-hidden={opening && i % n === wikis.indexOf(opening.card) ? "" : undefined}
+            data-dim={(query.trim() && matchScore(card, query) === 0) || undefined}
             aria-current={card.id === current.id || undefined}
             style={{ "--accent": card.accent } as CSSProperties}
           >

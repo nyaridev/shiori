@@ -25,6 +25,8 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
   const count = slotCount(n);
   /** How far the deck has moved in total, in px (never wraps). The starfield follows it for parallax. */
   const travel = useRef(0);
+  /** Imperative controls for search: spin to a wiki, open the centered card. */
+  const controls = useRef({ goTo: (_wiki: number) => {}, openCenter: () => {} });
   const [center, setCenter] = useState(() => mod(start, Math.max(n, 1)));
   const [dragging, setDragging] = useState(false);
   const live = useRef({ disabled, onOpen });
@@ -176,12 +178,32 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
 
     const key = (e: KeyboardEvent) => {
       if (live.current.disabled || e.altKey || e.ctrlKey || e.metaKey) return;
+      // Typing in the search field: its keys are its own.
+      if (e.target instanceof HTMLInputElement) return;
       const base = s.mode === "settle" ? s.target : Math.round(s.x);
       if (e.key === "ArrowRight" || e.key === "ArrowDown") snapTo(base + 1);
       else if (e.key === "ArrowLeft" || e.key === "ArrowUp") snapTo(base - 1);
       else if (e.key === "Enter" || e.key === " ") live.current.onOpen(mod(Math.round(s.x), count));
       else return;
       e.preventDefault();
+    };
+
+    controls.current = {
+      // The nearest slot that shows that wiki, so the deck takes the short way round.
+      goTo: (wiki) => {
+        const base = s.mode === "settle" ? s.target : Math.round(s.x);
+        let best = base;
+        let bestDist = Number.POSITIVE_INFINITY;
+        for (let slot = wiki; slot < count; slot += n) {
+          const d = Math.round(offset(slot, base, count));
+          if (Math.abs(d) < bestDist) {
+            bestDist = Math.abs(d);
+            best = base + d;
+          }
+        }
+        if (best !== base || s.mode !== "idle") snapTo(best);
+      },
+      openCenter: () => live.current.onOpen(mod(Math.round(s.mode === "settle" ? s.target : s.x), count)),
     };
 
     const resize = () => {
@@ -215,5 +237,5 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
     };
   }, [stage, slots, n, count, start]);
 
-  return { count, center, dragging, travel };
+  return { count, center, dragging, travel, controls };
 }

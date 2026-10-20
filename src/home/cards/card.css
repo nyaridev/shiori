@@ -76,11 +76,11 @@
 .cc-line {
   fill: none;
   stroke: rgb(255 240 200 / 0.6);
-  stroke-width: 1;
+  /* In viewBox units (about 1px on a card); a non-scaling stroke would ignore pathLength and dash the line. */
+  stroke-width: 0.3;
   stroke-linecap: round;
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  vector-effect: non-scaling-stroke;
   filter: drop-shadow(0 0 2px rgb(255 226 160 / 0.7));
   animation:
     cc-trace 0.55s cubic-bezier(0.5, 0, 0.3, 1) var(--delay) forwards,
@@ -108,11 +108,10 @@
 }
 /* 4. Sometimes a shooting star crosses. */
 .cc-meteor {
-  stroke-width: 1.4;
+  stroke-width: 0.4;
   stroke-linecap: round;
   stroke-dasharray: 0.35 1.4;
   stroke-dashoffset: 0.35;
-  vector-effect: non-scaling-stroke;
   opacity: 0;
   animation: cc-meteor 0.9s cubic-bezier(0.4, 0, 0.8, 0.6) var(--delay) both;
 }
