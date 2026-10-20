@@ -8,10 +8,11 @@ import { api } from "../lib/api.ts";
 import { prime } from "../lib/cache.ts";
 import "./open-card.css";
 
-const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
-const GROW = 480;
+/** Eases in and out, so the card is seen travelling to full size (a front-loaded curve reads as a pop). */
+const EASE = "cubic-bezier(0.5, 0, 0.15, 1)";
+const GROW = 560;
 /** When the art starts dissolving into the page color, from the click (ms). */
-const DISSOLVE_AT = 260;
+const DISSOLVE_AT = 400;
 const DISSOLVE = 240;
 const FALLBACK_BG = "#0f1012";
 
@@ -148,7 +149,7 @@ export function openCard({ slots, slot, wikiId, accent }: Options): Opening {
         { transform: `${transform} translateX(0px) scale(1)`, opacity: other.style.opacity || "1" },
         { transform: `${transform} translateX(${side * vw * 0.18}px) scale(0.9)`, opacity: 0 },
       ],
-      { duration: 420, easing: "cubic-bezier(0.4, 0, 0.2, 1)", fill: "forwards" },
+      { duration: GROW, easing: EASE, fill: "forwards" },
     );
   });
   deck?.querySelector(".deck-stars")?.animate(
