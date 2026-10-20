@@ -1,6 +1,6 @@
 # AGENTS.md — {{title}} wiki
 
-This folder is a **Loredeck wiki**. Loredeck (`{{loredeck}}`) is the app that shows it. The wiki is written only by
+This folder is a **Shiori wiki**. Shiori (`{{shiori}}`) is the app that shows it. The wiki is written only by
 agents: people read it and leave comments on selected text, and you answer them and update the pages.
 
 ## Layout
@@ -27,7 +27,7 @@ agents: people read it and leave comments on selected text, and you answer them 
 
 ## Elements
 
-The full reference with examples is `{{loredeck}}/docs/elements.md`, and the app shows it at `/dev/ui`.
+The full reference with examples is `{{shiori}}/docs/elements.md`, and the app shows it at `/dev/ui`.
 
 | Element | Syntax |
 |---|---|
@@ -56,7 +56,7 @@ Keep themes subtle: change the accent first, and the rest only when the project 
 
 ## Comments
 
-Run these from the Loredeck folder (`{{loredeck}}`):
+Run these from the Shiori folder (`{{shiori}}`):
 
 | Command | What |
 |---|---|

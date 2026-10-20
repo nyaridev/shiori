@@ -68,7 +68,7 @@ export function UiPage() {
         <Link to="/" className="ui-back">
           <Icon name="arrowLeft" size={16} /> Deck
         </Link>
-        <p className="ui-nav-title">Loredeck UI</p>
+        <p className="ui-nav-title">Shiori UI</p>
         {SECTIONS.map(([id, label]) => (
           <a key={id} href={`#${id}`}>
             {label}
@@ -308,7 +308,7 @@ export function UiPage() {
           <p className="ui-note">
             Rendered from <code>docs/elements.md</code>, the reference agents follow.
           </p>
-          <div className="ld-prose ui-elements">{elements.data && <Markdown hast={elements.data.hast} />}</div>
+          <div className="sh-prose ui-elements">{elements.data && <Markdown hast={elements.data.hast} />}</div>
         </Section>
       </main>
     </div>

@@ -5,8 +5,8 @@ import { IconButton, Tooltip } from "../ui/index.ts";
 export function Sidebar({ wiki, onNavigate }: { wiki: WikiDetail; onNavigate?: () => void }) {
   const navigate = useNavigate();
   return (
-    <nav className="ld-sidebar" aria-label={`${wiki.title} pages`}>
-      <div className="ld-sidebar-head">
+    <nav className="sh-sidebar" aria-label={`${wiki.title} pages`}>
+      <div className="sh-sidebar-head">
         <Tooltip content="Back to the deck" side="right">
           <IconButton
             icon="deck"
@@ -15,19 +15,19 @@ export function Sidebar({ wiki, onNavigate }: { wiki: WikiDetail; onNavigate?: (
           />
         </Tooltip>
       </div>
-      <NavLink to={`/w/${wiki.id}`} end className="ld-sidebar-wiki" onClick={onNavigate}>
-        <img src={wiki.coverUrl} alt="" className="ld-sidebar-cover" />
+      <NavLink to={`/w/${wiki.id}`} end className="sh-sidebar-wiki" onClick={onNavigate}>
+        <img src={wiki.coverUrl} alt="" className="sh-sidebar-cover" />
         <span>
-          <span className="ld-sidebar-title">{wiki.title}</span>
-          {wiki.tagline && <span className="ld-sidebar-tagline">{wiki.tagline}</span>}
+          <span className="sh-sidebar-title">{wiki.title}</span>
+          {wiki.tagline && <span className="sh-sidebar-tagline">{wiki.tagline}</span>}
         </span>
       </NavLink>
-      <ul className="ld-nav">
+      <ul className="sh-nav">
         {wiki.nav.map((n) => (
           <NavItem key={n.path} node={n} wikiId={wiki.id} onNavigate={onNavigate} />
         ))}
       </ul>
-      <Link to="/dev/ui" className="ld-sidebar-foot">
+      <Link to="/dev/ui" className="sh-sidebar-foot">
         UI primitives
       </Link>
     </nav>
@@ -37,22 +37,22 @@ export function Sidebar({ wiki, onNavigate }: { wiki: WikiDetail; onNavigate?: (
 function NavItem({ node, wikiId, onNavigate }: { node: NavNode; wikiId: string; onNavigate?: () => void }) {
   const isGroup = node.children.length > 0;
   return (
-    <li className={isGroup ? "ld-nav-group" : undefined}>
+    <li className={isGroup ? "sh-nav-group" : undefined}>
       {node.isPage ? (
         <NavLink
           to={`/w/${wikiId}/${node.path}`}
           end
-          className="ld-nav-link"
+          className="sh-nav-link"
           data-group={isGroup || undefined}
           onClick={onNavigate}
         >
           {node.title}
         </NavLink>
       ) : (
-        <span className="ld-nav-link ld-nav-heading">{node.title}</span>
+        <span className="sh-nav-link sh-nav-heading">{node.title}</span>
       )}
       {isGroup && (
-        <ul className="ld-nav">
+        <ul className="sh-nav">
           {node.children.map((c) => (
             <NavItem key={c.path} node={c} wikiId={wikiId} onNavigate={onNavigate} />
           ))}

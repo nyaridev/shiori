@@ -43,9 +43,9 @@ export function ThreadList({
   }, [active, all]);
 
   return (
-    <section className="ld-threads" aria-label="Comments">
-      <header className="ld-threads-head">
-        <h2 className="ld-rail-title">Comments</h2>
+    <section className="sh-threads" aria-label="Comments">
+      <header className="sh-threads-head">
+        <h2 className="sh-rail-title">Comments</h2>
         <Segmented
           value={filter}
           onChange={setFilter}
@@ -56,7 +56,7 @@ export function ThreadList({
         />
       </header>
       {shown.length === 0 && (
-        <p className="ld-threads-empty">
+        <p className="sh-threads-empty">
           {filter === "open" ? "Select text on the page to leave a comment." : "No closed comments."}
         </p>
       )}
@@ -105,9 +105,9 @@ function ThreadCard({
   };
 
   return (
-    <article ref={ref} className={cx("ld-thread", active && "is-active")} data-status={thread.status}>
-      <button type="button" className="ld-thread-main" onClick={onClick}>
-        <span className="ld-thread-meta">
+    <article ref={ref} className={cx("sh-thread", active && "is-active")} data-status={thread.status}>
+      <button type="button" className="sh-thread-main" onClick={onClick}>
+        <span className="sh-thread-meta">
           {thread.status === "open" ? (
             last?.author === "agent" ? (
               <Badge tone="accent">Agent replied</Badge>
@@ -120,16 +120,16 @@ function ThreadCard({
             </Badge>
           )}
           {orphaned && <Badge tone="warn">Text changed</Badge>}
-          <span className="ld-thread-time">{ago(thread.createdAt)}</span>
+          <span className="sh-thread-time">{ago(thread.createdAt)}</span>
         </span>
-        <span className="ld-thread-quote">{thread.quote.exact}</span>
-        {!active && <span className="ld-thread-preview">{thread.messages[0]?.body}</span>}
+        <span className="sh-thread-quote">{thread.quote.exact}</span>
+        {!active && <span className="sh-thread-preview">{thread.messages[0]?.body}</span>}
       </button>
       {active && (
-        <div className="ld-thread-body">
+        <div className="sh-thread-body">
           {thread.messages.map((m) => (
-            <div key={m.id} className="ld-message" data-author={m.author}>
-              <span className="ld-message-author">{m.author === "user" ? "You" : "Agent"}</span>
+            <div key={m.id} className="sh-message" data-author={m.author}>
+              <span className="sh-message-author">{m.author === "user" ? "You" : "Agent"}</span>
               <p>{m.body}</p>
             </div>
           ))}
@@ -144,7 +144,7 @@ function ThreadCard({
                   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) void send();
                 }}
               />
-              <div className="ld-thread-actions">
+              <div className="sh-thread-actions">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -159,7 +159,7 @@ function ThreadCard({
               </div>
             </>
           ) : (
-            <div className="ld-thread-actions">
+            <div className="sh-thread-actions">
               <Button size="sm" variant="ghost" icon="undo" onClick={() => void threads.setStatus(thread.id, "open")}>
                 Reopen
               </Button>

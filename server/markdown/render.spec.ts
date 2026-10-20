@@ -20,21 +20,21 @@ function find(node: Root | RootContent, tag: string): Element[] {
 describe("renderMarkdown", () => {
   it("turns directives into ld elements with their label", () => {
     const { hast, problems } = renderMarkdown(':::callout[Heads up]{tone="warning"}\nText\n:::', ctx);
-    const [callout] = find(hast, "ld-callout");
+    const [callout] = find(hast, "sh-callout");
     expect(callout.properties).toMatchObject({ tone: "warning", title: "Heads up" });
     expect(problems).toEqual([]);
   });
 
   it("splits infobox list items into rows", () => {
     const { hast } = renderMarkdown(":::infobox[Rat]\n- Health: 20\n- Speed: **Fast**\n:::", ctx);
-    const keys = find(hast, "ld-key").map((k) => (k.children[0] as { value: string }).value);
+    const keys = find(hast, "sh-key").map((k) => (k.children[0] as { value: string }).value);
     expect(keys).toEqual(["Health", "Speed"]);
-    expect(find(hast, "ld-value")[1].children.some((c) => c.type === "element" && c.tagName === "strong")).toBe(true);
+    expect(find(hast, "sh-value")[1].children.some((c) => c.type === "element" && c.tagName === "strong")).toBe(true);
   });
 
   it("splits columns on ---", () => {
     const { hast } = renderMarkdown(":::columns\nLeft\n\n---\n\nRight\n:::", ctx);
-    expect(find(hast, "ld-column")).toHaveLength(2);
+    expect(find(hast, "sh-column")).toHaveLength(2);
   });
 
   it("reports unknown elements and bad attribute values", () => {

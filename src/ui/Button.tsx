@@ -13,7 +13,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export function Button({ variant = "soft", size = "md", icon, children, className, ...rest }: ButtonProps) {
   return (
-    <button type="button" className={cx("ld-button", className)} data-variant={variant} data-size={size} {...rest}>
+    <button type="button" className={cx("sh-button", className)} data-variant={variant} data-size={size} {...rest}>
       {icon && <Icon name={icon} size={size === "sm" ? 15 : 17} />}
       {children}
     </button>
@@ -31,7 +31,7 @@ export function IconButton({ icon, label, variant = "ghost", size = "md", classN
   return (
     <button
       type="button"
-      className={cx("ld-button ld-icon-button", className)}
+      className={cx("sh-button sh-icon-button", className)}
       data-variant={variant}
       data-size={size}
       aria-label={label}

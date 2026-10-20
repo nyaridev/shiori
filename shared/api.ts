@@ -42,7 +42,7 @@ export interface PageData {
   title: string;
   summary: string;
   toc: TocEntry[];
-  /** Rendered Markdown: HTML elements plus `ld-*` elements for the Loredeck components. */
+  /** Rendered Markdown: HTML elements plus `sh-*` elements for the Shiori components. */
   hast: Root;
   problems: string[];
 }

@@ -1,14 +1,14 @@
-# AGENTS.md — Loredeck
+# AGENTS.md — Shiori
 
 Guide for AI agents (Claude Code, Cursor, Codex…). In Claude Code, the workspace and category rules load from the
 `CLAUDE.md` files above this folder; this file covers only what's specific here. There are two ways to use it:
 - **Writing a wiki** (pages, comments, themes): read the wiki's own `AGENTS.md` (copied from `wikis/_template/`) and
   the first section here.
-- **Working on Loredeck itself:** read the rest.
+- **Working on Shiori itself:** read the rest.
 
 ## Writing wikis
 
-Loredeck hosts wikis that agents write and people read. People can't edit pages; they select text and comment, and
+Shiori hosts wikis that agents write and people read. People can't edit pages; they select text and comment, and
 the comment waits in the wiki's inbox for an agent.
 
 | Command | What |

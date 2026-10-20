@@ -10,7 +10,7 @@ import { addMessage, closeAll, getThread, listThreads, setStatus, waitingForAgen
 import type { Thread } from "../shared/api.ts";
 import { wikiIdSchema } from "../shared/schema.ts";
 
-const HELP = `Loredeck wiki CLI
+const HELP = `Shiori wiki CLI
 
   pnpm wiki list                                   Wikis, where they live and their open comments
   pnpm wiki new <id> [--title "T"] [--tagline "…"] [--at <folder>] [--accent "#rrggbb"]
@@ -91,7 +91,7 @@ const commands: Record<string, () => void> = {
     const accent = values.accent ?? ACCENTS[Math.floor(Math.random() * ACCENTS.length)];
     if (!/^#[0-9a-fA-F]{6}$/.test(accent)) fail("--accent must be #rrggbb.");
     const title = values.title ?? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    copyTemplate(APP_ROOT, dest, { id, title, tagline: values.tagline ?? "", accent, loredeck: APP_ROOT });
+    copyTemplate(APP_ROOT, dest, { id, title, tagline: values.tagline ?? "", accent, shiori: APP_ROOT });
     if (values.at) writeLinks(APP_ROOT, [...readLinks(APP_ROOT), dest]);
     console.log(
       `Created ${slashes(dest)}${values.at ? " and linked it" : ""}. Write pages in pages/, then run \`pnpm wiki check ${id}\`.`,
@@ -102,7 +102,7 @@ const commands: Record<string, () => void> = {
     if (!args[0]) fail("Give the wiki folder.");
     const root = resolve(args[0]);
     const w = loadWiki(root, "linked");
-    if (!("id" in w)) fail(`${slashes(root)} isn't a Loredeck wiki: ${w.problems.join("; ")}`);
+    if (!("id" in w)) fail(`${slashes(root)} isn't a Shiori wiki: ${w.problems.join("; ")}`);
     if (discover(APP_ROOT).wikis.some((x) => x.id === w.id && resolve(x.root) !== root))
       fail(`A wiki "${w.id}" already exists.`);
     writeLinks(APP_ROOT, [...readLinks(APP_ROOT), root]);

@@ -61,7 +61,7 @@ export function rehypeLinks(ctx: LinkContext, problems: string[], lineOffset = 0
         }
       }
       if (node.tagName === "img") props.src = file(node, props.src);
-      if (node.tagName === "ld-infobox" && props.image) props.image = file(node, props.image);
+      if (node.tagName === "sh-infobox" && props.image) props.image = file(node, props.image);
     });
   };
 }

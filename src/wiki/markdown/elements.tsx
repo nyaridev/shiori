@@ -1,4 +1,4 @@
-// React components for the `ld-*` elements the server produces (server/markdown/elements.ts).
+// React components for the `sh-*` elements the server produces (server/markdown/elements.ts).
 import { Children, isValidElement, type ReactElement, type ReactNode } from "react";
 import { Link } from "react-router";
 import { Badge, type BadgeTone, Callout, type CalloutTone, Icon, Kbd, Tabs } from "../../ui/index.ts";
@@ -8,13 +8,13 @@ type Props<T = object> = T & { children?: ReactNode };
 export function WikiLink({ href, children, ...rest }: Props<{ href?: string; target?: string; rel?: string }>) {
   if (href?.startsWith("/w/") || href?.startsWith("/dev/")) {
     return (
-      <Link to={href} className="ld-link">
+      <Link to={href} className="sh-link">
         {children}
       </Link>
     );
   }
   return (
-    <a href={href} className="ld-link" {...rest}>
+    <a href={href} className="sh-link" {...rest}>
       {children}
     </a>
   );
@@ -33,18 +33,18 @@ export function InfoboxEl({
   children,
 }: Props<{ title?: string; image?: string; caption?: string }>) {
   return (
-    <aside className="ld-infobox">
-      {title && <p className="ld-infobox-title">{title}</p>}
-      {image && <img className="ld-infobox-image" src={image} alt={title ?? ""} />}
-      {caption && <p className="ld-infobox-caption">{caption}</p>}
-      <div className="ld-infobox-rows">{children}</div>
+    <aside className="sh-infobox">
+      {title && <p className="sh-infobox-title">{title}</p>}
+      {image && <img className="sh-infobox-image" src={image} alt={title ?? ""} />}
+      {caption && <p className="sh-infobox-caption">{caption}</p>}
+      <div className="sh-infobox-rows">{children}</div>
     </aside>
   );
 }
 
-export const RowEl = ({ children }: Props) => <div className="ld-infobox-row">{children}</div>;
-export const KeyEl = ({ children }: Props) => <span className="ld-infobox-key">{children}</span>;
-export const ValueEl = ({ children }: Props) => <span className="ld-infobox-value">{children}</span>;
+export const RowEl = ({ children }: Props) => <div className="sh-infobox-row">{children}</div>;
+export const KeyEl = ({ children }: Props) => <span className="sh-infobox-key">{children}</span>;
+export const ValueEl = ({ children }: Props) => <span className="sh-infobox-value">{children}</span>;
 
 export const TabEl = ({ children }: Props<{ label?: string }>) => <>{children}</>;
 
@@ -61,17 +61,17 @@ export function TabsEl({ children }: Props) {
   );
 }
 
-export const ColumnsEl = ({ children }: Props) => <div className="ld-columns">{children}</div>;
-export const ColumnEl = ({ children }: Props) => <div className="ld-column">{children}</div>;
+export const ColumnsEl = ({ children }: Props) => <div className="sh-columns">{children}</div>;
+export const ColumnEl = ({ children }: Props) => <div className="sh-column">{children}</div>;
 
 export function DetailsEl({ summary, children }: Props<{ summary?: string }>) {
   return (
-    <details className="ld-details">
+    <details className="sh-details">
       <summary>
         <Icon name="chevronRight" size={16} />
         {summary || "Details"}
       </summary>
-      <div className="ld-details-body">{children}</div>
+      <div className="sh-details-body">{children}</div>
     </details>
   );
 }
@@ -89,7 +89,7 @@ export const UnknownEl = ({ name, children }: Props<{ name?: string }>) => (
 export function TaskBox({ type, checked }: { type?: string; checked?: boolean }) {
   if (type !== "checkbox") return null;
   return (
-    <span className="ld-task" data-checked={checked || undefined} role="img" aria-label={checked ? "done" : "open"}>
+    <span className="sh-task" data-checked={checked || undefined} role="img" aria-label={checked ? "done" : "open"}>
       {checked && <Icon name="check" size={12} />}
     </span>
   );

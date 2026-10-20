@@ -10,7 +10,7 @@ export interface TemplateVars {
   title: string;
   tagline: string;
   accent: string;
-  loredeck: string;
+  shiori: string;
 }
 
 export const templateDir = (appRoot: string) => join(appRoot, "wikis", "_template");
@@ -26,7 +26,7 @@ function fill(dir: string, vars: TemplateVars) {
     tagline: esc(vars.tagline),
     accent: vars.accent,
     initial: [...vars.title][0]?.toUpperCase() ?? "?",
-    loredeck: slashes(vars.loredeck),
+    shiori: slashes(vars.shiori),
   };
   for (const name of readdirSync(dir)) {
     const full = join(dir, name);
@@ -51,14 +51,14 @@ export function copyTemplate(appRoot: string, dest: string, vars: TemplateVars) 
 }
 
 /** Where dev mode keeps the filled-in template. Outside the app, so the app folder stays read-only. */
-export const previewDir = () => join(tmpdir(), "loredeck", "template-preview");
+export const previewDir = () => join(tmpdir(), "shiori", "template-preview");
 
 export const PREVIEW_VARS = (appRoot: string): TemplateVars => ({
   id: "template",
   title: "Template",
   tagline: "The default wiki every new project starts from",
   accent: PALETTES.dark.accent,
-  loredeck: appRoot,
+  shiori: appRoot,
 });
 
 /** (Re)build the dev preview from the template. Its `data/` (comments made while testing) survives. */

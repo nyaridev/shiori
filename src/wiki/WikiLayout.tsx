@@ -49,7 +49,7 @@ export function WikiLayout() {
 
   if (wiki.error) {
     return (
-      <div className="ld-wiki-missing">
+      <div className="sh-wiki-missing">
         <p>This wiki isn't available: {wiki.error.message}</p>
         <Link to="/">Back to the deck</Link>
       </div>
@@ -58,16 +58,16 @@ export function WikiLayout() {
   const ready = Boolean(wiki.data && (page.data || page.error));
 
   return (
-    <div className="ld-wiki">
+    <div className="sh-wiki">
       {wiki.data && (
         <>
-          <div className="ld-wiki-sidebar" data-open={navOpen || undefined}>
+          <div className="sh-wiki-sidebar" data-open={navOpen || undefined}>
             <Sidebar wiki={wiki.data} onNavigate={() => setNavOpen(false)} />
           </div>
           {navOpen && (
-            <button type="button" className="ld-scrim" aria-label="Close menu" onClick={() => setNavOpen(false)} />
+            <button type="button" className="sh-scrim" aria-label="Close menu" onClick={() => setNavOpen(false)} />
           )}
-          <div className="ld-wiki-mobilebar">
+          <div className="sh-wiki-mobilebar">
             <IconButton icon="menu" label="Pages" onClick={() => setNavOpen(true)} />
             <span>{wiki.data.title}</span>
             <IconButton icon="comment" label="Comments" onClick={() => setRailOpen((o) => !o)} />
@@ -75,9 +75,9 @@ export function WikiLayout() {
         </>
       )}
       {page.error && wiki.data && (
-        <main className="ld-wiki-main">
-          <h1 className="ld-page-title">Page not found</h1>
-          <p className="ld-page-summary">There's no page at "{path}".</p>
+        <main className="sh-wiki-main">
+          <h1 className="sh-page-title">Page not found</h1>
+          <p className="sh-page-summary">There's no page at "{path}".</p>
           <Link to={`/w/${wikiId}`}>Go to the home page</Link>
         </main>
       )}
@@ -93,7 +93,7 @@ export function WikiLayout() {
         />
       )}
       <motion.div
-        className="ld-wiki-curtain"
+        className="sh-wiki-curtain"
         initial={{ opacity: fromDeck ? 1 : 0 }}
         animate={{ opacity: ready ? 0 : fromDeck ? 1 : 0 }}
         transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
@@ -126,10 +126,10 @@ function PageArea({
 
   return (
     <>
-      <main className="ld-wiki-main">
-        <header className="ld-page-head">
-          <h1 className="ld-page-title">{page.title}</h1>
-          {page.summary && <p className="ld-page-summary">{page.summary}</p>}
+      <main className="sh-wiki-main">
+        <header className="sh-page-head">
+          <h1 className="sh-page-title">{page.title}</h1>
+          {page.summary && <p className="sh-page-summary">{page.summary}</p>}
           {problems.length > 0 && (
             <Button size="sm" variant="ghost" onClick={() => setShowProblems((s) => !s)}>
               <Badge tone="warn">{problems.length}</Badge> page problem{problems.length === 1 ? "" : "s"}
@@ -145,7 +145,7 @@ function PageArea({
             </ul>
           </Callout>
         )}
-        <div ref={article} className="ld-prose">
+        <div ref={article} className="sh-prose">
           <Markdown hast={page.hast} />
         </div>
         <CommentLayer
@@ -157,8 +157,8 @@ function PageArea({
           onAnchors={onAnchors}
         />
       </main>
-      <aside className="ld-wiki-rail" data-open={railOpen || undefined}>
-        <div className="ld-wiki-rail-close">
+      <aside className="sh-wiki-rail" data-open={railOpen || undefined}>
+        <div className="sh-wiki-rail-close">
           <IconButton icon="close" label="Close comments" size="sm" onClick={onCloseRail} />
         </div>
         <Toc entries={page.toc} />

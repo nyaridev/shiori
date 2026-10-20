@@ -1,4 +1,4 @@
-// Loredeck elements: Markdown directives (`:::callout`, `:badge[…]`) that become `ld-*` elements, which the browser
+// Shiori elements: Markdown directives (`:::callout`, `:badge[…]`) that become `sh-*` elements, which the browser
 // renders with the app's components. The full syntax reference is docs/elements.md.
 import type { BlockContent, ListItem, Node, Parent, PhrasingContent, Root, RootContent } from "mdast";
 import type { ContainerDirective, LeafDirective, TextDirective } from "mdast-util-directive";
@@ -22,23 +22,23 @@ export const BADGE_TONES = ["neutral", "accent", "good", "warn", "bad"] as const
 export const ELEMENTS: Record<string, ElementSpec> = {
   callout: {
     type: "containerDirective",
-    tag: "ld-callout",
+    tag: "sh-callout",
     attrs: { tone: CALLOUT_TONES, title: null },
     label: "title",
   },
   infobox: {
     type: "containerDirective",
-    tag: "ld-infobox",
+    tag: "sh-infobox",
     attrs: { title: null, image: null, caption: null },
     label: "title",
     transform: infoboxRows,
   },
-  tabs: { type: "containerDirective", tag: "ld-tabs", attrs: {}, transform: onlyTabs },
-  tab: { type: "containerDirective", tag: "ld-tab", attrs: { label: null }, label: "label" },
-  columns: { type: "containerDirective", tag: "ld-columns", attrs: {}, transform: splitColumns },
-  details: { type: "containerDirective", tag: "ld-details", attrs: { summary: null }, label: "summary" },
-  badge: { type: "textDirective", tag: "ld-badge", attrs: { tone: BADGE_TONES } },
-  kbd: { type: "textDirective", tag: "ld-kbd", attrs: {} },
+  tabs: { type: "containerDirective", tag: "sh-tabs", attrs: {}, transform: onlyTabs },
+  tab: { type: "containerDirective", tag: "sh-tab", attrs: { label: null }, label: "label" },
+  columns: { type: "containerDirective", tag: "sh-columns", attrs: {}, transform: splitColumns },
+  details: { type: "containerDirective", tag: "sh-details", attrs: { summary: null }, label: "summary" },
+  badge: { type: "textDirective", tag: "sh-badge", attrs: { tone: BADGE_TONES } },
+  kbd: { type: "textDirective", tag: "sh-kbd", attrs: {} },
 };
 
 const COLONS: Record<Directive["type"], string> = {
@@ -47,7 +47,7 @@ const COLONS: Record<Directive["type"], string> = {
   textDirective: ":",
 };
 
-/** remark plugin: turn known directives into `ld-*` elements and report misuse into `problems`. */
+/** remark plugin: turn known directives into `sh-*` elements and report misuse into `problems`. */
 export function remarkElements(problems: string[], lineOffset = 0) {
   return (tree: Root) => {
     visit(tree, (node, index, parent) => {
@@ -65,7 +65,7 @@ export function remarkElements(problems: string[], lineOffset = 0) {
         problem(
           `unknown element "${COLONS[node.type]}${node.name}"${spec ? ` (use ${COLONS[spec.type]}${node.name})` : ""}`,
         );
-        node.data = { hName: "ld-unknown", hProperties: { name: `${COLONS[node.type]}${node.name}` } };
+        node.data = { hName: "sh-unknown", hProperties: { name: `${COLONS[node.type]}${node.name}` } };
         return;
       }
 
@@ -126,13 +126,13 @@ function row(item: ListItem): RootContent {
     if (colon > 0) {
       const value: PhrasingContent[] = [{ type: "text", value: head.value.slice(colon + 1).trimStart() }];
       value.push(...first.children.slice(1));
-      return make("ldRow", "ld-row", [
-        make("ldKey", "ld-key", [{ type: "text", value: head.value.slice(0, colon).trim() }]),
-        make("ldValue", "ld-value", [...value, ...rest]),
+      return make("ldRow", "sh-row", [
+        make("ldKey", "sh-key", [{ type: "text", value: head.value.slice(0, colon).trim() }]),
+        make("ldValue", "sh-value", [...value, ...rest]),
       ]);
     }
   }
-  return make("ldRow", "ld-row", [make("ldValue", "ld-value", item.children)]);
+  return make("ldRow", "sh-row", [make("ldValue", "sh-value", item.children)]);
 }
 
 function onlyTabs(node: Directive, problem: (message: string) => void) {
@@ -149,6 +149,6 @@ function splitColumns(node: Directive) {
     else columns[columns.length - 1].push(child);
   }
   node.children = columns.map(
-    (children) => ({ type: "ldColumn", data: { hName: "ld-column" }, children }) as unknown,
+    (children) => ({ type: "ldColumn", data: { hName: "sh-column" }, children }) as unknown,
   ) as BlockContent[];
 }

@@ -1,6 +1,6 @@
 // Synthesized, very soft UI sounds: no audio files. The context starts on the first pointer or key press
 // (browsers block audio before that). M toggles mute; the choice is remembered per browser.
-const KEY = "loredeck:muted";
+const KEY = "shiori:muted";
 let ctx: AudioContext | null = null;
 let lastTick = 0;
 let muted = (() => {

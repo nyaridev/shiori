@@ -10,16 +10,16 @@ export interface TabItem {
 /** Inactive panels stay in the DOM (hidden), so comment anchors inside them still resolve. */
 export function Tabs({ items, defaultValue }: { items: TabItem[]; defaultValue?: string }) {
   return (
-    <R.Root className="ld-tabs" defaultValue={defaultValue ?? items[0]?.value}>
-      <R.List className="ld-tabs-list" data-noquote="">
+    <R.Root className="sh-tabs" defaultValue={defaultValue ?? items[0]?.value}>
+      <R.List className="sh-tabs-list" data-noquote="">
         {items.map((t) => (
-          <R.Trigger key={t.value} value={t.value} className="ld-tabs-trigger">
+          <R.Trigger key={t.value} value={t.value} className="sh-tabs-trigger">
             {t.label}
           </R.Trigger>
         ))}
       </R.List>
       {items.map((t) => (
-        <R.Content key={t.value} value={t.value} className="ld-tabs-panel" forceMount>
+        <R.Content key={t.value} value={t.value} className="sh-tabs-panel" forceMount>
           {t.content}
         </R.Content>
       ))}
@@ -39,9 +39,9 @@ export function Segmented<T extends string>({
 }) {
   return (
     <R.Root value={value} onValueChange={(v) => onChange(v as T)}>
-      <R.List className="ld-segmented">
+      <R.List className="sh-segmented">
         {options.map((o) => (
-          <R.Trigger key={o.value} value={o.value} className="ld-segmented-item">
+          <R.Trigger key={o.value} value={o.value} className="sh-segmented-item">
             {o.label}
           </R.Trigger>
         ))}

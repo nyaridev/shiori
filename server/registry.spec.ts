@@ -19,7 +19,7 @@ function wiki(root: string, id: string, extra: Record<string, unknown> = {}) {
 }
 
 beforeEach(() => {
-  app = mkdtempSync(join(tmpdir(), "loredeck-"));
+  app = mkdtempSync(join(tmpdir(), "shiori-"));
   mkdirSync(join(app, "wikis", "_template"), { recursive: true });
 });
 afterEach(() => {

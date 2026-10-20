@@ -19,7 +19,7 @@ interface Props {
   onAnchors: (anchors: Anchors) => void;
 }
 
-const HL = { open: "ld-comment", active: "ld-comment-active", pending: "ld-pending" } as const;
+const HL = { open: "sh-comment", active: "sh-comment-active", pending: "sh-pending" } as const;
 
 function paint(name: string, ranges: Range[]) {
   if (!("highlights" in CSS)) return;
@@ -155,7 +155,7 @@ export function CommentLayer({ container, contentKey, threads, active, onActivat
       {!composing && (
         <button
           type="button"
-          className="ld-comment-bubble"
+          className="sh-comment-bubble"
           style={{ left: rect.left + rect.width / 2, top: rect.top }}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => {
@@ -170,13 +170,13 @@ export function CommentLayer({ container, contentKey, threads, active, onActivat
       <Popover open={composing} onOpenChange={(o) => !o && close()}>
         <PopoverAnchor asChild>
           <div
-            className="ld-comment-anchor"
+            className="sh-comment-anchor"
             style={{ left: rect.left, top: rect.top, width: rect.width, height: rect.height }}
           />
         </PopoverAnchor>
         <PopoverContent side="bottom" align="start" width={320} onOpenAutoFocus={(e) => e.preventDefault()}>
           <form
-            className="ld-composer"
+            className="sh-composer"
             onSubmit={(e) => {
               e.preventDefault();
               void save();
@@ -191,8 +191,8 @@ export function CommentLayer({ container, contentKey, threads, active, onActivat
                 if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) void save();
               }}
             />
-            <div className="ld-composer-actions">
-              <span className="ld-composer-hint">Ctrl + Enter</span>
+            <div className="sh-composer-actions">
+              <span className="sh-composer-hint">Ctrl + Enter</span>
               <Button size="sm" variant="ghost" onClick={close}>
                 Cancel
               </Button>

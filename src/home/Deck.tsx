@@ -12,7 +12,7 @@ import { StylePicker } from "./StylePicker.tsx";
 import { isMuted, whoosh } from "./sound.ts";
 import { useDeck } from "./useDeck.ts";
 
-const LAST = "loredeck:last";
+const LAST = "shiori:last";
 
 function startIndex(wikis: WikiCard[], from: string | undefined) {
   let id = from;
@@ -33,7 +33,7 @@ export function Deck() {
   });
   const from = (useLocation().state as { from?: string } | null)?.from;
 
-  if (wikis.error) return <DeckMessage>The Loredeck server isn't reachable. Is it running?</DeckMessage>;
+  if (wikis.error) return <DeckMessage>The Shiori server isn't reachable. Is it running?</DeckMessage>;
   if (!wikis.data) return <div className="deck deck-scope" />;
   if (wikis.data.length === 0) {
     return (

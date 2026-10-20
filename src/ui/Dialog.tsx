@@ -17,18 +17,18 @@ export function DialogContent({
 }) {
   return (
     <R.Portal>
-      <R.Overlay className="ld-overlay" />
-      <R.Content className="ld-dialog ld-surface">
-        <header className="ld-dialog-head">
-          <R.Title className="ld-dialog-title">{title}</R.Title>
+      <R.Overlay className="sh-overlay" />
+      <R.Content className="sh-dialog sh-surface">
+        <header className="sh-dialog-head">
+          <R.Title className="sh-dialog-title">{title}</R.Title>
           <R.Close asChild>
             <IconButton icon="close" label="Close" size="sm" />
           </R.Close>
         </header>
         {description ? (
-          <R.Description className="ld-dialog-description">{description}</R.Description>
+          <R.Description className="sh-dialog-description">{description}</R.Description>
         ) : (
-          <R.Description className="ld-sr-only">{title}</R.Description>
+          <R.Description className="sh-sr-only">{title}</R.Description>
         )}
         {children}
       </R.Content>

@@ -16,22 +16,22 @@ function describe(error: unknown): { title: string; message: string; stack?: str
 export function ErrorPage() {
   const { title, message, stack } = describe(useRouteError());
   return (
-    <div className="ld-error deck-scope">
-      <section className="ld-error-card">
-        <span className="ld-error-icon">
+    <div className="sh-error deck-scope">
+      <section className="sh-error-card">
+        <span className="sh-error-icon">
           <Icon name="danger" size={22} />
         </span>
-        <p className="ld-error-kicker">Loredeck</p>
-        <h1 className="ld-error-title">{title}</h1>
-        <p className="ld-error-message">{message}</p>
+        <p className="sh-error-kicker">Shiori</p>
+        <h1 className="sh-error-title">{title}</h1>
+        <p className="sh-error-message">{message}</p>
         {import.meta.env.DEV && stack && (
-          <details className="ld-error-details">
+          <details className="sh-error-details">
             <summary>Details</summary>
             <pre>{stack}</pre>
           </details>
         )}
-        <div className="ld-error-actions">
-          <Link to="/" reloadDocument className="ld-error-link">
+        <div className="sh-error-actions">
+          <Link to="/" reloadDocument className="sh-error-link">
             <Icon name="deck" size={16} />
             Back to the deck
           </Link>

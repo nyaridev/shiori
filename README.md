@@ -1,4 +1,4 @@
-# Loredeck
+# Shiori
 
 A home for project wikis written by AI agents. Open it and you get a deck of tall cards, one per project: fling it,
 let it spin, click the card in the middle and the wiki opens. Pages can't be edited by hand: you select text and
@@ -11,7 +11,7 @@ Every wiki has the same structure and components, and its own light theme (color
 | Launcher | What |
 |---|---|
 | `start-web.bat` | Builds the UI and opens http://localhost:4400 |
-| `start-app.bat` | Opens Loredeck in its own borderless window (the first run builds it and needs Rust) |
+| `start-app.bat` | Opens Shiori in its own borderless window (the first run builds it and needs Rust) |
 | `start-dev.bat` | Hot-reload dev mode on http://localhost:4410 |
 
 Needs Node 25+ and pnpm. On the deck: drag and release to spin, scroll, or use the arrow keys; click or press

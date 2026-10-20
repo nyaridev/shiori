@@ -12,9 +12,9 @@ interface ToggleProps {
 export function Switch({ checked, onChange, disabled, children }: ToggleProps) {
   const id = useId();
   return (
-    <span className="ld-toggle-row">
-      <RSwitch.Root id={id} className="ld-switch" checked={checked} onCheckedChange={onChange} disabled={disabled}>
-        <RSwitch.Thumb className="ld-switch-thumb" />
+    <span className="sh-toggle-row">
+      <RSwitch.Root id={id} className="sh-switch" checked={checked} onCheckedChange={onChange} disabled={disabled}>
+        <RSwitch.Thumb className="sh-switch-thumb" />
       </RSwitch.Root>
       {children && <label htmlFor={id}>{children}</label>}
     </span>
@@ -24,10 +24,10 @@ export function Switch({ checked, onChange, disabled, children }: ToggleProps) {
 export function Checkbox({ checked, onChange, disabled, children }: ToggleProps) {
   const id = useId();
   return (
-    <span className="ld-toggle-row">
+    <span className="sh-toggle-row">
       <RCheckbox.Root
         id={id}
-        className="ld-checkbox"
+        className="sh-checkbox"
         checked={checked}
         onCheckedChange={(v) => onChange?.(v === true)}
         disabled={disabled}

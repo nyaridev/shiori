@@ -20,7 +20,7 @@ export function Tooltip({
     <R.Root>
       <R.Trigger asChild>{children}</R.Trigger>
       <R.Portal>
-        <R.Content className="ld-tooltip" side={side} sideOffset={6}>
+        <R.Content className="sh-tooltip" side={side} sideOffset={6}>
           {content}
         </R.Content>
       </R.Portal>

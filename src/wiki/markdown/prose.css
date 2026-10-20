@@ -1,87 +1,87 @@
 /* Rendered pages. */
-.ld-prose {
+.sh-prose {
   font-size: var(--t-md);
   line-height: 1.7;
   color: var(--text-soft);
   overflow-wrap: break-word;
 }
-.ld-prose::after {
+.sh-prose::after {
   content: "";
   display: table;
   clear: both;
 }
-.ld-prose > :first-child {
+.sh-prose > :first-child {
   margin-top: 0;
 }
-.ld-prose h2,
-.ld-prose h3,
-.ld-prose h4 {
+.sh-prose h2,
+.sh-prose h3,
+.sh-prose h4 {
   color: var(--text);
   scroll-margin-top: var(--s-6);
 }
-.ld-prose h2 {
+.sh-prose h2 {
   margin: var(--s-7) 0 var(--s-3);
   padding-bottom: var(--s-2);
   border-bottom: var(--bw) solid var(--border);
   font-size: var(--t-xl);
 }
-.ld-prose h3 {
+.sh-prose h3 {
   margin: var(--s-6) 0 var(--s-2);
   font-size: var(--t-lg);
 }
-.ld-prose h4 {
+.sh-prose h4 {
   margin: var(--s-5) 0 var(--s-2);
   font-size: var(--t-md);
 }
-.ld-prose p,
-.ld-prose ul,
-.ld-prose ol,
-.ld-prose blockquote,
-.ld-prose table,
-.ld-prose pre {
+.sh-prose p,
+.sh-prose ul,
+.sh-prose ol,
+.sh-prose blockquote,
+.sh-prose table,
+.sh-prose pre {
   margin: var(--s-3) 0;
 }
-.ld-prose strong {
+.sh-prose strong {
   color: var(--text);
   font-weight: 650;
 }
-.ld-prose ul,
-.ld-prose ol {
+.sh-prose ul,
+.sh-prose ol {
   padding-left: 1.4em;
 }
-.ld-prose li + li {
+.sh-prose li + li {
   margin-top: 2px;
 }
-.ld-prose li::marker {
+.sh-prose li::marker {
   color: var(--muted);
 }
-.ld-prose li:has(> .ld-task) {
+.sh-prose li:has(> .sh-task) {
   list-style: none;
   margin-left: -1.4em;
 }
-.ld-link {
+.sh-link {
   color: var(--accent);
   text-decoration: underline;
   text-decoration-color: var(--accent-line);
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
 }
-.ld-link:hover {
+.sh-link:hover {
   text-decoration-color: var(--accent);
 }
-.ld-prose blockquote {
+.sh-prose blockquote {
   padding: var(--s-1) var(--s-4);
   border-left: 3px solid var(--border-strong);
   color: var(--muted);
   font-style: italic;
 }
-.ld-prose hr {
+.sh-prose hr {
   border: 0;
   height: var(--bw);
   background: var(--border);
   margin: var(--s-6) 0;
 }
-.ld-prose code {
+.sh-prose code {
   padding: 1px 5px;
   border-radius: var(--r-sm);
   background: var(--raised);
@@ -89,7 +89,7 @@
   font-family: var(--font-mono);
   font-size: 0.85em;
 }
-.ld-prose pre {
+.sh-prose pre {
   padding: var(--s-3) var(--s-4);
   border-radius: var(--r-md);
   background: var(--surface);
@@ -97,17 +97,17 @@
   overflow-x: auto;
   line-height: 1.55;
 }
-.ld-prose pre code {
+.sh-prose pre code {
   padding: 0;
   border: 0;
   background: none;
   font-size: var(--t-sm);
 }
-.ld-prose img {
+.sh-prose img {
   max-width: 100%;
   border-radius: var(--r-md);
 }
-.ld-prose table {
+.sh-prose table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -116,26 +116,26 @@
   overflow: hidden;
   font-size: var(--t-sm);
 }
-.ld-prose th,
-.ld-prose td {
+.sh-prose th,
+.sh-prose td {
   padding: 7px var(--s-3);
   text-align: left;
   border-bottom: var(--bw) solid var(--border);
 }
-.ld-prose th {
+.sh-prose th {
   background: var(--surface);
   color: var(--text);
   font-weight: 600;
 }
-.ld-prose tr:last-child td {
+.sh-prose tr:last-child td {
   border-bottom: 0;
 }
-.ld-prose tbody tr:hover td {
+.sh-prose tbody tr:hover td {
   background: var(--hover);
 }
 
 /* Task box */
-.ld-task {
+.sh-task {
   display: inline-grid;
   place-items: center;
   width: 16px;
@@ -146,16 +146,16 @@
   border-radius: calc(var(--r-sm) - 1px);
   color: var(--accent-text);
 }
-.ld-task[data-checked] {
+.sh-task[data-checked] {
   background: var(--accent);
   border-color: var(--accent);
 }
-li:has(> .ld-task[data-checked]) {
+li:has(> .sh-task[data-checked]) {
   color: var(--muted);
 }
 
 /* Infobox */
-.ld-infobox {
+.sh-infobox {
   float: right;
   clear: right;
   width: 260px;
@@ -167,7 +167,7 @@ li:has(> .ld-task[data-checked]) {
   box-shadow: var(--shadow-1);
   font-size: var(--t-sm);
 }
-.ld-infobox-title {
+.sh-infobox-title {
   margin: 0 0 var(--s-2);
   padding: var(--s-2);
   border-radius: var(--r-md);
@@ -177,63 +177,63 @@ li:has(> .ld-task[data-checked]) {
   font-weight: 650;
   text-align: center;
 }
-.ld-infobox-image {
+.sh-infobox-image {
   display: block;
   width: 100%;
   border-radius: var(--r-md);
   background: var(--raised);
 }
-.ld-infobox-caption {
+.sh-infobox-caption {
   margin: var(--s-2) 0;
   color: var(--muted);
   font-size: var(--t-xs);
   text-align: center;
   font-style: italic;
 }
-.ld-infobox-rows {
+.sh-infobox-rows {
   display: grid;
 }
-.ld-infobox-row {
+.sh-infobox-row {
   display: grid;
   grid-template-columns: 40% 1fr;
   gap: var(--s-2);
   padding: 6px var(--s-1);
   border-top: var(--bw) solid var(--border);
 }
-.ld-infobox-row:first-child {
+.sh-infobox-row:first-child {
   border-top: 0;
 }
-.ld-infobox-key {
+.sh-infobox-key {
   color: var(--muted);
   font-weight: 550;
 }
-.ld-infobox-value {
+.sh-infobox-value {
   color: var(--text);
 }
-.ld-infobox-value > p {
+.sh-infobox-value > p {
   margin: 0;
 }
 
 /* Columns */
-.ld-columns {
+.sh-columns {
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
   gap: var(--s-5);
   margin: var(--s-4) 0;
 }
-.ld-column > :first-child {
+.sh-column > :first-child {
   margin-top: 0;
 }
 
 /* Details */
-.ld-details {
+.sh-details {
   margin: var(--s-3) 0;
   border: var(--bw) solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
 }
-.ld-details summary {
+.sh-details summary {
   display: flex;
   align-items: center;
   gap: var(--s-2);
@@ -243,27 +243,27 @@ li:has(> .ld-task[data-checked]) {
   cursor: pointer;
   list-style: none;
 }
-.ld-details summary::-webkit-details-marker {
+.sh-details summary::-webkit-details-marker {
   display: none;
 }
-.ld-details summary .ld-icon {
+.sh-details summary .sh-icon {
   color: var(--muted);
   transition: rotate var(--fast) var(--ease);
 }
-.ld-details[open] summary .ld-icon {
+.sh-details[open] summary .sh-icon {
   rotate: 90deg;
 }
-.ld-details-body {
+.sh-details-body {
   padding: 0 var(--s-4) var(--s-1);
 }
 
 @media (max-width: 720px) {
-  .ld-infobox {
+  .sh-infobox {
     float: none;
     width: auto;
     margin: var(--s-4) 0;
   }
-  .ld-columns {
+  .sh-columns {
     grid-auto-flow: row;
   }
 }

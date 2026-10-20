@@ -1,4 +1,4 @@
-// Starts the Loredeck server. `--static` also serves the built UI from dist/ (start-web.bat, the desktop app);
+// Starts the Shiori server. `--static` also serves the built UI from dist/ (start-web.bat, the desktop app);
 // `--dev` shows only the template, filled in as a preview (pnpm dev).
 import { existsSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -32,7 +32,7 @@ const app = buildApp({ registry, live, staticDir: values.static ? relative(proce
 const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
   const n = registry.all().length;
   const what = values.dev ? "dev: the template only" : `${n} wiki${n === 1 ? "" : "s"}`;
-  console.log(`Loredeck server on http://localhost:${port} (${what})`);
+  console.log(`Shiori server on http://localhost:${port} (${what})`);
   for (const b of registry.broken()) console.warn(`  skipped ${b.root}: ${b.problems.join("; ")}`);
 });
 

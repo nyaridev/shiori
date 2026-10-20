@@ -29,7 +29,7 @@ export const ICON_NAMES = Object.keys(PATHS) as IconName[];
 export function Icon({ name, size = 18, label }: { name: IconName; size?: number; label?: string }) {
   return (
     <svg
-      className="ld-icon"
+      className="sh-icon"
       width={size}
       height={size}
       viewBox="0 0 24 24"

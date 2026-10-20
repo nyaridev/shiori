@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "loredeck",
+      "name": "shiori",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev"],
       "port": 4410

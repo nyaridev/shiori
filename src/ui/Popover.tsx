@@ -13,7 +13,7 @@ export function PopoverContent({
 }: { children: ReactNode; width?: number } & ComponentProps<typeof R.Content>) {
   return (
     <R.Portal>
-      <R.Content className="ld-popover ld-surface" sideOffset={8} collisionPadding={12} style={{ width }} {...rest}>
+      <R.Content className="sh-popover sh-surface" sideOffset={8} collisionPadding={12} style={{ width }} {...rest}>
         {children}
       </R.Content>
     </R.Portal>

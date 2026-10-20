@@ -22,8 +22,8 @@ export function Toc({ entries }: { entries: TocEntry[] }) {
 
   if (entries.length < 2) return null;
   return (
-    <section className="ld-toc" aria-label="On this page">
-      <h2 className="ld-rail-title">On this page</h2>
+    <section className="sh-toc" aria-label="On this page">
+      <h2 className="sh-rail-title">On this page</h2>
       <ul>
         {entries.map((e) => (
           <li key={e.id} data-depth={e.depth}>
