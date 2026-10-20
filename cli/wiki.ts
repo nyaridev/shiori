@@ -1,10 +1,11 @@
 // `pnpm wiki <command>`: how agents create wikis, check them and answer comments.
-import { cpSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { extname, join, resolve } from "node:path";
+import { existsSync, readdirSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { listPages, renderPage } from "../server/pages.ts";
 import { APP_ROOT, slashes } from "../server/paths.ts";
 import { discover, loadWiki, readLinks, type Wiki, writeLinks } from "../server/registry.ts";
+import { copyTemplate } from "../server/template.ts";
 import { addMessage, closeAll, getThread, listThreads, setStatus, waitingForAgent } from "../server/threads.ts";
 import type { Thread } from "../shared/api.ts";
 import { wikiIdSchema } from "../shared/schema.ts";
@@ -66,20 +67,6 @@ function printThread(wiki: Wiki, t: Thread) {
     console.log(`  ${m.author === "user" ? "user " : "agent"}: ${m.body.replace(/\n/g, "\n         ")}`);
 }
 
-function fillTemplate(dir: string, vars: Record<string, string>) {
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) fillTemplate(full, vars);
-    else if ([".md", ".json", ".svg", ""].includes(extname(name)) || name === ".gitignore") {
-      const text = readFileSync(full, "utf8");
-      writeFileSync(
-        full,
-        text.replace(/\{\{(\w+)\}\}/g, (m, k: string) => vars[k] ?? m),
-      );
-    }
-  }
-}
-
 const commands: Record<string, () => void> = {
   list() {
     const { wikis, broken } = discover(APP_ROOT);
@@ -104,16 +91,7 @@ const commands: Record<string, () => void> = {
     const accent = values.accent ?? ACCENTS[Math.floor(Math.random() * ACCENTS.length)];
     if (!/^#[0-9a-fA-F]{6}$/.test(accent)) fail("--accent must be #rrggbb.");
     const title = values.title ?? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    const esc = (s: string) => JSON.stringify(s).slice(1, -1);
-    cpSync(join(APP_ROOT, "wikis", "_template"), dest, { recursive: true });
-    fillTemplate(dest, {
-      id,
-      title: esc(title),
-      tagline: esc(values.tagline ?? ""),
-      accent,
-      initial: [...title][0]?.toUpperCase() ?? "?",
-      loredeck: slashes(APP_ROOT),
-    });
+    copyTemplate(APP_ROOT, dest, { id, title, tagline: values.tagline ?? "", accent, loredeck: APP_ROOT });
     if (values.at) writeLinks(APP_ROOT, [...readLinks(APP_ROOT), dest]);
     console.log(
       `Created ${slashes(dest)}${values.at ? " and linked it" : ""}. Write pages in pages/, then run \`pnpm wiki check ${id}\`.`,

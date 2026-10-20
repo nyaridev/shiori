@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { buildNav, listPages } from "./pages.ts";
-import { discover, writeLinks } from "./registry.ts";
+import { createRegistry, discover, writeLinks } from "./registry.ts";
 import { closeAll, createThread, listThreads, waitingForAgent } from "./threads.ts";
 
 let app: string;
@@ -66,5 +66,24 @@ describe("pages and threads", () => {
     expect(threads).toHaveLength(1);
     expect(waitingForAgent(threads)).toHaveLength(1);
     expect(listThreads(w.root, { page: "" })).toHaveLength(0);
+  });
+});
+
+describe("dev mode", () => {
+  it("shows only the template, filled in, and ignores everything else", () => {
+    const template = join(app, "wikis", "_template");
+    mkdirSync(join(template, "pages"), { recursive: true });
+    writeFileSync(join(template, "wiki.json"), JSON.stringify({ schema: 1, id: "{{id}}", title: "{{title}}" }));
+    writeFileSync(join(template, "theme.json"), JSON.stringify({ colors: { accent: "{{accent}}" } }));
+    writeFileSync(join(template, "cover.svg"), "<svg>{{initial}}</svg>");
+    writeFileSync(join(template, "pages", "index.md"), "# {{title}}");
+    wiki(join(app, "wikis", "alpha"), "alpha");
+
+    const preview = join(app, "preview");
+    const registry = createRegistry(app, { dev: true, preview });
+    expect(registry.all().map((w) => [w.id, w.manifest.title, w.problems])).toEqual([["template", "Template", []]]);
+    expect(registry.classify(join(template, "pages", "index.md"))).toEqual({ wiki: "template", area: "pages" });
+    expect(registry.classify(join(preview, "data", "wiki.db"))).toEqual({ wiki: "template", area: "data" });
+    expect(registry.classify(join(app, "wikis", "alpha", "pages", "index.md")).area).toBe("ignore");
   });
 });

@@ -14,8 +14,8 @@ anchored to text and an agent CLI. Loredeck generalizes it to many wikis. The re
   nudges the shared design (shape, colors), never the behavior.
 - Wikis live in `wikis/` (git-ignored except `_template/`) or in any other folder.
 - People can't edit pages. They select text and comment; comments are stored in the wiki's folder, never in the app.
-- The home screen is a deck of tall 1:4 cards: fling to spin, soft sounds, snap to center, click to expand into the
-  wiki. No header or footer.
+- The home screen is a deck of portrait cards (about 2:3; the card style sets the exact shape): fling to spin, soft
+  sounds, snap to center, click to expand into the wiki. No header or footer.
 - It runs in the browser (`start-web.bat`, `start-dev.bat`) and in its own borderless window (`start-app.bat`).
 - A page showing every primitive in the default theme.
 

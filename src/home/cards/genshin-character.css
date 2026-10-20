@@ -1,0 +1,83 @@
+.gc {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #e9e5dc;
+  box-shadow:
+    0 2px 0 rgb(0 0 0 / 0.25),
+    0 24px 50px -20px rgb(0 0 0 / 0.85);
+  font-family: "Nunito Sans Variable", system-ui, sans-serif;
+  transition: box-shadow 260ms ease;
+}
+.deck-card[data-center] .gc {
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 26px 2px rgb(255 255 255 / 0.35),
+    0 24px 50px -20px rgb(0 0 0 / 0.85);
+}
+
+/* The 5★ gradient, tinted by the wiki's accent; the art fades into it at the bottom. */
+.gc-art {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  border-bottom-right-radius: 34px;
+  background: linear-gradient(
+    165deg,
+    color-mix(in oklab, var(--accent) 35%, #6b4530),
+    color-mix(in oklab, var(--accent) 35%, #c98e4d)
+  );
+}
+.gc-art .card-fill {
+  mask-image: linear-gradient(to bottom, #000 62%, transparent 92%);
+}
+.gc-element {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid rgb(255 255 255 / 0.7);
+  border-radius: 50%;
+  background: rgb(20 18 30 / 0.45);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  backdrop-filter: blur(4px);
+}
+.gc-stars {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  color: #ffcc32;
+  font-size: clamp(12px, calc(var(--card-h) * 0.03), 18px);
+  letter-spacing: 0.05em;
+  text-align: center;
+  text-shadow:
+    0 0 6px rgb(255 190 40 / 0.7),
+    0 1px 1px rgb(90 50 0 / 0.6);
+}
+
+.gc-plate {
+  display: grid;
+  place-items: center;
+  flex: none;
+  height: 17%;
+  padding: 0 10px;
+}
+.gc-name {
+  max-width: 100%;
+  overflow: hidden;
+  color: #495366;
+  font-size: clamp(13px, calc(var(--card-h) * 0.032), 19px);
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

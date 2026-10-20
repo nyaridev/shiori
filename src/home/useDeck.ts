@@ -26,7 +26,6 @@ interface Options {
 export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange }: Options) {
   const count = slotCount(n);
   const [center, setCenter] = useState(() => mod(start, Math.max(n, 1)));
-  const [settled, setSettled] = useState(true);
   const [dragging, setDragging] = useState(false);
   const live = useRef({ disabled, onOpen, onMuteChange });
   live.current = { disabled, onOpen, onMuteChange };
@@ -60,11 +59,12 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange
         card.style.visibility = "visible";
         const lift = Math.max(0, 1 - a);
         card.style.transform =
-          `translate3d(${px.toFixed(2)}px, ${(-lift * 14).toFixed(2)}px, ${(-a * 70).toFixed(1)}px) ` +
-          `rotateY(${clamp(-d * 9, -32, 32).toFixed(2)}deg) scale(${(1 - Math.min(a, 4) * 0.045).toFixed(4)})`;
+          `translate3d(${px.toFixed(2)}px, ${(-lift * 14).toFixed(2)}px, ${(-a * 90).toFixed(1)}px) ` +
+          `rotateY(${clamp(-d * 8, -30, 30).toFixed(2)}deg) scale(${(1 - Math.min(a, 4) * 0.05).toFixed(4)})`;
         card.style.opacity = String(clamp(1 - Math.max(0, a - 0.5) * 0.16, 0.18, 1));
         card.style.zIndex = String(1000 - Math.round(a * 10));
         card.style.setProperty("--focus", lift.toFixed(3));
+        card.style.setProperty("--d", d.toFixed(3));
         card.toggleAttribute("data-center", a < 0.5);
       });
     };
@@ -89,13 +89,9 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange
       s = step(s, dt);
       afterMove();
       if (s.mode === "coast" || s.mode === "settle") raf = requestAnimationFrame(frame);
-      else {
-        raf = 0;
-        setSettled(true);
-      }
+      else raf = 0;
     };
     const run = () => {
-      setSettled(false);
       if (!raf) {
         last = performance.now();
         raf = requestAnimationFrame(frame);
@@ -134,7 +130,6 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange
       s = { ...s, v: 0, mode: "drag" };
       cancelAnimationFrame(raf);
       raf = 0;
-      setSettled(false);
     };
     const move = (e: PointerEvent) => {
       if (!drag || e.pointerId !== drag.id) return;
@@ -194,6 +189,10 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange
       measure();
       layout();
     };
+    // Card styles change the card width; follow it.
+    const sizes = new ResizeObserver(resize);
+    const firstCard = slots.current[0];
+    if (firstCard) sizes.observe(firstCard);
 
     measure();
     layout();
@@ -213,8 +212,9 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen, onMuteChange
       el.removeEventListener("wheel", wheel);
       window.removeEventListener("keydown", key);
       window.removeEventListener("resize", resize);
+      sizes.disconnect();
     };
   }, [stage, slots, n, count, start]);
 
-  return { count, center, settled, dragging };
+  return { count, center, dragging };
 }

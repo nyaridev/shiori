@@ -1,9 +1,9 @@
-// Watches every wiki folder and tells open tabs what changed, so an agent's edits show up without a reload.
+// Watches the wiki folders and tells open tabs what changed, so an agent's edits show up without a reload.
 // Changes in a wiki's `data/` (the comment database, also written by the CLI) refresh threads, not pages.
 import { type FSWatcher, watch } from "node:fs";
-import { join, relative, resolve, sep } from "node:path";
+import { join } from "node:path";
 import type { LiveEvent } from "../shared/api.ts";
-import { LINKS_FILE, type Registry, readLinks } from "./registry.ts";
+import { LINKS_FILE, type Registry } from "./registry.ts";
 
 type Listener = (event: LiveEvent) => void;
 
@@ -25,20 +25,20 @@ export function createLive(registry: Registry) {
     }, 120);
   };
 
-  /** A changed file somewhere under `base` → an event for the wiki that owns it. */
-  const changed = (base: string, file: string | null) => {
-    const full = file ? join(base, file) : base;
-    const wiki = registry.all().find((w) => !relative(w.root, full).startsWith(".."));
-    if (!wiki) return emit({ type: "wikis" });
-    const rel = relative(wiki.root, full).split(sep);
-    if (rel[0] === "data") return emit({ type: "threads", wiki: wiki.id });
-    if (rel[0] === "wiki.json" || rel[0] === "theme.json" || rel[0] === wiki.manifest.cover) emit({ type: "wikis" });
-    emit({ type: "pages", wiki: wiki.id });
+  const changed = (file: string) => {
+    const { wiki, area } = registry.classify(file);
+    if (area === "ignore") return;
+    if (area === "data") {
+      if (wiki) emit({ type: "threads", wiki });
+      return;
+    }
+    if (area === "meta" || !wiki) emit({ type: "wikis" });
+    if (wiki) emit({ type: "pages", wiki });
   };
 
   const watchTree = (dir: string) => {
     try {
-      const w = watch(dir, { recursive: true }, (_e, file) => changed(dir, file ? String(file) : null));
+      const w = watch(dir, { recursive: true }, (_e, file) => changed(file ? join(dir, String(file)) : dir));
       w.on("error", () => {});
       watchers.push(w);
     } catch {
@@ -48,8 +48,8 @@ export function createLive(registry: Registry) {
 
   const start = () => {
     for (const w of watchers.splice(0)) w.close();
-    watchTree(join(registry.appRoot, "wikis"));
-    for (const p of readLinks(registry.appRoot)) watchTree(resolve(registry.appRoot, p));
+    for (const dir of registry.watchDirs()) watchTree(dir);
+    if (registry.dev) return;
     const rootWatch = watch(registry.appRoot, (_e, file) => {
       if (String(file) !== LINKS_FILE) return;
       registry.invalidate();

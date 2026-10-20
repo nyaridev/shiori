@@ -9,7 +9,7 @@ agents: people read it and leave comments on selected text, and you answer them 
 |---|---|
 | `wiki.json` | `id` (kebab-case, unique), `title`, `tagline`, `cover`, `order` (position in the deck) |
 | `theme.json` | Small style overrides on the app's defaults. See Theme below |
-| `cover.svg` | The deck card art, 1:4 (tall). Art only, no title text: the app draws the title |
+| `cover.svg` | The deck card art, 2:3 (portrait), with the subject in the middle (card styles crop the edges). Art only, no title text: the app draws the title |
 | `pages/**/*.md` | The pages. `pages/index.md` is the home page; a folder is a sidebar section and its `index.md` is the section page |
 | `assets/` | Images and media used by pages |
 | `data/` | Comments database, written by the app. Never edit or commit it |

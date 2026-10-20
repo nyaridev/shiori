@@ -1,12 +1,13 @@
 // Finds wikis: every folder in the app's `wikis/` (except `_template` and other `_`/`.` folders), plus the folders
 // listed in `wikis.local.json`. A folder is a wiki when it has a valid `wiki.json`.
 import { existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { WikiCard } from "../shared/api.ts";
 import { issues, type Manifest, manifestSchema } from "../shared/schema.ts";
 import { DEFAULT_THEME, type Theme, themeAccent, themeSchema } from "../shared/theme.ts";
 import { fileUrl } from "./markdown/links.ts";
 import { readJson, slashes } from "./paths.ts";
+import { buildPreview, previewDir, templateDir } from "./template.ts";
 
 export interface Wiki {
   id: string;
@@ -107,20 +108,69 @@ export function toCard(wiki: Wiki): WikiCard {
   };
 }
 
-/** Cached discovery; `live.ts` invalidates it when files change. */
-export function createRegistry(appRoot: string) {
+/** What a changed file means: which wiki it belongs to and what part of it. */
+export interface Change {
+  wiki: string | null;
+  /** `meta`: wiki.json, theme.json, the cover or a new folder. `data`: the comment database. */
+  area: "pages" | "meta" | "data" | "ignore";
+}
+
+function areaOf(wiki: Wiki, rel: string[]): Change["area"] {
+  if (rel[0] === "data") return "data";
+  if (rel[0] === "wiki.json" || rel[0] === "theme.json" || rel[0] === wiki.manifest.cover) return "meta";
+  return "pages";
+}
+
+const within = (root: string, file: string) => {
+  const rel = relative(root, file);
+  return rel.startsWith("..") || isAbsolute(rel) ? null : rel.split(sep);
+};
+
+/**
+ * Cached discovery; `live.ts` invalidates it when files change.
+ * Dev mode (`pnpm dev`) shows only the template, filled in as a preview outside the app folder.
+ */
+export function createRegistry(appRoot: string, { dev = false, preview = previewDir() } = {}) {
   let cache: Discovery | null = null;
+  if (dev) buildPreview(appRoot, preview);
   const current = () => {
-    cache ??= discover(appRoot);
+    if (!cache) {
+      if (dev) {
+        const w = loadWiki(preview, "local");
+        cache = "id" in w ? { wikis: [w], broken: [] } : { wikis: [], broken: [w] };
+      } else cache = discover(appRoot);
+    }
     return cache;
   };
   return {
     appRoot,
+    dev,
     all: () => current().wikis,
     broken: () => current().broken,
     get: (id: string) => current().wikis.find((w) => w.id === id),
     invalidate: () => {
       cache = null;
+      if (dev) buildPreview(appRoot, preview);
+    },
+    /** Folders to watch, recursively. */
+    watchDirs: (): string[] =>
+      dev
+        ? [templateDir(appRoot), join(preview, "data")]
+        : [join(appRoot, "wikis"), ...readLinks(appRoot).map((p) => resolve(appRoot, p))],
+    classify: (file: string): Change => {
+      if (dev) {
+        const id = current().wikis[0]?.id ?? null;
+        if (within(join(preview, "data"), file)) return { wiki: id, area: "data" };
+        const rel = within(templateDir(appRoot), file);
+        if (!rel || rel[0] === "data") return { wiki: null, area: "ignore" };
+        const w = current().wikis[0];
+        return { wiki: id, area: w ? areaOf(w, rel) : "meta" };
+      }
+      for (const w of current().wikis) {
+        const rel = within(w.root, file);
+        if (rel) return { wiki: w.id, area: areaOf(w, rel) };
+      }
+      return { wiki: null, area: "meta" };
     },
   };
 }

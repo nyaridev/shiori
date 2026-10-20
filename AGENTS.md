@@ -34,7 +34,7 @@ set of components. Each wiki only nudges the design tokens with its `theme.json`
 | Command | What |
 |---|---|
 | `start-web.bat` / `pnpm build && pnpm start` | Built app on http://localhost:4400 |
-| `start-dev.bat` / `pnpm dev` | Vite on http://localhost:4410 + API server on 4411, both reloading |
+| `start-dev.bat` / `pnpm dev` | Vite on http://localhost:4410 + API server on 4411, both reloading. Dev shows **only the template** (filled in, in the OS temp folder) and a card-style picker on the deck |
 | `start-app.bat` | The desktop window (builds `src-tauri` once; `pnpm app:build` rebuilds it, `pnpm app` runs it in dev) |
 | `pnpm check` | `tsc` + Biome + Vitest; must pass before a task is done |
 | `pnpm format` | Biome fixes |
@@ -44,14 +44,14 @@ set of components. Each wiki only nudges the design tokens with its `theme.json`
 | Path | What |
 |---|---|
 | `server/` | Hono API: `registry.ts` (finds wikis), `pages.ts` (page list, nav, render), `threads.ts` (comments in each wiki's `data/wiki.db`), `live.ts` (file watcher → SSE), `markdown/` (unified pipeline, `elements.ts` directives, `links.ts`) |
-| `cli/wiki.ts` | The agent CLI (`pnpm wiki`) |
+| `cli/wiki.ts` | The agent CLI (`pnpm wiki`); `server/template.ts` copies the template for it and for dev mode |
 | `shared/` | Used by server, CLI and UI: `schema.ts` (wiki.json, frontmatter), `theme.ts` (theme.json → tokens), `quote.ts` (comment anchors), `api.ts` (types) |
 | `src/ui/` | The primitives: Radix wrappers and hand-made parts, styled only with tokens (`ui.css`) |
-| `src/home/` | The deck: `useDeck.ts` (input + per-frame layout), `physics.ts`, `sound.ts` (Web Audio), `Deck.tsx` |
+| `src/home/` | The deck: `useDeck.ts` (input + per-frame layout), `physics.ts`, `sound.ts` (Web Audio), `Deck.tsx`, `StylePicker.tsx` (dev); `cards/` holds the card styles, one component + CSS each, registered in `cards/index.ts` |
 | `src/wiki/` | Wiki layout, sidebar, TOC; `markdown/` renders server hast with `elements.tsx` |
 | `src/comments/` | Selection → composer, highlights (CSS Custom Highlight API), thread list |
 | `src/dev/` | `/dev/ui`: every primitive and element in the default theme |
-| `src/shell/` | Desktop title bar (only inside Tauri) |
+| `src/shell/` | Desktop title bar (only inside Tauri), the error page |
 | `src-tauri/` | The window: starts `server/main.ts --static` on 4400 and loads it |
 | `wikis/_template/` | Template for new wikis. Every other folder in `wikis/` is git-ignored |
 | `docs/` | `elements.md` (element reference, shown on `/dev/ui`), `adr/` |

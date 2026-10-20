@@ -6,7 +6,9 @@ import { api } from "../lib/api.ts";
 import { useLive } from "../lib/live.ts";
 import { useResource } from "../lib/useResource.ts";
 import { Icon } from "../ui/index.ts";
+import { useCardStyle } from "./cards/index.ts";
 import "./deck.css";
+import { StylePicker } from "./StylePicker.tsx";
 import { isMuted, whoosh } from "./sound.ts";
 import { useDeck } from "./useDeck.ts";
 
@@ -54,6 +56,7 @@ function DeckMessage({ children }: { children: React.ReactNode }) {
 interface Opening {
   card: WikiCard;
   rect: DOMRect;
+  radius: string;
 }
 
 function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
@@ -62,11 +65,12 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
   const slotEls = useRef<(HTMLDivElement | null)[]>([]);
   const [opening, setOpening] = useState<Opening | null>(null);
   const [toast, setToast] = useState<{ muted: boolean; key: number } | null>(null);
+  const [style, setStyle] = useCardStyle();
   // The deck keeps its first layout while open; new or removed wikis show up on the next visit.
   const [initial] = useState(() => ({ n: wikis.length, start }));
   const n = Math.min(initial.n, wikis.length);
 
-  const { count, center, settled, dragging } = useDeck({
+  const { count, center, dragging } = useDeck({
     stage,
     slots: slotEls,
     n,
@@ -80,7 +84,9 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
         sessionStorage.setItem(LAST, card.id);
       } catch {}
       whoosh();
-      setOpening({ card, rect: el.getBoundingClientRect() });
+      const face = el.querySelector(".deck-card-inner > *");
+      const radius = face ? getComputedStyle(face).borderTopLeftRadius : "14px";
+      setOpening({ card, rect: el.getBoundingClientRect(), radius });
     },
     onMuteChange: (muted) => setToast({ muted, key: Date.now() }),
   });
@@ -91,6 +97,7 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
   return (
     <motion.div
       className="deck deck-scope"
+      style={{ "--card-aspect": style.aspect } as CSSProperties}
       data-dragging={dragging || undefined}
       data-opening={opening ? "" : undefined}
       initial={{ opacity: 0 }}
@@ -126,18 +133,13 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
             style={{ "--accent": card.accent } as CSSProperties}
           >
             <div className="deck-card-inner">
-              <img src={card.coverUrl} alt="" draggable={false} />
-              <div className="deck-card-shade" />
-              <span className="deck-card-title">{card.title}</span>
+              <style.Card card={card} />
             </div>
           </div>
         ))}
       </section>
 
-      <div className="deck-caption" data-visible={settled && !opening ? "" : undefined}>
-        <p className="deck-caption-title">{current.title}</p>
-        {current.tagline && <p className="deck-caption-tagline">{current.tagline}</p>}
-      </div>
+      {import.meta.env.DEV && !opening && <StylePicker value={style.id} onChange={setStyle} />}
 
       <AnimatePresence>
         {toast && (
@@ -168,7 +170,7 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
             top: opening.rect.top,
             width: opening.rect.width,
             height: opening.rect.height,
-            borderRadius: 14,
+            borderRadius: opening.radius,
           }}
           animate={{ left: 0, top: 0, width: window.innerWidth, height: window.innerHeight, borderRadius: 0 }}
           transition={{ duration: 0.62, ease: [0.76, 0, 0.24, 1] }}

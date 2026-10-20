@@ -1,4 +1,5 @@
-// Starts the Loredeck server. `--static` also serves the built UI from dist/ (start-web.bat, the desktop app).
+// Starts the Loredeck server. `--static` also serves the built UI from dist/ (start-web.bat, the desktop app);
+// `--dev` shows only the template, filled in as a preview (pnpm dev).
 import { existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { parseArgs } from "node:util";
@@ -10,7 +11,11 @@ import { createRegistry } from "./registry.ts";
 import { closeAll } from "./threads.ts";
 
 const { values } = parseArgs({
-  options: { port: { type: "string", default: "4400" }, static: { type: "boolean", default: false } },
+  options: {
+    port: { type: "string", default: "4400" },
+    static: { type: "boolean", default: false },
+    dev: { type: "boolean", default: false },
+  },
 });
 const port = Number(values.port);
 const staticDir = join(APP_ROOT, "dist");
@@ -19,14 +24,15 @@ if (values.static && !existsSync(join(staticDir, "index.html"))) {
   process.exit(1);
 }
 
-const registry = createRegistry(APP_ROOT);
+const registry = createRegistry(APP_ROOT, { dev: values.dev });
 const live = createLive(registry);
 live.start();
 const app = buildApp({ registry, live, staticDir: values.static ? relative(process.cwd(), staticDir) : undefined });
 
 const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
   const n = registry.all().length;
-  console.log(`Loredeck server on http://localhost:${port} (${n} wiki${n === 1 ? "" : "s"})`);
+  const what = values.dev ? "dev: the template only" : `${n} wiki${n === 1 ? "" : "s"}`;
+  console.log(`Loredeck server on http://localhost:${port} (${what})`);
   for (const b of registry.broken()) console.warn(`  skipped ${b.root}: ${b.problems.join("; ")}`);
 });
 
