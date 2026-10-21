@@ -1,0 +1,313 @@
+/* Universal elements (universal.tsx, ADR-0002). Tokens only, so wiki themes apply. */
+
+.sh-element-placeholder {
+  padding: var(--s-2) var(--s-3);
+  border: var(--bw) dashed var(--border-strong);
+  border-radius: var(--r-md);
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+/* :page[] chips, inline in text. */
+.sh-prose .sh-link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.92em;
+  font-weight: 560;
+  text-decoration: none;
+  vertical-align: 0.05em;
+}
+.sh-prose .sh-link-chip:hover {
+  border-color: var(--accent-line);
+}
+.sh-prose .sh-link-chip[data-missing] {
+  border-style: dashed;
+  border-color: color-mix(in oklab, var(--tone-bad) 50%, transparent);
+  color: var(--tone-bad);
+}
+.sh-page-chip[data-missing] {
+  border-style: dashed;
+  border-color: color-mix(in oklab, var(--tone-bad) 50%, transparent);
+  color: var(--tone-bad);
+}
+
+/* Related */
+.sh-related {
+  display: grid;
+  gap: var(--s-2);
+  margin: var(--s-4) 0;
+  padding: var(--s-3) var(--s-4);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.sh-related-group {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  align-items: baseline;
+  gap: var(--s-3);
+}
+.sh-related-kind {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Children */
+.sh-prose .sh-children-list {
+  padding-left: 1.2em;
+}
+.sh-children-summary {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.sh-children-cards {
+  margin: var(--s-4) 0;
+}
+
+/* Inline contents, as on Wikipedia and Fandom. */
+.sh-inline-toc {
+  display: inline-block;
+  min-width: 220px;
+  margin: var(--s-3) 0;
+  padding: var(--s-3) var(--s-4);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sh-prose .sh-inline-toc-title {
+  margin: 0 0 var(--s-2);
+  color: var(--text);
+  font-weight: 650;
+}
+.sh-prose .sh-inline-toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-inline-toc li[data-depth="3"] {
+  padding-left: var(--s-4);
+}
+.sh-inline-toc a {
+  color: var(--accent);
+  font-size: var(--t-sm);
+  text-decoration: none;
+}
+.sh-inline-toc a:hover {
+  text-decoration: underline;
+}
+.sh-inline-toc-number {
+  display: inline-block;
+  min-width: 2em;
+  color: var(--muted);
+}
+
+/* Steps */
+.sh-steps {
+  margin: var(--s-4) 0;
+}
+.sh-prose .sh-steps-title {
+  margin: 0 0 var(--s-3);
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-weight: 650;
+}
+.sh-prose .sh-steps ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+.sh-step {
+  position: relative;
+  min-height: 28px;
+  padding: 3px 0 var(--s-4) calc(28px + var(--s-3));
+  counter-increment: step;
+}
+.sh-step::before {
+  content: counter(step);
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+.sh-step::after {
+  content: "";
+  position: absolute;
+  top: 32px;
+  bottom: 4px;
+  left: 13px;
+  width: 2px;
+  background: var(--border);
+}
+.sh-step:last-child::after {
+  display: none;
+}
+.sh-prose .sh-step-title {
+  margin: 0 0 2px;
+  color: var(--text);
+  font-weight: 650;
+}
+.sh-prose .sh-step-body > :first-child {
+  margin-top: 0;
+}
+.sh-prose .sh-step-body > :last-child {
+  margin-bottom: 0;
+}
+
+/* Compare */
+.sh-compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--s-3);
+  margin: var(--s-4) 0;
+}
+.sh-option {
+  display: grid;
+  align-content: start;
+  overflow: hidden;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.sh-option[data-picked] {
+  border-color: color-mix(in oklab, var(--tone-good) 55%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--tone-good) 35%, transparent);
+}
+.sh-option-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: var(--bw) solid var(--border);
+}
+.sh-option-name {
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-weight: 650;
+}
+.sh-option-body {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  font-size: var(--t-sm);
+}
+.sh-prose .sh-option-body > p {
+  margin: 0;
+}
+.sh-point {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: var(--s-2);
+}
+.sh-point-mark {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: var(--hover);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 800;
+}
+.sh-point[data-kind="pro"] .sh-point-mark {
+  background: color-mix(in oklab, var(--tone-good) 18%, transparent);
+  color: var(--tone-good);
+}
+.sh-point[data-kind="con"] .sh-point-mark {
+  background: color-mix(in oklab, var(--tone-bad) 18%, transparent);
+  color: var(--tone-bad);
+}
+.sh-prose .sh-point-body > p {
+  display: inline;
+  margin: 0;
+}
+.sh-point-label {
+  color: var(--muted);
+}
+
+/* Quote */
+.sh-quote {
+  margin: var(--s-4) 0;
+  padding: var(--s-3) var(--s-4);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  background: var(--surface);
+}
+.sh-prose .sh-quote blockquote {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--text);
+  font-size: var(--t-lg);
+  font-style: normal;
+}
+.sh-prose .sh-quote blockquote > :first-child {
+  margin-top: 0;
+}
+.sh-prose .sh-quote blockquote > :last-child {
+  margin-bottom: 0;
+}
+.sh-quote figcaption {
+  margin-top: var(--s-2);
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.sh-quote figcaption::before {
+  content: "— ";
+}
+.sh-quote figcaption strong {
+  color: var(--text-soft);
+}
+
+/* Embed */
+.sh-embed {
+  margin: var(--s-4) 0;
+}
+.sh-embed-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--raised);
+}
+.sh-embed-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.sh-embed figcaption {
+  margin-top: var(--s-2);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .sh-related-group {
+    grid-template-columns: 1fr;
+    gap: var(--s-1);
+  }
+}

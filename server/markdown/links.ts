@@ -2,6 +2,7 @@
 import { posix } from "node:path";
 import type { Element, Root } from "hast";
 import { visit } from "unist-util-visit";
+import type { Found } from "./wikilinks.ts";
 
 export interface LinkContext {
   wikiId: string;
@@ -10,6 +11,8 @@ export interface LinkContext {
   pageExists: (path: string) => boolean;
   /** `rel` is relative to the wiki root. */
   fileExists: (rel: string) => boolean;
+  /** What a `[[wikilink]]` names (a path, file name or title) → the page; none when it isn't written yet. */
+  findPage?: (name: string) => Found;
 }
 
 const EXTERNAL = /^([a-z][a-z0-9+.-]*:|\/\/)/i;
@@ -56,7 +59,11 @@ export function rehypeLinks(ctx: LinkContext, problems: string[], lineOffset = 0
         } else if (!href.startsWith("#")) {
           const [target, hash] = href.split("#");
           const path = resolvePageLink(ctx.pageDir, decodeURI(target));
-          if (path === null || !ctx.pageExists(path)) problems.push(`${where(node)}broken link "${href}"`);
+          // A wikilink to a page not written yet is a red link, on purpose; a Markdown link to nowhere is a mistake.
+          if (path === null || !ctx.pageExists(path)) {
+            props.dataMissing = "";
+            if (props.dataWikilink === undefined) problems.push(`${where(node)}broken link "${href}"`);
+          }
           if (path !== null) props.href = `/w/${ctx.wikiId}${path ? `/${path}` : ""}${hash ? `#${hash}` : ""}`;
         }
       }

@@ -5,6 +5,9 @@
   display: grid;
   grid-template-columns: var(--sidebar) minmax(0, 1fr) var(--rail);
   min-height: 100%;
+  /* The entrance slides the 100vh sticky columns up from below; clipping keeps that from overflowing the page and
+     flashing a scrollbar. `clip` (unlike `hidden`) makes no scroll container, so the columns stay sticky. */
+  overflow: clip;
   background: var(--bg);
 }
 :root[data-shell="desktop"] .sh-wiki {
@@ -16,7 +19,6 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow-y: auto;
   padding-top: var(--titlebar);
 }
 
@@ -98,6 +100,10 @@
   text-decoration: none;
   line-height: 1.35;
 }
+.sh-nav-icon {
+  margin-right: 6px;
+  font-size: 0.95em;
+}
 a.sh-nav-link:hover {
   background: var(--hover);
   color: var(--text);
@@ -123,24 +129,6 @@ a.sh-nav-link.active {
   max-width: 820px;
   margin: 0 auto;
   padding: calc(var(--titlebar) + var(--s-7)) var(--s-6) 30vh;
-}
-.sh-page-head {
-  margin-bottom: var(--s-5);
-}
-.sh-page-title {
-  margin: 0;
-  font-size: var(--t-2xl);
-  color: var(--text);
-}
-.sh-page-summary {
-  margin: var(--s-2) 0 0;
-  color: var(--muted);
-  font-size: var(--t-lg);
-  line-height: 1.5;
-}
-.sh-page-head .sh-button {
-  margin-top: var(--s-3);
-  margin-left: calc(-1 * var(--s-2));
 }
 
 /* Rail */

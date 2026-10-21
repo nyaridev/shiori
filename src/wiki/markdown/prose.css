@@ -17,7 +17,14 @@
 .sh-prose h3,
 .sh-prose h4 {
   color: var(--text);
-  scroll-margin-top: var(--s-6);
+  scroll-margin-top: calc(var(--titlebar, 0px) + var(--s-6));
+}
+/* Beside a floating infobox, headings, quotes and rules stop at its edge instead of running under it. */
+.sh-prose h2,
+.sh-prose h3,
+.sh-prose blockquote,
+.sh-prose hr {
+  display: flow-root;
 }
 .sh-prose h2 {
   margin: var(--s-7) 0 var(--s-3);
@@ -69,6 +76,42 @@
 .sh-link:hover {
   text-decoration-color: var(--accent);
 }
+/* A red link: a page not written yet (ADR-0002). */
+.sh-link[data-missing] {
+  color: var(--tone-bad);
+  text-decoration-style: dashed;
+  text-decoration-color: color-mix(in oklab, var(--tone-bad) 55%, transparent);
+}
+.sh-link[data-missing]:hover {
+  text-decoration-color: var(--tone-bad);
+}
+
+/* The link icon after a heading, shown on hover; a click copies a link to the section. */
+.sh-heading-link {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-left: var(--s-2);
+  vertical-align: middle;
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+:is(h2, h3):hover > .sh-heading-link,
+.sh-heading-link:focus-visible,
+.sh-heading-link[data-copied] {
+  opacity: 1;
+}
+.sh-heading-link:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.sh-heading-link[data-copied] {
+  color: var(--tone-good);
+}
+
 .sh-prose blockquote {
   padding: var(--s-1) var(--s-4);
   border-left: 3px solid var(--border-strong);

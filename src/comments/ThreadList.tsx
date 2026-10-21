@@ -1,18 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { Thread } from "../../shared/api.ts";
+import { ago } from "../lib/time.ts";
 import { Badge, Button, cx, Segmented, Textarea } from "../ui/index.ts";
 import type { Anchors } from "./CommentLayer.tsx";
 import type { Threads } from "./useThreads.ts";
 
 type Filter = "open" | "closed";
-
-const ago = (iso: string) => {
-  const s = (Date.now() - Date.parse(iso)) / 1000;
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
-  return new Date(iso).toLocaleDateString();
-};
 
 export function scrollToRange(range: Range | null | undefined) {
   const r = range?.getBoundingClientRect();

@@ -2,7 +2,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { buildNav, listPages } from "./pages.ts";
+import { buildCorpus } from "./corpus.ts";
+import { buildNav, listPages, renderPage } from "./pages.ts";
 import { createRegistry, discover, writeLinks } from "./registry.ts";
 import { closeAll, createThread, listThreads, waitingForAgent } from "./threads.ts";
 
@@ -85,5 +86,122 @@ describe("dev mode", () => {
     expect(registry.classify(join(template, "pages", "index.md"))).toEqual({ wiki: "template", area: "pages" });
     expect(registry.classify(join(preview, "data", "wiki.db"))).toEqual({ wiki: "template", area: "data" });
     expect(registry.classify(join(app, "wikis", "alpha", "pages", "index.md")).area).toBe("ignore");
+  });
+});
+
+describe("page relations", () => {
+  it("gives a page its trail, children, neighbours and reading time", () => {
+    const root = join(app, "wikis", "alpha");
+    wiki(root, "alpha");
+    writeFileSync(
+      join(root, "pages", "systems", "index.md"),
+      `---\ntitle: Systems\nicon: "⚙️"\nstatus: active\ntags: [core, combat]\n---\n${"word ".repeat(500)}`,
+    );
+    const { wikis } = discover(app);
+    const w = wikis[0];
+    const pages = listPages(w);
+
+    const systems = renderPage(w, pages, "systems");
+    expect(systems).toMatchObject({ icon: "⚙️", status: "active", tags: ["core", "combat"], minutes: 2 });
+    expect(systems?.trail.map((t) => t.path)).toEqual([""]);
+    expect(systems?.children.map((c) => c.title)).toEqual(["Lanterns", "Combat"]);
+    expect(systems?.prev?.path).toBe("");
+    expect(systems?.next?.path).toBe("systems/lanterns");
+
+    const combat = renderPage(w, pages, "systems/combat");
+    expect(combat?.trail.map((t) => t.title)).toEqual(["Home", "Systems"]);
+    expect(combat?.next).toBeNull();
+    expect(renderPage(w, pages, "")?.children.map((c) => c.path)).toEqual(["systems"]);
+  });
+});
+
+describe("corpus", () => {
+  it("renders every page once with backlinks, the frontmatter infobox and the page index", () => {
+    const root = join(app, "wikis", "alpha");
+    wiki(root, "alpha");
+    mkdirSync(join(root, "assets"));
+    writeFileSync(join(root, "assets", "lantern.png"), "png");
+    writeFileSync(
+      join(root, "pages", "systems", "lanterns.md"),
+      [
+        "---",
+        "title: Lanterns",
+        "type: System",
+        "image: /assets/lantern.png",
+        "caption: The first lantern",
+        "toc: false",
+        "infobox:",
+        "  Owner: Nari",
+        "  Uses: [Light, Heat]",
+        "  Shipped: true",
+        "  Links to: '[Combat](combat)'",
+        "---",
+        "## One\n\nText.\n\n## Two\n\nMore text.",
+      ].join("\n"),
+    );
+    writeFileSync(join(root, "pages", "index.md"), "See [lanterns](/systems/lanterns) and [combat](/systems/combat).");
+    const { wikis } = discover(app);
+    const corpus = buildCorpus(wikis[0], listPages(wikis[0]));
+
+    const lanterns = corpus.pages.get("systems/lanterns");
+    expect(lanterns?.type).toBe("System");
+    expect(lanterns?.toc).toEqual([]);
+    expect(lanterns?.infobox?.image).toBe("/api/wikis/alpha/files/assets/lantern.png");
+    expect(lanterns?.infobox?.caption).toBe("The first lantern");
+    expect(lanterns?.infobox?.rows.map((r) => r.label)).toEqual(["Owner", "Uses", "Shipped", "Links to"]);
+    expect(JSON.stringify(lanterns?.infobox?.rows[1].value)).toContain("Light, Heat");
+    expect(JSON.stringify(lanterns?.infobox?.rows[2].value)).toContain("Yes");
+    expect(lanterns?.problems).toEqual([]);
+
+    expect(corpus.pages.get("systems/combat")?.backlinks.map((b) => b.path)).toEqual(["", "systems/lanterns"]);
+    expect(corpus.pages.get("systems/lanterns")?.backlinks.map((b) => b.title)).toEqual(["Home"]);
+    expect(corpus.pages.get("")?.backlinks).toEqual([]);
+
+    const entry = corpus.index.find((e) => e.path === "systems/lanterns");
+    expect(entry).toMatchObject({ type: "System", hidden: false, image: "/api/wikis/alpha/files/assets/lantern.png" });
+    expect(entry?.excerpt).toBe("Text.");
+    expect(corpus.search).toHaveLength(corpus.index.length);
+  });
+
+  it("resolves related pages by kind, counts them as links, and wants the missing ones", () => {
+    const root = join(app, "wikis", "alpha");
+    wiki(root, "alpha");
+    writeFileSync(
+      join(root, "pages", "systems", "combat.md"),
+      [
+        "---",
+        "title: Combat",
+        "related:",
+        "  - Lanterns",
+        "  - to: Boss Fight",
+        "    kind: Leads to",
+        "---",
+        "::related",
+      ].join("\n"),
+    );
+    const { wikis } = discover(app);
+    const corpus = buildCorpus(wikis[0], listPages(wikis[0]));
+    const combat = corpus.pages.get("systems/combat");
+    expect(combat?.related.map((g) => [g.kind, g.pages.map((p) => [p.path, p.isPage])])).toEqual([
+      ["Related", [["systems/lanterns", true]]],
+      ["Leads to", [["boss-fight", false]]],
+    ]);
+    expect(combat?.placed.related).toBe(true);
+    expect(corpus.pages.get("systems/lanterns")?.backlinks.map((b) => b.title)).toEqual(["Combat"]);
+    expect(corpus.wanted.map((w) => w.path)).toEqual(["boss-fight"]);
+  });
+
+  it("lists pages that red links want, most wanted first", () => {
+    const root = join(app, "wikis", "alpha");
+    wiki(root, "alpha");
+    writeFileSync(join(root, "pages", "index.md"), "[[Lanterns]] [[Boss Fight]] [[Shop]]");
+    writeFileSync(join(root, "pages", "systems", "combat.md"), "---\ntitle: Combat\n---\n[[Boss Fight|the boss]]");
+    const { wikis } = discover(app);
+    const corpus = buildCorpus(wikis[0], listPages(wikis[0]));
+    expect(corpus.wanted.map((w) => [w.path, w.title, w.from.map((f) => f.title)])).toEqual([
+      ["boss-fight", "Boss Fight", ["Home", "Combat"]],
+      ["shop", "Shop", ["Home"]],
+    ]);
+    expect(corpus.pages.get("systems/lanterns")?.backlinks.map((b) => b.title)).toEqual(["Home"]);
   });
 });

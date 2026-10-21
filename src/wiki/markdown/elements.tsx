@@ -1,16 +1,58 @@
 // React components for the `sh-*` elements the server produces (server/markdown/elements.ts).
-import { Children, isValidElement, type ReactElement, type ReactNode } from "react";
+import { Children, isValidElement, type ReactElement, type ReactNode, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Badge, type BadgeTone, Callout, type CalloutTone, Icon, Kbd, Tabs } from "../../ui/index.ts";
+import {
+  Badge,
+  type BadgeTone,
+  Callout,
+  type CalloutTone,
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  HoverCard,
+  Icon,
+  Kbd,
+  Tabs,
+} from "../../ui/index.ts";
+import { PagePreview } from "../PagePreview.tsx";
+import { usePageAt } from "../WikiIndexContext.ts";
 
 type Props<T = object> = T & { children?: ReactNode };
 
-export function WikiLink({ href, children, ...rest }: Props<{ href?: string; target?: string; rel?: string }>) {
+type LinkProps = Props<{
+  href?: string;
+  target?: string;
+  rel?: string;
+  "data-missing"?: string;
+  "data-chip"?: string;
+}>;
+
+/**
+ * Links in pages. Links to a page preview it on hover (ADR-0002); a link to a page not written yet is a red link,
+ * like on Wikipedia.
+ */
+export function WikiLink({ href, children, "data-missing": missing, "data-chip": chip, ...rest }: LinkProps) {
+  const page = usePageAt(href);
   if (href?.startsWith("/w/") || href?.startsWith("/dev/")) {
-    return (
-      <Link to={href} className="sh-link">
+    const isMissing = missing !== undefined;
+    // `:page[Name]` shows as a chip with the page's icon.
+    const link = (
+      <Link
+        to={href}
+        className={chip === undefined ? "sh-link" : "sh-link sh-link-chip"}
+        data-missing={isMissing || undefined}
+        title={isMissing ? "This page hasn't been written yet" : undefined}
+      >
+        {chip !== undefined && <span aria-hidden="true">{isMissing ? "🧩" : (page?.icon ?? "📄")}</span>}
         {children}
       </Link>
+    );
+    return page && !isMissing ? (
+      <HoverCard trigger={link}>
+        <PagePreview page={page} />
+      </HoverCard>
+    ) : (
+      link
     );
   }
   return (
@@ -19,6 +61,44 @@ export function WikiLink({ href, children, ...rest }: Props<{ href?: string; tar
     </a>
   );
 }
+
+/** `##` and `###` headings, with a link icon on hover that copies a link to the section. */
+function headingWith(Tag: "h2" | "h3") {
+  return function Heading({ id, children }: Props<{ id?: string }>) {
+    const [copied, setCopied] = useState(false);
+    useEffect(() => {
+      if (!copied) return;
+      const timer = setTimeout(() => setCopied(false), 1400);
+      return () => clearTimeout(timer);
+    }, [copied]);
+    return (
+      <Tag id={id}>
+        {children}
+        {id && (
+          <a
+            href={`#${id}`}
+            className="sh-heading-link"
+            aria-label={copied ? "Link copied" : "Copy a link to this section"}
+            data-copied={copied || undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              window.history.replaceState(window.history.state, "", `#${id}`);
+              navigator.clipboard?.writeText(window.location.href).then(
+                () => setCopied(true),
+                () => {},
+              );
+            }}
+          >
+            <Icon name={copied ? "check" : "link"} size={14} />
+          </a>
+        )}
+      </Tag>
+    );
+  };
+}
+
+export const H2El = headingWith("h2");
+export const H3El = headingWith("h3");
 
 export const CalloutEl = ({ tone, title, children }: Props<{ tone?: CalloutTone; title?: string }>) => (
   <Callout tone={tone} title={title}>
@@ -78,6 +158,94 @@ export function DetailsEl({ summary, children }: Props<{ summary?: string }>) {
 
 export const BadgeEl = ({ tone, children }: Props<{ tone?: BadgeTone }>) => <Badge tone={tone}>{children}</Badge>;
 export const KbdEl = ({ children }: Props) => <Kbd>{children}</Kbd>;
+
+export const StatsEl = ({ children }: Props) => <div className="sh-stats">{children}</div>;
+
+export function StatEl({
+  label,
+  value,
+  change,
+  trend,
+}: Props<{ label?: string; value?: string; change?: string; trend?: string }>) {
+  return (
+    <div className="sh-stat" data-trend={trend}>
+      <span className="sh-stat-label">{label}</span>
+      <span className="sh-stat-value">{value}</span>
+      {change && <span className="sh-stat-change">{change}</span>}
+    </div>
+  );
+}
+
+export const TimelineEl = ({ children }: Props) => <ol className="sh-timeline">{children}</ol>;
+
+export function MilestoneEl({ when, state, children }: Props<{ when?: string; state?: string }>) {
+  return (
+    <li className="sh-milestone" data-state={state}>
+      <span className="sh-milestone-dot" aria-hidden="true">
+        {state === "done" && <Icon name="check" size={10} />}
+      </span>
+      {(when || state === "now") && (
+        <p className="sh-milestone-when">
+          {when}
+          {state === "now" && <Badge tone="accent">Now</Badge>}
+        </p>
+      )}
+      <div className="sh-milestone-body">{children}</div>
+    </li>
+  );
+}
+
+export const CardsEl = ({ children }: Props) => <div className="sh-cards">{children}</div>;
+
+/** The whole card is its title link's target (the link stretches over it in CSS). */
+export function CardEl({ icon, children }: Props<{ icon?: string }>) {
+  return (
+    <div className="sh-card">
+      {icon && (
+        <span className="sh-card-icon" aria-hidden="true">
+          {icon}
+        </span>
+      )}
+      {children}
+    </div>
+  );
+}
+
+export const CardTitleEl = ({ children }: Props) => <p className="sh-card-title">{children}</p>;
+
+export const GalleryEl = ({ children }: Props) => <div className="sh-gallery">{children}</div>;
+
+/** A gallery tile; it opens the image large. */
+export function ShotEl({ caption, children }: Props<{ caption?: string }>) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button type="button" className="sh-shot">
+          {children}
+          {caption && <span className="sh-shot-caption">{caption}</span>}
+        </button>
+      </DialogTrigger>
+      <DialogContent title={caption || "Image"} size="wide">
+        <div className="sh-shot-full">{children}</div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function ProgressEl({ value, max, children }: Props<{ value?: string; max?: string }>) {
+  const total = Number(max) > 0 ? Number(max) : 100;
+  const done = Math.min(Math.max(Number(value) || 0, 0), total);
+  const pct = (done / total) * 100;
+  return (
+    <span className="sh-progress" role="progressbar" aria-valuenow={done} aria-valuemin={0} aria-valuemax={total}>
+      {children && <span className="sh-progress-label">{children}</span>}
+      <span className="sh-progress-track">
+        <span className="sh-progress-bar" style={{ width: `${pct}%` }} />
+      </span>
+      <span className="sh-progress-value">{max ? `${done}/${total}` : `${Math.round(pct)}%`}</span>
+    </span>
+  );
+}
 
 export const UnknownEl = ({ name, children }: Props<{ name?: string }>) => (
   <Callout tone="danger" title={`Unknown element ${name ?? ""}`}>

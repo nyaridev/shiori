@@ -1,0 +1,121 @@
+/* Question cards (QuestionCard.tsx). */
+.sh-question {
+  display: grid;
+  gap: var(--s-2);
+  margin: var(--s-4) 0;
+  padding: var(--s-3) var(--s-4) var(--s-4);
+  border: var(--bw) solid color-mix(in oklab, var(--tone-warn) 40%, var(--border));
+  border-radius: var(--r-lg);
+  background: color-mix(in oklab, var(--tone-warn) 5%, var(--surface));
+  scroll-margin-top: calc(var(--titlebar, 0px) + var(--s-6));
+}
+.sh-question-list .sh-question {
+  margin: 0;
+}
+.sh-question[data-decided] {
+  border-color: color-mix(in oklab, var(--tone-good) 40%, var(--border));
+  background: color-mix(in oklab, var(--tone-good) 5%, var(--surface));
+}
+.sh-question-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+.sh-question-kicker {
+  color: var(--text-soft);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.sh-question .sh-question-text {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-size: var(--t-lg);
+  font-weight: 650;
+  line-height: 1.35;
+}
+.sh-question .sh-question-answer {
+  margin: 0;
+  color: var(--tone-good);
+  font-weight: 600;
+}
+.sh-question-answer::before {
+  content: "→ ";
+}
+.sh-question-form {
+  display: grid;
+  gap: var(--s-2);
+}
+.sh-question-options {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.sh-question-option {
+  padding: 5px var(--s-3);
+  border: var(--bw) solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--bg);
+  color: var(--text-soft);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 560;
+  cursor: pointer;
+  transition:
+    border-color var(--fast) var(--ease),
+    background var(--fast) var(--ease);
+}
+.sh-question-option:hover {
+  border-color: var(--accent-line);
+  color: var(--text);
+}
+.sh-question-option[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.sh-question-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.sh-question-hint {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-question .sh-question-answers {
+  display: grid;
+  gap: var(--s-1);
+  margin: var(--s-1) 0 0;
+  padding: var(--s-2) 0 0;
+  border-top: var(--bw) solid var(--border);
+  list-style: none;
+  font-size: var(--t-sm);
+}
+.sh-question-answers li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin: 0;
+  color: var(--text-soft);
+}
+.sh-question-choice {
+  padding: 0 6px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 600;
+}
+.sh-question-answers time {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}

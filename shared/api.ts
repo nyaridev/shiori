@@ -1,6 +1,7 @@
 // Shapes the server sends to the browser.
 import type { Root } from "hast";
 import type { Quote } from "./quote.ts";
+import type { PageStatus } from "./schema.ts";
 import type { Theme } from "./theme.ts";
 
 export interface WikiCard {
@@ -20,9 +21,21 @@ export interface NavNode {
   /** Page path without `.md`: `systems/combat`. The wiki's home page is "". */
   path: string;
   title: string;
+  icon?: string;
   /** False for a folder without an `index.md`. */
   isPage: boolean;
   children: NavNode[];
+}
+
+/** Another page, as the page head, section cards and previous/next links show it. */
+export interface PageLink {
+  path: string;
+  title: string;
+  icon?: string;
+  summary?: string;
+  status?: PageStatus;
+  /** False for a folder without an `index.md` (a breadcrumb with nothing to open). */
+  isPage: boolean;
 }
 
 export interface WikiDetail extends WikiCard {
@@ -37,14 +50,114 @@ export interface TocEntry {
   depth: 2 | 3;
 }
 
+/** The fact box beside an article, from the page's frontmatter. Row values are rendered inline Markdown. */
+export interface Infobox {
+  image?: string;
+  caption?: string;
+  rows: { label: string; value: Root }[];
+}
+
 export interface PageData {
   path: string;
   title: string;
   summary: string;
+  icon?: string;
+  status?: PageStatus;
+  tags: string[];
+  /** The page's kind, in the project's own words ("Feature", "Product"). */
+  type?: string;
+  infobox?: Infobox;
+  /** URL of a wide picture behind the page head. */
+  banner?: string;
+  /** The page file, from the wiki root (`pages/plan/goals.md`). */
+  file?: string;
+  /** Pages that link to this one. */
+  backlinks: PageLink[];
+  /** Pages from `related:` in the frontmatter, grouped by kind ("Related" when none is given). */
+  related: { kind: string; pages: PageLink[] }[];
+  /** Open decisions from the frontmatter's `questions:`. */
+  questions: Question[];
+  /** Elements the page places itself, so the app doesn't add them again at the bottom. */
+  placed: { related: boolean; children: boolean; questions: string[] };
+  /** When the page file last changed (ISO), and about how long it takes to read. */
+  updatedAt?: string;
+  minutes?: number;
+  /** The pages above this one, from the home page down. */
+  trail: PageLink[];
+  /** The pages one level below, in sidebar order. */
+  children: PageLink[];
+  /** Neighbours in sidebar order, for reading straight through. */
+  prev: PageLink | null;
+  next: PageLink | null;
   toc: TocEntry[];
   /** Rendered Markdown: HTML elements plus `sh-*` elements for the Shiori components. */
   hast: Root;
   problems: string[];
+}
+
+/** A page in the wiki's index: what lists, special pages and link previews show. */
+export interface PageEntry extends PageLink {
+  type?: string;
+  tags: string[];
+  updatedAt?: string;
+  hidden: boolean;
+  /** The first lines of the page's text. */
+  excerpt: string;
+  image?: string;
+}
+
+/** A decision a page asks for. Resolved ones carry the agent's `answer`. */
+export interface Question {
+  id: string;
+  text: string;
+  options: string[];
+  status: "open" | "resolved";
+  answer?: string;
+}
+
+/** Someone's answer to a question: an option they picked and/or a note. */
+export interface Answer {
+  id: number;
+  page: string;
+  question: string;
+  choice: string | null;
+  body: string;
+  createdAt: string;
+}
+
+/** A question in the wiki-wide list (Special:Questions), with its page and how many answers it has. */
+export interface QuestionEntry extends Question {
+  page: PageLink;
+  answers: number;
+}
+
+/** A page that red links point to but nobody has written yet, and the pages that link to it. */
+export interface WantedPage {
+  path: string;
+  /** The link text it's wanted under. */
+  title: string;
+  from: PageLink[];
+}
+
+/** Everything lists, special pages and link previews need about a wiki's pages. */
+export interface WikiIndex {
+  pages: PageEntry[];
+  wanted: WantedPage[];
+  questions: QuestionEntry[];
+}
+
+/** `[start, end)` ranges of a string that match the search. */
+export type Marks = [number, number][];
+
+/** One page found by a wiki search: where it is, the heading to jump to, and a snippet around the match. */
+export interface SearchHit {
+  path: string;
+  title: string;
+  icon?: string;
+  titleMarks: Marks;
+  section?: { id: string; heading: string; marks: Marks };
+  snippet: string;
+  marks: Marks;
 }
 
 export type ThreadStatus = "open" | "resolved" | "wontfix";
@@ -67,4 +180,5 @@ export interface Thread {
 }
 
 /** Server-sent events on /api/events. */
+/** `threads` means the wiki's data (comments and answers) changed. */
 export type LiveEvent = { type: "wikis" } | { type: "pages"; wiki: string } | { type: "threads"; wiki: string };

@@ -1,17 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
-import type { PageData } from "../../shared/api.ts";
-import { type Anchors, CommentLayer } from "../comments/CommentLayer.tsx";
-import { ThreadList } from "../comments/ThreadList.tsx";
-import { useThreads } from "../comments/useThreads.ts";
 import { api } from "../lib/api.ts";
 import { useLive } from "../lib/live.ts";
 import { useResource } from "../lib/useResource.ts";
 import { useTheme } from "../lib/useTheme.ts";
-import { Badge, Button, Callout, IconButton } from "../ui/index.ts";
-import { Markdown } from "./markdown/Markdown.tsx";
+import { IconButton, ScrollArea } from "../ui/index.ts";
+import { PageArea } from "./PageArea.tsx";
+import { SearchPalette, typing } from "./SearchPalette.tsx";
 import { Sidebar } from "./Sidebar.tsx";
-import { Toc } from "./Toc.tsx";
+import { MissingPage } from "./special/MissingPage.tsx";
+import { SpecialPage } from "./special/SpecialPage.tsx";
+import { WikiIndexContext } from "./WikiIndexContext.ts";
 import "./wiki.css";
 
 export function WikiLayout() {
@@ -20,18 +19,43 @@ export function WikiLayout() {
   const location = useLocation();
   const fromDeck = (location.state as { fromDeck?: boolean } | null)?.fromDeck ?? false;
 
+  // `_/…` is a special page (Recent changes, Categories…), not a page file.
+  const special = path === "_" || path.startsWith("_/") ? path.slice(2) : null;
+
   const wiki = useResource(`wiki:${wikiId}`, () => api.wiki(wikiId));
-  const page = useResource(`page:${wikiId}:${path}`, () => api.page(wikiId, path));
+  const page = useResource(special === null ? `page:${wikiId}:${path}` : null, () => api.page(wikiId, path));
+  const index = useResource(`pages:${wikiId}`, () => api.index(wikiId));
+  const pages = useMemo(
+    () => (index.data ? { wikiId, byPath: new Map(index.data.pages.map((p) => [p.path, p])) } : null),
+    [index.data, wikiId],
+  );
   const { reload: reloadWiki } = wiki;
   const { reload: reloadPage } = page;
+  const { reload: reloadIndex } = index;
   useLive((e) => {
     if (e.type === "wikis" || (e.type === "pages" && e.wiki === wikiId)) reloadWiki();
-    if (e.type === "pages" && e.wiki === wikiId) reloadPage();
+    if (e.type === "pages" && e.wiki === wikiId) {
+      reloadPage();
+      reloadIndex();
+    }
   });
   useTheme(wiki.data?.theme);
 
   const [navOpen, setNavOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Ctrl+K / ⌘K anywhere, or "/" outside a text field, opens search.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const combo = (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "k";
+      if (!combo && !(e.key === "/" && !e.ctrlKey && !e.metaKey && !typing(e.target))) return;
+      e.preventDefault();
+      setSearchOpen(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     if (wiki.data) document.title = page.data?.path ? `${page.data.title} · ${wiki.data.title}` : wiki.data.title;
@@ -40,11 +64,15 @@ export function WikiLayout() {
   // New page: back to the top, or to the #section in the URL.
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the page itself changes.
   useEffect(() => {
+    if (special !== null) {
+      window.scrollTo(0, 0);
+      return;
+    }
     if (!page.data) return;
     const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
     if (target) target.scrollIntoView();
     else window.scrollTo(0, 0);
-  }, [page.data?.path]);
+  }, [page.data?.path, special]);
 
   if (wiki.error) {
     return (
@@ -56,106 +84,40 @@ export function WikiLayout() {
   }
 
   return (
-    <div className="sh-wiki" data-enter={fromDeck || undefined}>
-      {wiki.data && (
-        <>
-          <div className="sh-wiki-sidebar" data-open={navOpen || undefined}>
-            <Sidebar wiki={wiki.data} onNavigate={() => setNavOpen(false)} />
-          </div>
-          {navOpen && (
-            <button type="button" className="sh-scrim" aria-label="Close menu" onClick={() => setNavOpen(false)} />
-          )}
-          <div className="sh-wiki-mobilebar">
-            <IconButton icon="menu" label="Pages" onClick={() => setNavOpen(true)} />
-            <span>{wiki.data.title}</span>
-            <IconButton icon="comment" label="Comments" onClick={() => setRailOpen((o) => !o)} />
-          </div>
-        </>
-      )}
-      {page.error && wiki.data && (
-        <main className="sh-wiki-main">
-          <h1 className="sh-page-title">Page not found</h1>
-          <p className="sh-page-summary">There's no page at "{path}".</p>
-          <Link to={`/w/${wikiId}`}>Go to the home page</Link>
-        </main>
-      )}
-      {page.data && wiki.data && (
-        <PageArea
-          key={`${wikiId}:${path}`}
-          wikiId={wikiId}
-          path={path}
-          page={page.data}
-          problems={[...wiki.data.problems, ...page.data.problems]}
-          railOpen={railOpen}
-          onCloseRail={() => setRailOpen(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-function PageArea({
-  wikiId,
-  path,
-  page,
-  problems,
-  railOpen,
-  onCloseRail,
-}: {
-  wikiId: string;
-  path: string;
-  page: PageData;
-  problems: string[];
-  railOpen: boolean;
-  onCloseRail: () => void;
-}) {
-  const article = useRef<HTMLDivElement>(null);
-  const threads = useThreads(wikiId, path);
-  const [active, setActive] = useState<number | null>(null);
-  const [anchors, setAnchors] = useState<Anchors>(new Map());
-  const [showProblems, setShowProblems] = useState(false);
-  const onAnchors = useCallback((a: Anchors) => setAnchors(a), []);
-
-  return (
-    <>
-      <main className="sh-wiki-main">
-        <header className="sh-page-head">
-          <h1 className="sh-page-title">{page.title}</h1>
-          {page.summary && <p className="sh-page-summary">{page.summary}</p>}
-          {problems.length > 0 && (
-            <Button size="sm" variant="ghost" onClick={() => setShowProblems((s) => !s)}>
-              <Badge tone="warn">{problems.length}</Badge> page problem{problems.length === 1 ? "" : "s"}
-            </Button>
-          )}
-        </header>
-        {showProblems && (
-          <Callout tone="warning" title="Problems (for the agent: run pnpm wiki check)">
-            <ul>
-              {problems.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
-          </Callout>
+    <WikiIndexContext.Provider value={pages}>
+      <div className="sh-wiki" data-enter={fromDeck || undefined}>
+        {wiki.data && (
+          <>
+            <ScrollArea className="sh-wiki-sidebar" data-open={navOpen || undefined}>
+              <Sidebar wiki={wiki.data} onNavigate={() => setNavOpen(false)} onSearch={() => setSearchOpen(true)} />
+            </ScrollArea>
+            {navOpen && (
+              <button type="button" className="sh-scrim" aria-label="Close menu" onClick={() => setNavOpen(false)} />
+            )}
+            <div className="sh-wiki-mobilebar">
+              <IconButton icon="menu" label="Pages" onClick={() => setNavOpen(true)} />
+              <span>{wiki.data.title}</span>
+              <IconButton icon="search" label="Search" onClick={() => setSearchOpen(true)} />
+              <IconButton icon="comment" label="Comments" onClick={() => setRailOpen((o) => !o)} />
+            </div>
+            <SearchPalette wiki={wiki.data} open={searchOpen} onOpenChange={setSearchOpen} />
+          </>
         )}
-        <div ref={article} className="sh-prose">
-          <Markdown hast={page.hast} />
-        </div>
-        <CommentLayer
-          container={article}
-          contentKey={page.hast}
-          threads={threads}
-          active={active}
-          onActivate={setActive}
-          onAnchors={onAnchors}
-        />
-      </main>
-      <aside className="sh-wiki-rail" data-open={railOpen || undefined}>
-        <div className="sh-wiki-rail-close">
-          <IconButton icon="close" label="Close comments" size="sm" onClick={onCloseRail} />
-        </div>
-        <Toc entries={page.toc} />
-        <ThreadList threads={threads} anchors={anchors} active={active} onActivate={setActive} />
-      </aside>
-    </>
+        {page.error && wiki.data && <MissingPage wikiId={wikiId} path={path} index={index.data} />}
+        {special !== null && wiki.data && <SpecialPage wiki={wiki.data} route={special} index={index.data} />}
+        {page.data && !page.error && wiki.data && (
+          <PageArea
+            key={`${wikiId}:${path}`}
+            wiki={wiki.data}
+            path={path}
+            page={page.data}
+            index={index.data?.pages}
+            problems={[...wiki.data.problems, ...page.data.problems]}
+            railOpen={railOpen}
+            onCloseRail={() => setRailOpen(false)}
+          />
+        )}
+      </div>
+    </WikiIndexContext.Provider>
   );
 }

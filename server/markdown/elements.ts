@@ -1,8 +1,9 @@
 // Shiori elements: Markdown directives (`:::callout`, `:badge[…]`) that become `sh-*` elements, which the browser
 // renders with the app's components. The full syntax reference is docs/elements.md.
-import type { BlockContent, ListItem, Node, Parent, PhrasingContent, Root, RootContent } from "mdast";
+import type { BlockContent, Image, ListItem, Node, Paragraph, Parent, PhrasingContent, Root, RootContent } from "mdast";
 import type { ContainerDirective, LeafDirective, TextDirective } from "mdast-util-directive";
 import { SKIP, visit } from "unist-util-visit";
+import { PAGE_STATUSES } from "../../shared/schema.ts";
 
 type Directive = ContainerDirective | LeafDirective | TextDirective;
 
@@ -13,7 +14,9 @@ interface ElementSpec {
   attrs: Record<string, readonly string[] | null>;
   /** The attribute that the `[label]` fills in when it isn't given. */
   label?: string;
-  transform?: (node: Directive, problem: (message: string) => void) => void;
+  /** Reshapes the node's content; may return more properties for the element (a value worked out from the input). */
+  // biome-ignore lint/suspicious/noConfusingVoidType: most transforms only reshape the node and return nothing.
+  transform?: (node: Directive, problem: (message: string) => void) => Record<string, string> | undefined | void;
 }
 
 export const CALLOUT_TONES = ["note", "tip", "warning", "danger"] as const;
@@ -39,6 +42,29 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   details: { type: "containerDirective", tag: "sh-details", attrs: { summary: null }, label: "summary" },
   badge: { type: "textDirective", tag: "sh-badge", attrs: { tone: BADGE_TONES } },
   kbd: { type: "textDirective", tag: "sh-kbd", attrs: {} },
+  // Planning: numbers, roadmaps, link hubs, mood boards, progress.
+  stats: { type: "containerDirective", tag: "sh-stats", attrs: {}, transform: statTiles },
+  timeline: { type: "containerDirective", tag: "sh-timeline", attrs: {}, transform: milestones },
+  cards: { type: "containerDirective", tag: "sh-cards", attrs: {}, transform: linkCards },
+  gallery: { type: "containerDirective", tag: "sh-gallery", attrs: {}, transform: galleryShots },
+  progress: {
+    type: "textDirective",
+    tag: "sh-progress",
+    attrs: { value: null, max: null },
+    transform: checkProgress,
+  },
+  // Universal elements (ADR-0002): page relations, structure, how-tos, decisions, sources, media.
+  related: { type: "leafDirective", tag: "sh-related", attrs: { kind: null } },
+  question: { type: "leafDirective", tag: "sh-question", attrs: { id: null }, transform: needsId },
+  children: { type: "leafDirective", tag: "sh-children", attrs: { layout: ["cards", "list"] } },
+  toc: { type: "leafDirective", tag: "sh-toc", attrs: {} },
+  status: { type: "textDirective", tag: "sh-status", attrs: {}, transform: checkStatus },
+  // `:page[Name]` becomes a page chip when wikilinks resolve it (wikilinks.ts).
+  page: { type: "textDirective", tag: "sh-page", attrs: {} },
+  steps: { type: "containerDirective", tag: "sh-steps", attrs: { title: null }, label: "title", transform: stepItems },
+  compare: { type: "containerDirective", tag: "sh-compare", attrs: { pick: null }, transform: compareOptions },
+  quote: { type: "containerDirective", tag: "sh-quote", attrs: { by: null, role: null, source: null, url: null } },
+  embed: { type: "leafDirective", tag: "sh-embed", attrs: { url: null }, label: "caption", transform: embedSource },
 };
 
 const COLONS: Record<Directive["type"], string> = {
@@ -90,8 +116,13 @@ export function remarkElements(problems: string[], lineOffset = 0) {
           props[spec.label] ??= textOf(first);
         }
       }
-      spec.transform?.(node, problem);
-      node.data = { hName: spec.tag, hProperties: props };
+      // A leaf's `::name[label]` is its whole content.
+      if (spec.label && node.type === "leafDirective" && node.children.length) {
+        props[spec.label] ??= textOf(node);
+        node.children = [];
+      }
+      const extra = spec.transform?.(node, problem);
+      node.data = { hName: spec.tag, hProperties: { ...props, ...(extra ?? {}) } };
     });
   };
 }
@@ -106,6 +137,37 @@ export function textOf(node: Node): string {
   return "";
 }
 
+/** An mdast node that becomes the `hName` element. */
+const el = (hName: string, children: unknown[], hProperties: Record<string, string> = {}) =>
+  ({ type: hName, data: { hName, hProperties }, children }) as unknown as RootContent;
+
+/** A list item "Key: rest…" → the key and the item's content without it; no key when there's no colon. */
+function splitKey(item: ListItem): { key: string | null; body: RootContent[] } {
+  const [first, ...rest] = item.children;
+  const head = first?.type === "paragraph" ? first.children[0] : undefined;
+  if (first?.type === "paragraph" && head?.type === "text") {
+    const colon = head.value.indexOf(":");
+    if (colon > 0) {
+      const phrasing: PhrasingContent[] = [
+        { type: "text", value: head.value.slice(colon + 1).trimStart() },
+        ...first.children.slice(1),
+      ];
+      return { key: head.value.slice(0, colon).trim(), body: [{ type: "paragraph", children: phrasing }, ...rest] };
+    }
+  }
+  return { key: null, body: item.children };
+}
+
+/** The list items of a list-only element; anything else is reported and dropped. */
+function items(node: Directive, problem: (message: string) => void, hint: string): ListItem[] {
+  const out: ListItem[] = [];
+  for (const child of node.children as RootContent[]) {
+    if (child.type === "list") out.push(...child.children);
+    else problem(`${node.name}: ${hint}`);
+  }
+  return out;
+}
+
 /** Infobox lists become rows: `- Health: 20` → key "Health", value "20". */
 function infoboxRows(node: Directive) {
   const out: RootContent[] = [];
@@ -117,22 +179,10 @@ function infoboxRows(node: Directive) {
 }
 
 function row(item: ListItem): RootContent {
-  const make = (type: string, hName: string, children: unknown[]) =>
-    ({ type, data: { hName }, children }) as unknown as RootContent;
-  const [first, ...rest] = item.children;
-  const head = first?.type === "paragraph" ? first.children[0] : undefined;
-  if (first?.type === "paragraph" && head?.type === "text") {
-    const colon = head.value.indexOf(":");
-    if (colon > 0) {
-      const value: PhrasingContent[] = [{ type: "text", value: head.value.slice(colon + 1).trimStart() }];
-      value.push(...first.children.slice(1));
-      return make("ldRow", "sh-row", [
-        make("ldKey", "sh-key", [{ type: "text", value: head.value.slice(0, colon).trim() }]),
-        make("ldValue", "sh-value", [...value, ...rest]),
-      ]);
-    }
-  }
-  return make("ldRow", "sh-row", [make("ldValue", "sh-value", item.children)]);
+  const { key, body } = splitKey(item);
+  if (key === null) return el("sh-row", [el("sh-value", item.children)]);
+  const [value, ...rest] = body as [Paragraph, ...RootContent[]];
+  return el("sh-row", [el("sh-key", [{ type: "text", value: key }]), el("sh-value", [...value.children, ...rest])]);
 }
 
 function onlyTabs(node: Directive, problem: (message: string) => void) {
@@ -151,4 +201,182 @@ function splitColumns(node: Directive) {
   node.children = columns.map(
     (children) => ({ type: "ldColumn", data: { hName: "sh-column" }, children }) as unknown,
   ) as BlockContent[];
+}
+
+/** Stats: `- Subscribers: 12.4k | +8% this month` → a tile with its label, value and change. */
+function statTiles(node: Directive, problem: (message: string) => void) {
+  const tiles: RootContent[] = [];
+  for (const item of items(node, problem, 'write each stat as a list item, "- Label: value | change"')) {
+    const text = textOf(item).trim();
+    const colon = text.indexOf(":");
+    if (colon <= 0) {
+      problem(`stats: "${text}" needs a label, as "Label: value"`);
+      continue;
+    }
+    const [value = "", change = ""] = text
+      .slice(colon + 1)
+      .split("|")
+      .map((part) => part.trim());
+    const trend = /^[+↑]/.test(change) ? "up" : /^[-−↓]/.test(change) ? "down" : "flat";
+    tiles.push(el("sh-stat", [], { label: text.slice(0, colon).trim(), value, change, trend }));
+  }
+  node.children = tiles as BlockContent[];
+}
+
+/** Timeline: `- [x] March: Prototype` → milestones. Ticked ones are done, the first open one is now. */
+function milestones(node: Directive, problem: (message: string) => void) {
+  const out: RootContent[] = [];
+  let reachedNow = false;
+  for (const item of items(node, problem, 'write each milestone as a list item, "- [ ] When: what"')) {
+    let state = "item";
+    if (item.checked === true) state = "done";
+    else if (item.checked === false) {
+      state = reachedNow ? "next" : "now";
+      reachedNow = true;
+    }
+    const { key, body } = splitKey(item);
+    out.push(el("sh-milestone", body, key === null ? { state } : { when: key, state }));
+  }
+  node.children = out as BlockContent[];
+}
+
+/** Cards: `- 🎯 [Goals](goals) — what we aim for` → a card: optional emoji, the link as its title, a description. */
+function linkCards(node: Directive, problem: (message: string) => void) {
+  const out: RootContent[] = [];
+  for (const item of items(node, problem, 'write each card as a list item, "- [Title](page) — description"')) {
+    const [first, ...rest] = item.children;
+    const at = first?.type === "paragraph" ? first.children.findIndex((c) => c.type === "link") : -1;
+    if (first?.type !== "paragraph" || at < 0) {
+      problem(`cards: "${textOf(item).trim()}" needs a link, as "- [Title](page) — description"`);
+      continue;
+    }
+    const icon = first.children.slice(0, at).map(textOf).join("").trim();
+    const after = first.children.slice(at + 1);
+    if (after[0]?.type === "text") {
+      after[0] = { ...after[0], value: after[0].value.replace(/^\s*[—–:-]\s*/, "") };
+    }
+    const description = after.some((c) => textOf(c).trim()) ? [{ type: "paragraph", children: after }] : [];
+    out.push(el("sh-card", [el("sh-card-title", [first.children[at]]), ...description, ...rest], icon ? { icon } : {}));
+  }
+  node.children = out as BlockContent[];
+}
+
+/** Gallery: images, one per line or several on a line → tiles. The image's title, else its alt text, is the caption. */
+function galleryShots(node: Directive, problem: (message: string) => void) {
+  const shots: RootContent[] = [];
+  visit(node, "image", (image: Image) => {
+    shots.push(el("sh-shot", [image], { caption: image.title || image.alt || "" }));
+  });
+  if (!shots.length) problem("gallery: add images, one per line: ![Caption](/assets/picture.png)");
+  node.children = shots as BlockContent[];
+}
+
+/** Progress: `:progress[Launch]{value="60"}`, out of 100 unless `max` says otherwise. */
+function checkProgress(node: Directive, problem: (message: string) => void) {
+  const value = Number(node.attributes?.value);
+  const max = Number(node.attributes?.max ?? 100);
+  if (node.attributes?.value == null || !Number.isFinite(value) || !(max > 0)) {
+    problem('progress: give it a number, as :progress[Label]{value="60"} (out of max="100")');
+  }
+}
+
+/** `:status[active]`: one of the page statuses. */
+function checkStatus(node: Directive, problem: (message: string) => void) {
+  const value = textOf(node).trim().toLowerCase();
+  if (!(PAGE_STATUSES as readonly string[]).includes(value)) {
+    problem(`status: "${value}" isn't one of ${PAGE_STATUSES.join(", ")}`);
+  }
+  return { value };
+}
+
+/** Steps: a list, `- Title: what to do` or just `- what to do` → numbered steps. */
+function stepItems(node: Directive, problem: (message: string) => void) {
+  node.children = items(node, problem, 'write each step as a list item, "1. Title: what to do"').map((item) => {
+    const { key, body } = splitKey(item);
+    return el("sh-step", key === null ? item.children : body, key === null ? {} : { title: key });
+  }) as BlockContent[];
+}
+
+const POINT_KINDS: Record<string, string> = {
+  pro: "pro",
+  pros: "pro",
+  "+": "pro",
+  con: "con",
+  cons: "con",
+  "-": "con",
+};
+
+/**
+ * Compare: options side by side, each under a heading, with `- Pro: …` and `- Con: …` points (any other `Key: …` is
+ * a plain fact). `pick` marks the chosen option.
+ */
+function compareOptions(node: Directive, problem: (message: string) => void) {
+  const options: { name: string; children: RootContent[] }[] = [];
+  for (const child of node.children as RootContent[]) {
+    if (child.type === "heading") {
+      options.push({ name: textOf(child).trim(), children: [] });
+      continue;
+    }
+    const current = options[options.length - 1];
+    if (!current) {
+      problem('compare: start each option with a heading, as "### Option name"');
+      continue;
+    }
+    if (child.type !== "list") {
+      current.children.push(child);
+      continue;
+    }
+    for (const item of child.children) {
+      const { key, body } = splitKey(item);
+      const kind = key === null ? "note" : (POINT_KINDS[key.toLowerCase()] ?? "note");
+      const props: Record<string, string> = { kind };
+      if (key !== null && kind === "note") props.label = key;
+      current.children.push(el("sh-point", kind === "note" && key === null ? item.children : body, props));
+    }
+  }
+  if (options.length < 2) problem("compare: give at least two options, each under its own heading");
+  const pick = node.attributes?.pick?.trim().toLowerCase();
+  if (pick && !options.some((o) => o.name.toLowerCase() === pick)) {
+    problem(
+      `compare: pick="${node.attributes?.pick}" isn't one of the options (${options.map((o) => o.name).join(", ")})`,
+    );
+  }
+  node.children = options.map((o) =>
+    el("sh-option", o.children, o.name.toLowerCase() === pick ? { name: o.name, picked: "" } : { name: o.name }),
+  ) as BlockContent[];
+}
+
+/** Hosts `::embed` plays from, and how each turns a page URL into its player. */
+const EMBEDS: { provider: string; match: RegExp; src: (m: RegExpMatchArray, url: string) => string }[] = [
+  {
+    provider: "YouTube",
+    match:
+      /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{11})/,
+    src: (m) => `https://www.youtube-nocookie.com/embed/${m[1]}`,
+  },
+  {
+    provider: "Vimeo",
+    match: /^https?:\/\/(?:www\.)?vimeo\.com\/(\d+)/,
+    src: (m) => `https://player.vimeo.com/video/${m[1]}`,
+  },
+  {
+    provider: "Figma",
+    match: /^https:\/\/(?:www\.)?figma\.com\/(?:file|design|proto|board)\//,
+    src: (_m, url) => `https://www.figma.com/embed?embed_host=shiori&url=${encodeURIComponent(url)}`,
+  },
+];
+
+/** Embed: a video or design from an allowed host, played in place. */
+function embedSource(node: Directive, problem: (message: string) => void) {
+  const url = node.attributes?.url?.trim() ?? "";
+  for (const e of EMBEDS) {
+    const m = url.match(e.match);
+    if (m) return { src: e.src(m, url), provider: e.provider };
+  }
+  problem(`embed: "${url}" isn't a YouTube, Vimeo or Figma link`);
+}
+
+/** `::question{id=q1}` places a question from the page's frontmatter; the page checks the id exists. */
+function needsId(node: Directive, problem: (message: string) => void) {
+  if (!node.attributes?.id) problem("question: give the question's id, as ::question{id=q1}");
 }

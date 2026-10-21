@@ -1,8 +1,18 @@
 import { Link, NavLink, useNavigate } from "react-router";
 import type { NavNode, WikiDetail } from "../../shared/api.ts";
-import { IconButton, Tooltip } from "../ui/index.ts";
+import { Icon, IconButton, Kbd, Tooltip } from "../ui/index.ts";
+import { shortcutLabel } from "./SearchPalette.tsx";
+import { SPECIALS } from "./special/SpecialPage.tsx";
 
-export function Sidebar({ wiki, onNavigate }: { wiki: WikiDetail; onNavigate?: () => void }) {
+export function Sidebar({
+  wiki,
+  onNavigate,
+  onSearch,
+}: {
+  wiki: WikiDetail;
+  onNavigate?: () => void;
+  onSearch: () => void;
+}) {
   const navigate = useNavigate();
   return (
     <nav className="sh-sidebar" aria-label={`${wiki.title} pages`}>
@@ -22,9 +32,27 @@ export function Sidebar({ wiki, onNavigate }: { wiki: WikiDetail; onNavigate?: (
           {wiki.tagline && <span className="sh-sidebar-tagline">{wiki.tagline}</span>}
         </span>
       </NavLink>
+      <button type="button" className="sh-sidebar-search" onClick={onSearch}>
+        <Icon name="search" size={14} />
+        Search
+        <Kbd>{shortcutLabel()}</Kbd>
+      </button>
       <ul className="sh-nav">
         {wiki.nav.map((n) => (
           <NavItem key={n.path} node={n} wikiId={wiki.id} onNavigate={onNavigate} />
+        ))}
+      </ul>
+      <p className="sh-nav-heading sh-sidebar-tools-title">Tools</p>
+      <ul className="sh-nav">
+        {SPECIALS.map((s) => (
+          <li key={s.route}>
+            <NavLink to={`/w/${wiki.id}/_/${s.route}`} className="sh-nav-link" onClick={onNavigate}>
+              <span className="sh-nav-icon" aria-hidden="true">
+                {s.icon}
+              </span>
+              {s.title}
+            </NavLink>
+          </li>
         ))}
       </ul>
       <Link to="/dev/ui" className="sh-sidebar-foot">
@@ -46,6 +74,11 @@ function NavItem({ node, wikiId, onNavigate }: { node: NavNode; wikiId: string; 
           data-group={isGroup || undefined}
           onClick={onNavigate}
         >
+          {node.icon && (
+            <span className="sh-nav-icon" aria-hidden="true">
+              {node.icon}
+            </span>
+          )}
           {node.title}
         </NavLink>
       ) : (

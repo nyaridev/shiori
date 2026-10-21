@@ -9,6 +9,7 @@ import { visit } from "unist-util-visit";
 import type { TocEntry } from "../../shared/api.ts";
 import { remarkElements, textOf } from "./elements.ts";
 import { type LinkContext, rehypeLinks } from "./links.ts";
+import { remarkWikilinks } from "./wikilinks.ts";
 
 export interface Rendered {
   hast: Root;
@@ -24,6 +25,7 @@ export function renderMarkdown(body: string, ctx: LinkContext, lineOffset = 0): 
     .use(remarkGfm)
     .use(remarkDirective)
     .use(remarkElements, problems, lineOffset)
+    .use(remarkWikilinks, ctx.findPage ?? (() => ({ page: null, others: [] })), problems, lineOffset)
     .use(remarkRehype)
     .use(rehypeSlug)
     .use(rehypeLinks, ctx, problems, lineOffset);

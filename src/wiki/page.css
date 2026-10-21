@@ -1,0 +1,508 @@
+/* A page's head and foot (PageHead.tsx, PageFoot.tsx). */
+
+/* Head */
+.sh-page-head {
+  margin-bottom: var(--s-5);
+}
+.sh-page-head > .sh-button {
+  margin-top: var(--s-3);
+  margin-left: calc(-1 * var(--s-2));
+}
+.sh-page-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+}
+.sh-page-title {
+  margin: 0;
+  font-size: var(--t-2xl);
+  color: var(--text);
+}
+.sh-page-icon {
+  margin-right: 0.3em;
+}
+.sh-page-summary {
+  margin: var(--s-2) 0 0;
+  color: var(--muted);
+  font-size: var(--t-lg);
+  line-height: 1.5;
+}
+.sh-page-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  margin-top: var(--s-3);
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-tag {
+  padding: 1px 7px;
+  border-radius: var(--r-sm);
+  background: var(--hover);
+  color: var(--text-soft);
+  font-weight: 550;
+}
+
+/* Breadcrumbs */
+.sh-crumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin: 0 0 var(--s-3);
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-crumbs .sh-icon {
+  opacity: 0.6;
+}
+.sh-crumbs a,
+.sh-crumbs span {
+  display: inline-block;
+  padding: 2px var(--s-1);
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  text-decoration: none;
+}
+.sh-crumbs a:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+/* The home page's hero: the cover art, large and blurred behind the title, and sharp beside it. */
+.sh-page-head[data-hero] {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin-inline: calc(-1 * var(--s-5));
+  padding: var(--s-6) var(--s-5) var(--s-5);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+.sh-page-head[data-hero]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    to right,
+    color-mix(in oklab, var(--surface) 30%, transparent),
+    color-mix(in oklab, var(--surface) 90%, transparent)
+  );
+}
+.sh-hero-backdrop {
+  position: absolute;
+  inset: -60px;
+  z-index: -2;
+  width: calc(100% + 120px);
+  height: calc(100% + 120px);
+  object-fit: cover;
+  filter: blur(42px) saturate(1.3);
+  opacity: 0.5;
+}
+.sh-hero-cover {
+  flex: none;
+  width: 104px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border: var(--bw) solid color-mix(in oklab, var(--text) 18%, transparent);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-2);
+}
+
+/* Foot */
+.sh-page-foot {
+  display: grid;
+  gap: var(--s-6);
+  margin-top: var(--s-7);
+}
+.sh-sections-title {
+  margin: 0 0 var(--s-3);
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.sh-sections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: var(--s-3);
+}
+.sh-section-card {
+  display: grid;
+  align-content: start;
+  gap: var(--s-1);
+  padding: var(--s-4);
+  background: var(--surface);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    border-color var(--fast) var(--ease),
+    translate var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+a.sh-section-card:hover {
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow-2);
+  translate: 0 -1px;
+}
+.sh-section-card[data-folder] {
+  opacity: 0.7;
+}
+.sh-section-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  margin-bottom: var(--s-1);
+}
+.sh-section-icon {
+  font-size: 1.375rem;
+  line-height: 1.2;
+}
+.sh-section-name {
+  font-family: var(--font-heading);
+  font-weight: 650;
+}
+.sh-section-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+
+/* Previous / next */
+.sh-pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+  padding-top: var(--s-5);
+  border-top: var(--bw) solid var(--border);
+}
+.sh-pager-link {
+  display: grid;
+  gap: 2px;
+  padding: var(--s-3) var(--s-4);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color var(--fast) var(--ease);
+}
+.sh-pager-link:hover {
+  border-color: var(--accent-line);
+}
+.sh-pager-link[data-dir="next"] {
+  grid-column: 2;
+  justify-items: end;
+  text-align: right;
+}
+.sh-pager-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-pager-title {
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .sh-hero-cover {
+    display: none;
+  }
+  .sh-page-head[data-hero] {
+    margin-inline: 0;
+  }
+  .sh-pager {
+    grid-template-columns: 1fr;
+  }
+  .sh-pager-link[data-dir="next"] {
+    grid-column: 1;
+  }
+}
+
+/* A `type` label ("Feature", "Product"): quiet, beside the status. */
+.sh-page-type {
+  color: var(--text-soft);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.sh-page-questions {
+  color: var(--tone-warn);
+  font-weight: 600;
+  text-decoration: none;
+}
+.sh-page-questions:hover {
+  text-decoration: underline;
+}
+.sh-question-list {
+  display: grid;
+  gap: var(--s-3);
+}
+a.sh-tag {
+  text-decoration: none;
+}
+a.sh-tag:hover {
+  color: var(--text);
+  background: var(--press);
+}
+
+/* A `banner`: the picture itself behind the head, sharp, fading into the page. */
+.sh-page-head[data-banner] {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.sh-page-head[data-banner] .sh-hero-backdrop {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: none;
+  opacity: 1;
+}
+.sh-page-head[data-banner]::after {
+  background: linear-gradient(
+    to top,
+    var(--surface) 8%,
+    color-mix(in oklab, var(--surface) 70%, transparent) 50%,
+    color-mix(in oklab, var(--surface) 45%, transparent)
+  );
+}
+
+/* Infobox: the article's fact box, floating right as on Wikipedia and Fandom. */
+.sh-page-infobox {
+  float: right;
+  clear: right;
+  width: 280px;
+  margin: 0 0 var(--s-4) var(--s-5);
+  overflow: hidden;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  font-size: var(--t-sm);
+}
+.sh-page-infobox-head {
+  display: grid;
+  gap: 2px;
+  padding: var(--s-3) var(--s-4);
+  background: var(--accent-soft);
+  text-align: center;
+}
+.sh-page-infobox-title {
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-size: var(--t-lg);
+  font-weight: 650;
+  line-height: 1.3;
+}
+.sh-page-infobox-type {
+  color: var(--text-soft);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.sh-page-infobox-figure {
+  margin: 0;
+  padding: var(--s-3) var(--s-3) 0;
+}
+.sh-prose .sh-page-infobox-figure img {
+  display: block;
+  width: 100%;
+  border-radius: var(--r-md);
+  background: var(--raised);
+}
+.sh-page-infobox-figure figcaption {
+  margin-top: var(--s-2);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-style: italic;
+  text-align: center;
+}
+.sh-page-infobox-rows {
+  display: grid;
+  margin: 0;
+  padding: var(--s-2) var(--s-3) var(--s-3);
+}
+.sh-page-infobox-rows > div {
+  display: grid;
+  grid-template-columns: 38% 1fr;
+  gap: var(--s-2);
+  padding: 7px var(--s-1);
+  border-top: var(--bw) solid var(--border);
+}
+.sh-page-infobox-rows > div:first-child {
+  border-top: 0;
+}
+.sh-page-infobox-rows dt {
+  color: var(--muted);
+  font-weight: 600;
+}
+.sh-page-infobox-rows dd {
+  margin: 0;
+  color: var(--text);
+}
+.sh-prose .sh-page-infobox-rows dd > p {
+  margin: 0;
+}
+
+/* Foot blocks: recently updated, what links here. */
+.sh-foot-block .sh-sections-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.sh-foot-more {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-decoration: none;
+  text-transform: none;
+}
+.sh-foot-more:hover {
+  color: var(--accent);
+}
+.sh-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.sh-page-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+  text-decoration: none;
+  transition: border-color var(--fast) var(--ease);
+}
+.sh-page-chip:hover {
+  border-color: var(--accent-line);
+  color: var(--text);
+}
+.sh-recent-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.sh-recent-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-4);
+  border-top: var(--bw) solid var(--border);
+}
+.sh-recent-list li:first-child {
+  border-top: 0;
+}
+.sh-recent-list a {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  gap: var(--s-2);
+  min-width: 0;
+  color: var(--text);
+  text-decoration: none;
+}
+.sh-recent-title {
+  flex: none;
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+.sh-recent-list a:hover .sh-recent-title {
+  color: var(--accent);
+}
+.sh-recent-summary {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sh-recent-list time {
+  flex: none;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+/* Categories bar, as at the end of a Wikipedia article. */
+.sh-categories {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font-size: var(--t-sm);
+}
+.sh-categories-label {
+  margin-right: var(--s-1);
+  color: var(--text);
+  font-weight: 650;
+  text-decoration: none;
+}
+.sh-categories-label::after {
+  content: ":";
+}
+.sh-category {
+  color: var(--accent);
+  text-decoration: none;
+}
+.sh-category:hover {
+  text-decoration: underline;
+}
+.sh-category + .sh-category::before {
+  content: "·";
+  margin-right: var(--s-2);
+  color: var(--muted);
+}
+
+/* Last edited. */
+.sh-last-edited {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-last-edited code {
+  font-family: var(--font-mono);
+  font-size: 0.95em;
+}
+
+@media (max-width: 720px) {
+  .sh-page-infobox {
+    float: none;
+    width: auto;
+    margin: 0 0 var(--s-4);
+  }
+}

@@ -6,12 +6,15 @@ import { type Context, Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import type { WikiDetail } from "../shared/api.ts";
+import { addAnswer, answerCounts, listAnswers } from "./answers.ts";
+import { buildCorpus, type Corpus } from "./corpus.ts";
 import type { Live } from "./live.ts";
 import { splitFrontmatter } from "./markdown/frontmatter.ts";
 import { renderMarkdown } from "./markdown/render.ts";
-import { buildNav, listPages, type PageFile, renderPage } from "./pages.ts";
+import { buildNav, listPages, type PageFile } from "./pages.ts";
 import { inside } from "./paths.ts";
 import { type Registry, toCard, type Wiki } from "./registry.ts";
+import { search } from "./search.ts";
 import { addMessage, createThread, getThread, listThreads, setStatus } from "./threads.ts";
 
 const TYPES: Record<string, string> = {
@@ -31,6 +34,12 @@ const TYPES: Record<string, string> = {
 };
 
 const quoteSchema = z.strictObject({ exact: z.string().min(1).max(4000), prefix: z.string(), suffix: z.string() });
+const newAnswerSchema = z.strictObject({
+  page: z.string(),
+  question: z.string().min(1),
+  choice: z.string().min(1).nullable().default(null),
+  body: z.string().trim().default(""),
+});
 const newThreadSchema = z.strictObject({ page: z.string(), quote: quoteSchema, body: z.string().trim().min(1) });
 const messageSchema = z.strictObject({ body: z.string().trim().min(1) });
 const statusSchema = z.strictObject({ status: z.enum(["open", "resolved", "wontfix"]) });
@@ -45,8 +54,11 @@ export interface AppOptions {
 export function buildApp({ registry, live, staticDir }: AppOptions) {
   const app = new Hono();
   const pageCache = new Map<string, PageFile[]>();
+  const corpusCache = new Map<string, Corpus>();
   live.subscribe((e) => {
-    if (e.type !== "threads") pageCache.clear();
+    if (e.type === "threads") return;
+    pageCache.clear();
+    corpusCache.clear();
   });
   const pagesOf = (w: Wiki) => {
     let pages = pageCache.get(w.id);
@@ -55,6 +67,15 @@ export function buildApp({ registry, live, staticDir }: AppOptions) {
       pageCache.set(w.id, pages);
     }
     return pages;
+  };
+  /** Every page of the wiki rendered once, with backlinks, the page index and the search index. */
+  const corpusOf = (w: Wiki) => {
+    let corpus = corpusCache.get(w.id);
+    if (!corpus) {
+      corpus = buildCorpus(w, pagesOf(w));
+      corpusCache.set(w.id, corpus);
+    }
+    return corpus;
   };
 
   const wikiOr404 = (c: Context): Wiki | Response =>
@@ -77,12 +98,34 @@ export function buildApp({ registry, live, staticDir }: AppOptions) {
   app.get("/api/wikis/:id/page", (c) => {
     const w = wikiOr404(c);
     if (w instanceof Response) return w;
-    const page = renderPage(w, pagesOf(w), c.req.query("path") ?? "");
+    const page = corpusOf(w).pages.get(c.req.query("path") ?? "");
     return page ? c.json(page) : c.json({ error: "no such page" }, 404);
   });
 
-  app.get("/api/wikis/:id/files/*", (c) => {
+  app.get("/api/wikis/:id/pages", (c) => {
     const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const corpus = corpusOf(w);
+    const counts = answerCounts(w.root);
+    const questions = [...corpus.pages.values()].flatMap((p) =>
+      p.questions.map((q) => ({
+        ...q,
+        page: { path: p.path, title: p.title, icon: p.icon, isPage: true },
+        answers: counts.get(`${p.path}#${q.id}`) ?? 0,
+      })),
+    );
+    return c.json({ pages: corpus.index, wanted: corpus.wanted, questions });
+  });
+
+  app.get("/api/wikis/:id/search", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    return c.json({ hits: search(corpusOf(w).search, c.req.query("q") ?? "") });
+  });
+
+  // A wiki's media. `_dev` is docs/, for the element examples on /dev/ui.
+  app.get("/api/wikis/:id/files/*", (c) => {
+    const w = c.req.param("id") === "_dev" ? { id: "_dev", root: join(registry.appRoot, "docs") } : wikiOr404(c);
     if (w instanceof Response) return w;
     const rel = decodeURIComponent(c.req.path.slice(`/api/wikis/${w.id}/files/`.length));
     const full = inside(w.root, rel);
@@ -91,6 +134,29 @@ export function buildApp({ registry, live, staticDir }: AppOptions) {
     if (!full || !type || rel.split("/").some((p) => p.startsWith(".") || p === "data")) return c.notFound();
     if (!existsSync(full) || !statSync(full).isFile()) return c.notFound();
     return c.body(readFileSync(full), 200, { "content-type": type, "cache-control": "no-cache" });
+  });
+
+  app.get("/api/wikis/:id/answers", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    return c.json({ answers: listAnswers(w.root, { page: c.req.query("page") }) });
+  });
+
+  // Answers only go to a question the page asks, with one of its options when it has some.
+  app.post("/api/wikis/:id/answers", async (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const body = newAnswerSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: "bad request" }, 400);
+    const { page, question, choice, body: note } = body.data;
+    const q = corpusOf(w)
+      .pages.get(page)
+      ?.questions.find((x) => x.id === question);
+    if (!q) return c.json({ error: "no such question" }, 404);
+    if (q.status !== "open") return c.json({ error: "this question is already decided" }, 409);
+    if (choice !== null && !q.options.includes(choice)) return c.json({ error: "not one of the options" }, 400);
+    if (choice === null && !note) return c.json({ error: "pick an option or write an answer" }, 400);
+    return c.json(addAnswer(w.root, page, question, choice, note), 201);
   });
 
   app.get("/api/wikis/:id/threads", (c) => {
@@ -133,9 +199,23 @@ export function buildApp({ registry, live, staticDir }: AppOptions) {
       wikiId: "_dev",
       pageDir: "",
       pageExists: () => true,
-      fileExists: () => true,
+      fileExists: (rel) => existsSync(join(registry.appRoot, "docs", rel)),
     });
-    return c.json({ path: "", title: "Elements", summary: "", ...r });
+    return c.json({
+      path: "",
+      title: "Elements",
+      summary: "",
+      tags: [],
+      backlinks: [],
+      related: [],
+      questions: [],
+      placed: { related: false, children: false, questions: [] },
+      trail: [],
+      children: [],
+      prev: null,
+      next: null,
+      ...r,
+    });
   });
 
   app.get("/api/events", (c) =>

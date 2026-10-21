@@ -1,0 +1,148 @@
+/* Wiki search (SearchPalette.tsx) and the sidebar button that opens it. */
+.sh-search-box {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: var(--bw) solid var(--border);
+  color: var(--muted);
+}
+.sh-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--s-1) 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--t-lg);
+}
+/* The palette itself shows where typing goes; no extra focus ring. */
+.sh-search-input:focus-visible {
+  box-shadow: none;
+}
+.sh-search-input::placeholder {
+  color: var(--muted);
+}
+.sh-search-results {
+  height: min(52vh, 420px);
+}
+.sh-search-list {
+  display: grid;
+  gap: 2px;
+  padding: var(--s-2);
+}
+.sh-search-empty {
+  margin: 0;
+  padding: var(--s-6) var(--s-4);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  text-align: center;
+}
+.sh-search-hit {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.sh-search-hit.is-active {
+  background: var(--accent-soft);
+}
+.sh-search-icon {
+  flex: none;
+  width: 1.4em;
+  font-size: 1.05rem;
+  line-height: 1.45;
+  text-align: center;
+}
+.sh-search-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.sh-search-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--text);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+.sh-search-section {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--text-soft);
+  font-weight: 500;
+}
+.sh-search-section .sh-icon {
+  color: var(--muted);
+}
+.sh-search-snippet {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+}
+.sh-search-mark {
+  border-radius: 3px;
+  background: var(--accent-soft);
+  color: var(--text);
+  box-shadow: 0 0 0 1px var(--accent-soft);
+}
+.sh-search-hit.is-active .sh-search-mark {
+  background: var(--accent-line);
+}
+.sh-search-foot {
+  display: flex;
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-4);
+  border-top: var(--bw) solid var(--border);
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+/* The sidebar's search button looks like a field. */
+.sh-sidebar-search {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  margin-bottom: var(--s-3);
+  padding: 6px var(--s-2);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg);
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-sm);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease);
+}
+.sh-sidebar-search:hover {
+  border-color: var(--border-strong);
+  color: var(--text-soft);
+}
+.sh-sidebar-search .sh-kbd {
+  margin-left: auto;
+}
+
+/* The heading a search result opened, flashed once so the eye finds it. */
+.sh-found {
+  border-radius: var(--r-sm);
+  animation: sh-found 1.6s var(--ease);
+}
+@keyframes sh-found {
+  0%,
+  30% {
+    background: var(--accent-soft);
+    box-shadow: 0 0 0 6px var(--accent-soft);
+  }
+}

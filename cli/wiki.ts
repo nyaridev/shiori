@@ -2,12 +2,14 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
+import { listAnswers } from "../server/answers.ts";
+import { buildCorpus } from "../server/corpus.ts";
 import { listPages, renderPage } from "../server/pages.ts";
 import { APP_ROOT, slashes } from "../server/paths.ts";
 import { discover, loadWiki, readLinks, type Wiki, writeLinks } from "../server/registry.ts";
 import { copyTemplate } from "../server/template.ts";
 import { addMessage, closeAll, getThread, listThreads, setStatus, waitingForAgent } from "../server/threads.ts";
-import type { Thread } from "../shared/api.ts";
+import type { Answer, PageData, Question, Thread } from "../shared/api.ts";
 import { wikiIdSchema } from "../shared/schema.ts";
 
 const HELP = `Shiori wiki CLI
@@ -18,7 +20,7 @@ const HELP = `Shiori wiki CLI
   pnpm wiki link <folder>                          Show a wiki that lives elsewhere (wikis.local.json)
   pnpm wiki unlink <id|folder>                     Stop showing a linked wiki (its files stay)
   pnpm wiki check [id]                             Validate wiki.json, theme.json, pages, links, files, elements
-  pnpm wiki inbox [id]                             Open comments waiting for an agent, with the quoted text
+  pnpm wiki inbox [id]                             Open comments and answers to open questions, waiting for an agent
   pnpm wiki threads <id> [--all]                   All open (or all) threads of a wiki
   pnpm wiki reply <id> <thread> "message"          Answer or ask back; the thread stays open
   pnpm wiki resolve <id> <thread> [--note "…"] [--wontfix]
@@ -65,6 +67,33 @@ function printThread(wiki: Wiki, t: Thread) {
   console.log(`  quote: …${short(t.quote.prefix, 32)}«${t.quote.exact}»${short(t.quote.suffix, 32)}…`);
   for (const m of t.messages)
     console.log(`  ${m.author === "user" ? "user " : "agent"}: ${m.body.replace(/\n/g, "\n         ")}`);
+}
+
+/** Answers to questions their page still has open, grouped by question. Resolving the question clears them. */
+function openAnswers(wiki: Wiki): { page: PageData; question: Question; answers: Answer[] }[] {
+  const answers = listAnswers(wiki.root);
+  if (!answers.length) return [];
+  const corpus = buildCorpus(wiki, listPages(wiki));
+  const groups = new Map<string, { page: PageData; question: Question; answers: Answer[] }>();
+  for (const a of answers) {
+    const page = corpus.pages.get(a.page);
+    const question = page?.questions.find((q) => q.id === a.question);
+    if (!page || !question || question.status !== "open") continue;
+    const key = `${a.page}#${a.question}`;
+    if (!groups.has(key)) groups.set(key, { page, question, answers: [] });
+    groups.get(key)?.answers.push(a);
+  }
+  return [...groups.values()];
+}
+
+function printAnswers(wiki: Wiki, { page, question, answers }: ReturnType<typeof openAnswers>[number]) {
+  console.log(`
+? ${wiki.id} › ${page.path || "(home)"}  ${page.file}  questions: ${question.id}`);
+  console.log(`  question: ${question.text}${question.options.length ? `  [${question.options.join(" / ")}]` : ""}`);
+  for (const a of answers) {
+    const when = a.createdAt.slice(0, 16).replace("T", " ");
+    console.log(`  answer:   ${[a.choice && `«${a.choice}»`, a.body].filter(Boolean).join(" ")}  (${when})`);
+  }
 }
 
 const commands: Record<string, () => void> = {
@@ -145,17 +174,28 @@ const commands: Record<string, () => void> = {
   inbox() {
     const targets = args[0] ? [wikiById(args[0])] : discover(APP_ROOT).wikis;
     let n = 0;
+    let q = 0;
     for (const w of targets) {
       for (const t of waitingForAgent(listThreads(w.root, { status: "open" }))) {
         printThread(w, t);
         n++;
       }
+      for (const group of openAnswers(w)) {
+        printAnswers(w, group);
+        q++;
+      }
     }
-    console.log(
-      n
-        ? `\n${n} thread${n === 1 ? "" : "s"} waiting. Answer with \`pnpm wiki reply\` or \`pnpm wiki resolve\`.`
-        : "Inbox empty.",
-    );
+    if (!n && !q) console.log("Inbox empty.");
+    if (n)
+      console.log(
+        `\n${n} thread${n === 1 ? "" : "s"} waiting. Answer with \`pnpm wiki reply\` or \`pnpm wiki resolve\`.`,
+      );
+    if (q) {
+      console.log(
+        `\n${q} question${q === 1 ? "" : "s"} answered. Decide, then write it into the page's frontmatter:` +
+          " that question's `status: resolved` and `answer: …`.",
+      );
+    }
   },
 
   threads() {

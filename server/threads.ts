@@ -24,6 +24,16 @@ const MIGRATIONS = [
      created_at text not null
    );
    create index messages_thread on messages(thread_id);`,
+  // Answers to the open questions in pages' frontmatter (answers.ts).
+  `create table answers (
+     id integer primary key,
+     page text not null,
+     question text not null,
+     choice text,
+     body text not null default '',
+     created_at text not null
+   );
+   create index answers_page on answers(page, question);`,
 ];
 
 const open = new Map<string, DatabaseSync>();

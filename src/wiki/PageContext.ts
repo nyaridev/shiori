@@ -1,0 +1,15 @@
+// The page being shown, for elements that list what the page knows (its children, contents, related pages).
+import { createContext, useContext } from "react";
+import type { Answer, PageData } from "../../shared/api.ts";
+
+export interface PageInfo {
+  wikiId: string;
+  page: PageData;
+  /** Answers to the page's questions, and how to send one. */
+  answers: Answer[];
+  answer: (question: string, choice: string | null, body: string) => Promise<void>;
+}
+
+export const PageContext = createContext<PageInfo | null>(null);
+
+export const usePage = () => useContext(PageContext);

@@ -1,0 +1,130 @@
+/* Special pages (SpecialPage.tsx). */
+.sh-special-kicker {
+  margin: 0 0 var(--s-1);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.sh-special-group + .sh-special-group {
+  margin-top: var(--s-5);
+}
+.sh-special-heading {
+  margin: 0 0 var(--s-2);
+  padding-bottom: var(--s-1);
+  border-bottom: var(--bw) solid var(--border);
+  color: var(--text);
+  font-size: var(--t-md);
+  scroll-margin-top: calc(var(--titlebar, 0px) + var(--s-6));
+}
+.sh-special-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-special-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-3);
+  padding: 7px var(--s-2);
+  border-radius: var(--r-sm);
+}
+.sh-special-row:hover {
+  background: var(--hover);
+}
+.sh-special-time {
+  width: 64px;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+}
+.sh-special-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+.sh-special-link:hover {
+  color: var(--accent);
+}
+.sh-special-summary {
+  flex-basis: 100%;
+  padding-left: calc(64px + var(--s-3));
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-special-list:not(:has(.sh-special-time)) .sh-special-summary {
+  padding-left: 22px;
+}
+.sh-special-letters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  margin-bottom: var(--s-5);
+}
+.sh-special-letters a {
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+.sh-special-letters a:hover {
+  border-color: var(--accent-line);
+  color: var(--text);
+}
+.sh-special-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: var(--s-3);
+}
+.sh-special-count {
+  padding: 0 7px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: var(--t-xs);
+  font-weight: 650;
+}
+.sh-special-empty {
+  color: var(--muted);
+}
+.sh-special-answer {
+  color: var(--tone-good);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+.sh-wanted-row {
+  align-items: flex-start;
+}
+.sh-wanted-from {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  padding-left: 22px;
+}
+.sh-sidebar-tools-title {
+  margin: var(--s-5) 0 var(--s-1);
+  padding: 0 var(--s-2);
+}
+.sh-missing-links {
+  margin-top: var(--s-6);
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.sh-missing-links a {
+  color: var(--accent);
+}

@@ -68,6 +68,65 @@ describe("renderMarkdown", () => {
     expect(problems).toEqual(['line 1: broken link "missing"']);
   });
 
+  it("turns stats items into tiles with a label, value, change and trend", () => {
+    const { hast, problems } = renderMarkdown(
+      ":::stats\n- Subscribers: 12.4k | +8% this month\n- Churn: 3% | -1%\n- Videos: 42\n:::",
+      ctx,
+    );
+    expect(find(hast, "sh-stat").map((t) => t.properties)).toEqual([
+      { label: "Subscribers", value: "12.4k", change: "+8% this month", trend: "up" },
+      { label: "Churn", value: "3%", change: "-1%", trend: "down" },
+      { label: "Videos", value: "42", change: "", trend: "flat" },
+    ]);
+    expect(problems).toEqual([]);
+  });
+
+  it("marks timeline milestones done, now and next from their task boxes", () => {
+    const { hast } = renderMarkdown(
+      ":::timeline\n- [x] March: Prototype\n- [ ] April: Demo\n- [ ] May: **Launch**\n:::",
+      ctx,
+    );
+    const steps = find(hast, "sh-milestone");
+    expect(steps.map((m) => m.properties)).toEqual([
+      { when: "March", state: "done" },
+      { when: "April", state: "now" },
+      { when: "May", state: "next" },
+    ]);
+    expect(find(steps[2], "strong")).toHaveLength(1);
+  });
+
+  it("makes link cards with an icon, a resolved title link and a description", () => {
+    const { hast, problems } = renderMarkdown(
+      ":::cards\n- ⚔️ [Combat](combat) — how fights work\n- No link here\n:::",
+      ctx,
+    );
+    const [card] = find(hast, "sh-card");
+    expect(card.properties).toEqual({ icon: "⚔️" });
+    expect(find(card, "a")[0].properties.href).toBe("/w/demo/systems/combat");
+    expect(JSON.stringify(card)).toContain("how fights work");
+    expect(JSON.stringify(card)).not.toContain("—");
+    expect(problems).toEqual(['line 1: cards: "No link here" needs a link, as "- [Title](page) — description"']);
+  });
+
+  it("collects gallery images into captioned tiles", () => {
+    const { hast } = renderMarkdown(
+      ':::gallery\n![Rat](/assets/rat.png "A thief")\n![Rat again](/assets/rat.png)\n:::',
+      ctx,
+    );
+    expect(find(hast, "sh-shot").map((s) => s.properties.caption)).toEqual(["A thief", "Rat again"]);
+    expect(find(hast, "img")[0].properties.src).toBe("/api/wikis/demo/files/assets/rat.png");
+  });
+
+  it("checks progress values", () => {
+    const { problems } = renderMarkdown(
+      ':progress[Launch]{value="60"} :progress{value="3" max="10"} :progress[Bad]',
+      ctx,
+    );
+    expect(problems).toEqual([
+      'line 1: progress: give it a number, as :progress[Label]{value="60"} (out of max="100")',
+    ]);
+  });
+
   it("builds the table of contents from h2 and h3", () => {
     const { toc } = renderMarkdown("## Attacks\n\n### Swing\n\n#### Deep\n\n## Damage", ctx);
     expect(toc).toEqual([

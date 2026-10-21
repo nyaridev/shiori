@@ -26,12 +26,14 @@ anchored to text and an agent CLI. Shiori generalizes it to many wikis. The requ
 | UI | React 19 + Vite 8, TypeScript strict | House stack (`apps/CLAUDE.md`); Radix is React-only |
 | Primitives | Radix (`radix-ui`), wrapped once in `src/ui/` | Accessible behavior with no look; the wrappers give it ours |
 | Styling | Plain CSS with design tokens (custom properties) | Themes only swap token values. Tailwind (the house default) was left out: tokens are the theming mechanism, and utility classes would duplicate them |
-| Motion | Motion for the expand transition and fades; hand-written physics for the deck | Writing the deck transforms straight to the DOM keeps the spin at frame rate with no React renders |
+| Motion | Hand-written physics for the deck; a WebGL2 shader for opening a card; Motion for small fades | Writing the deck transforms straight to the DOM keeps the spin at frame rate with no React renders. The card-open dive (radial motion blur, light streaks, a flash) runs as one full-window fragment shader, since DOM filters and copies at that size dropped frames |
 | Server | Hono on Node 25, run from TypeScript source (type stripping) | House server; no build step for server code |
 | Comments | `node:sqlite`, one `data/wiki.db` per wiki, with W3C text-quote anchors | No native module to compile on Windows; data stays with the wiki |
 | Content | Markdown + frontmatter → unified (GFM, directives) → hast on the server → React components | One renderer for every wiki, with validated custom elements |
 | Highlights | CSS Custom Highlight API | Comment highlights never touch the page DOM, so React and anchors stay simple |
 | Live updates | `fs.watch` (recursive) → server-sent events | Agent edits and CLI replies appear without reloading |
+| Search | In-memory index per wiki on the server, cut into sections at `##`/`###`, rebuilt when pages change | Every page is already rendered to hast, so indexing is cheap; nothing is written at runtime, and a few hundred pages need no FTS |
+| Scrollbars | Native ones hidden; the app draws overlay scrollbars | A scrollbar appearing or disappearing never shifts the layout's width |
 | Desktop | Tauri 2 window, no decorations; the UI draws the title bar | Same app as the browser; the window starts the Node server itself |
 
 ### Theme contract
@@ -82,12 +84,17 @@ The ideas (text-quote anchors, CLI inbox loop, directive elements) were carried 
   one CLI.
 - Harder: themes can't do anything outside the contract. That's on purpose, and the contract can grow with new
   presets.
-- Revisit: search (SQLite FTS per wiki or a shared index), code highlighting, and a JSON backup of comments (as in
-  FOUMA ADR-0006) when wikis carry important discussions.
+- Revisit: code highlighting, and a JSON backup of comments (as in FOUMA ADR-0006) when wikis carry important
+  discussions. Search may move to SQLite FTS if a wiki grows past a few thousand pages.
+- Pages carry planning metadata (`icon`, `status`, `tags`) and the app adds breadcrumbs, section cards and
+  previous/next around them, so wikis can plan any project, not only games. Planning elements: stats, timeline, cards,
+  gallery, progress.
+- Sharing wikis publicly with other people (hosting, accounts, comments from many people) changes the local-only
+  model above and needs its own ADR first.
 
 ## Action Items
 
 1. [x] Server, CLI, template, deck, wiki view, comments, `/dev/ui`, Tauri window.
-2. [ ] Search across a wiki's pages.
+2. [x] Search across a wiki's pages (Ctrl+K / "/" palette, jumps to the matching heading).
 3. [ ] Comment backups to JSON.
 4. [ ] Code highlighting (Shiki) in code blocks.
