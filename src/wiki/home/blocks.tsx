@@ -125,7 +125,7 @@ export function OpenTasksEl({ count }: Props<{ count?: string }>) {
   if (!open.length) return <Empty>Every task is done.</Empty>;
   return (
     <>
-      <ul className="sh-block-list">
+      <ul className="sh-block-list sh-block-tasks">
         {open.map((t, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: two tasks can read the same; order is stable.
           <li key={i}>

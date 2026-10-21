@@ -102,11 +102,13 @@
   white-space: nowrap;
 }
 .sh-prose .sh-block-questions > li,
+.sh-prose .sh-block-tasks > li,
 .sh-prose .sh-block-discussions > li {
   display: grid;
   gap: 2px;
 }
 .sh-block-questions .sh-block-meta,
+.sh-block-tasks .sh-block-meta,
 .sh-block-discussions .sh-block-meta {
   white-space: normal;
 }
@@ -131,6 +133,9 @@
   translate: 0 2px;
 }
 a.sh-block-page {
+  justify-self: start;
+  /* Under the task's text, past its checkbox. */
+  margin-left: calc(var(--s-2) + 16px);
   text-decoration: none;
 }
 a.sh-block-page:hover {
@@ -205,6 +210,8 @@ a.sh-block-page:hover {
   gap: var(--s-4);
   padding: var(--s-7) var(--s-5) calc(var(--s-7) + var(--s-4));
   overflow: hidden;
+  /* A blurred picture can paint past an overflow edge; this clips it for good. */
+  clip-path: inset(0);
   isolation: isolate;
   text-align: center;
 }
@@ -226,7 +233,7 @@ a.sh-block-page:hover {
   z-index: -1;
   background:
     radial-gradient(70% 60% at 50% 40%, color-mix(in oklab, var(--bg) 35%, transparent), transparent),
-    linear-gradient(180deg, color-mix(in oklab, var(--bg) 30%, transparent) 0%, var(--bg) 100%);
+    linear-gradient(180deg, color-mix(in oklab, var(--bg) 30%, transparent) 0%, var(--bg) 88%);
 }
 .sh-home-pill {
   display: inline-flex;

@@ -23,6 +23,7 @@ import {
   Textarea,
 } from "../ui/index.ts";
 import { Crumbs, pageHref, specialHref } from "../wiki/PageHead.tsx";
+import { useWikiIndex } from "../wiki/WikiIndexContext.ts";
 import { Board } from "./Board.tsx";
 import { STATUS } from "./DesignsGallery.tsx";
 import "./designs.css";
@@ -33,6 +34,7 @@ const SETTLE = 800;
 
 export function DesignPage({ wiki, collection, id }: { wiki: WikiDetail; collection: string; id: string }) {
   const meta = wiki.collections[collection];
+  const pages = useWikiIndex();
   const loaded = useResource(`design:${wiki.id}:${collection}:${id}`, () => api.design(wiki.id, collection, id));
   const [design, setDesign] = useState<DesignInfo | null>(null);
   const [problem, setProblem] = useState("");
@@ -63,7 +65,7 @@ export function DesignPage({ wiki, collection, id }: { wiki: WikiDetail; collect
   }, []);
 
   const trail = [
-    { path: "", title: "Home", isPage: true },
+    { path: "", title: "Home", icon: "home", isPage: true },
     { path: `_/designs/${collection}`, title: meta?.title ?? collection, icon: "pencil", isPage: true },
   ];
 
@@ -115,7 +117,11 @@ export function DesignPage({ wiki, collection, id }: { wiki: WikiDetail; collect
         <Callout tone="tip" title="In the wiki">
           {design.page !== null && (
             <>
-              It became <Link to={pageHref(wiki.id, design.page)}>{design.page || "the home page"}</Link>.{" "}
+              It became{" "}
+              <Link to={pageHref(wiki.id, design.page)} className="sh-link">
+                {pages?.byPath.get(design.page)?.title ?? (design.page || "the home page")}
+              </Link>
+              .{" "}
             </>
           )}
           {design.note}

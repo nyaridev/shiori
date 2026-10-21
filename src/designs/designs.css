@@ -96,11 +96,11 @@
     grid-column: 1;
   }
 }
-.sh-design-name-field {
-  width: 100%;
-  margin: 0;
+/* An editable title, lined up with the text above it: the padding and border hang out to the left. */
+.sh-page-head .sh-design-name-field {
+  width: calc(100% + var(--s-2) + var(--bw));
+  margin: 0 0 0 calc(-1 * (var(--s-2) + var(--bw)));
   padding: 2px var(--s-2);
-  margin-left: calc(-1 * var(--s-2));
   border: var(--bw) solid transparent;
   border-radius: var(--r-md);
   background: none;
@@ -299,6 +299,14 @@
   gap: var(--s-1);
   color: var(--muted);
   font-size: var(--t-sm);
+}
+
+/* Lists here are grids, also inside an article. */
+.sh-designs .sh-designs-grid,
+.sh-design-side .sh-design-pictures,
+.sh-design-block .sh-design-pictures {
+  margin: 0;
+  padding: 0;
 }
 
 @media (max-width: 960px) {

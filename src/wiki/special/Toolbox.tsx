@@ -90,11 +90,11 @@ export function Fields() {
         What a page's frontmatter (the YAML between <code>---</code> lines at its top) can set. Anything else is
         reported by <code>pnpm wiki check</code>. Quote values that contain a colon.
       </p>
-      <dl className="sh-fields">
+      <dl className="sh-fm-fields">
         {FRONTMATTER_FIELDS.map((f) => (
-          <div key={f.key} className="sh-field">
+          <div key={f.key} className="sh-fm-field">
             <dt>
-              <code className="sh-field-key">{f.key}</code>
+              <code className="sh-fm-key">{f.key}</code>
             </dt>
             <dd>
               <p className="sh-kit-text">{f.what}</p>

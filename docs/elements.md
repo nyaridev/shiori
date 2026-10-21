@@ -427,8 +427,8 @@ every front page is different.
 
 ::::boxes
 :::box[Start here]{icon="compass"}
-- :page[Plan]: goals and the roadmap
-- :page[Ideas]: everything worth trying
+- :page[Plan] — goals and the roadmap
+- :page[Ideas] — everything worth trying
 :::
 
 :::box[Recent changes]{icon="clock"}
@@ -460,7 +460,7 @@ name from Shiori's set, a picture of the wiki's own such as `/assets/icons/carro
 ```md
 ::::boxes
 :::box[Start here]{icon="compass"}
-- :page[Plan]: goals and the roadmap
+- :page[Plan] — goals and the roadmap
 :::
 :::box[Recent changes]{icon="clock"}
 ::recent-changes{count="6"}

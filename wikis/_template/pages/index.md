@@ -15,10 +15,10 @@ answers, and updates the page.
 :::
 
 :::box[Start here]{icon="compass"}
-- :page[Plan]: goals, the roadmap, and this week
-- :page[Audience & market]: who it's for
-- :page[Inspiration]: the mood board
-- :page[Ideas]: everything worth trying
+- :page[Plan] — goals, the roadmap, and this week
+- :page[Audience & market] — who it's for
+- :page[Inspiration] — the mood board
+- :page[Ideas] — everything worth trying
 :::
 
 :::box[The pitch]{icon="sparkles" span="2"}
