@@ -2,6 +2,7 @@
 import { posix } from "node:path";
 import type { Element, Root } from "hast";
 import { visit } from "unist-util-visit";
+import { ICON_NAME, iconSet } from "../icons.ts";
 import type { Found } from "./wikilinks.ts";
 
 export interface LinkContext {
@@ -72,9 +73,13 @@ export function rehypeLinks(ctx: LinkContext, problems: string[], lineOffset = 0
       }
       if (node.tagName === "img") props.src = file(node, props.src);
       if (node.tagName === "sh-infobox" && props.image) props.image = file(node, props.image);
-      // A box's icon is an emoji, or a picture drawn for the wiki.
-      if (node.tagName === "sh-box" && typeof props.icon === "string" && PICTURE.test(props.icon))
-        props.icon = file(node, props.icon);
+      // A box's icon is a name from Shiori's icon set, a picture drawn for the wiki, or an emoji.
+      if (node.tagName === "sh-box" && typeof props.icon === "string") {
+        if (ICON_NAME.test(props.icon)) {
+          if (!iconSet().has(props.icon))
+            problems.push(`${where(node)}box: "${props.icon}" isn't in Shiori's icon set`);
+        } else if (PICTURE.test(props.icon)) props.icon = file(node, props.icon);
+      }
     });
   };
 }

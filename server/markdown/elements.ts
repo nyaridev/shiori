@@ -4,6 +4,7 @@ import type { BlockContent, Image, ListItem, Node, Paragraph, Parent, PhrasingCo
 import type { ContainerDirective, LeafDirective, TextDirective } from "mdast-util-directive";
 import { SKIP, visit } from "unist-util-visit";
 import { PAGE_STATUSES } from "../../shared/schema.ts";
+import { iconSet } from "../icons.ts";
 
 type Directive = ContainerDirective | LeafDirective | TextDirective;
 
@@ -59,6 +60,8 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   children: { type: "leafDirective", tag: "sh-children", attrs: { layout: ["cards", "list"] } },
   toc: { type: "leafDirective", tag: "sh-toc", attrs: {} },
   status: { type: "textDirective", tag: "sh-status", attrs: {}, transform: checkStatus },
+  // `:icon[compass]`: one of Shiori's drawn icons, in a sentence, a table or before a card's link.
+  icon: { type: "textDirective", tag: "sh-icon", attrs: {}, transform: checkIcon },
   // `:page[Name]` becomes a page chip when wikilinks resolve it (wikilinks.ts).
   page: { type: "textDirective", tag: "sh-page", attrs: {} },
   steps: { type: "containerDirective", tag: "sh-steps", attrs: { title: null }, label: "title", transform: stepItems },
@@ -208,6 +211,13 @@ function onlyBoxes(node: Directive, problem: (message: string) => void) {
   const strays = (node.children as RootContent[]).filter((c) => !(c.type === "containerDirective" && c.name === "box"));
   if (strays.length) problem('boxes: put all content inside ":::box[Title]" blocks (and use "::::boxes" outside)');
   node.children = node.children.filter((c) => !strays.includes(c as RootContent)) as never;
+}
+
+function checkIcon(node: Directive, problem: (message: string) => void) {
+  const name = textOf(node).trim();
+  if (!iconSet().has(name)) problem(`icon: "${name}" isn't in Shiori's icon set (Toolbox → Icons lists them)`);
+  node.children = [];
+  return { name };
 }
 
 /** How many entries a home block lists: 1 to 50. */

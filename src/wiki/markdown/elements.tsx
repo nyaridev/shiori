@@ -57,7 +57,7 @@ export function WikiLink({ href, children, "data-missing": missing, "data-chip":
         data-missing={isMissing || undefined}
         title={isMissing ? "This page hasn't been written yet" : undefined}
       >
-        {chip !== undefined && <PageIcon icon={isMissing ? "🧩" : page?.icon} fallback="📄" />}
+        {chip !== undefined && <PageIcon icon={isMissing ? "puzzle" : page?.icon} fallback="page" />}
         {children}
       </Link>
     );
@@ -219,17 +219,16 @@ export const CardsEl = ({ children }: Props) => <div className="sh-cards">{child
 export function CardEl({ icon, children }: Props<{ icon?: string }>) {
   return (
     <div className="sh-card">
-      {icon && (
-        <span className="sh-card-icon" aria-hidden="true">
-          {icon}
-        </span>
-      )}
+      <PageIcon icon={icon || undefined} className="sh-card-icon" />
       {children}
     </div>
   );
 }
 
 export const CardTitleEl = ({ children }: Props) => <p className="sh-card-title">{children}</p>;
+
+/** `:icon[name]`: one of Shiori's drawn icons, inline. */
+export const IconEl = ({ name }: Props<{ name?: string }>) => <PageIcon icon={name} />;
 
 /** Inside a gallery tile, which is already the button that opens the picture. */
 const InShot = createContext(false);

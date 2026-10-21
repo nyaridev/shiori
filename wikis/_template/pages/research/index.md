@@ -1,7 +1,7 @@
 ---
 title: "Research"
 summary: "What we've learned, where it came from, and what we still need to find out."
-icon: "/assets/icons/research.svg"
+icon: magnifier
 status: active
 order: 2
 type: "Research"

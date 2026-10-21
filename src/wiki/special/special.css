@@ -254,6 +254,31 @@
   gap: var(--s-1);
   margin: 0;
 }
+.sh-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-icon-cell {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-2);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sh-icon-cell code {
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+}
+.sh-icon-big {
+  font-size: 2rem;
+}
 @media (max-width: 640px) {
   .sh-field {
     grid-template-columns: minmax(0, 1fr);

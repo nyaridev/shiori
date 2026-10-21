@@ -71,6 +71,20 @@ describe("picture icons", () => {
     );
     s.emit({ type: "pages", wiki: "alpha" });
     await new Promise((done) => setTimeout(done, 10));
-    expect((await page("plan")).problems.join("\n")).toMatch(/icon: one emoji, or a picture file/);
+    expect((await page("plan")).problems.join("\n")).toMatch(/icon: an icon's name, a picture file, or one emoji/);
+  });
+});
+
+describe("icons from Shiori's set", () => {
+  it("keep a name from the set, and report one that isn't in it", async () => {
+    writeFileSync(join(alpha(), "pages", "plan.md"), "---\ntitle: Plan\nicon: compass\n---\nx");
+    writeFileSync(join(alpha(), "pages", "odd.md"), "---\ntitle: Odd\nicon: no-such-icon\n---\nx");
+    s.emit({ type: "pages", wiki: "alpha" });
+    await new Promise((done) => setTimeout(done, 10));
+    expect((await page("plan")).icon).toBe("compass");
+    expect((await detail()).nav.find((n: NavNode) => n.path === "plan")?.icon).toBe("compass");
+    const odd = await page("odd");
+    expect(odd.icon).toBeUndefined();
+    expect(odd.problems.join("\n")).toMatch(/"no-such-icon" isn't in Shiori's icon set/);
   });
 });

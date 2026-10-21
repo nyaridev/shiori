@@ -29,7 +29,7 @@ describe("the toolbox on the owner's server", () => {
       fields: ["icon"],
     });
     const feature = list.find((k) => k.name === "feature");
-    expect(feature).toMatchObject({ source: "template", type: "Feature", icon: "✨" });
+    expect(feature).toMatchObject({ source: "template", type: "Feature", icon: "sparkles" });
     expect(feature?.sections).toContain("Goals");
     expect(list.find((k) => k.name === "place")).toMatchObject({ source: "wiki" });
     expect(JSON.stringify(list)).not.toContain(s.app.replaceAll("\\", "\\\\"));

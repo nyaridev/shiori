@@ -2,7 +2,7 @@
 kit: "A character: who they are, how they look, their story, where they show up"
 title: "{{page.title}}"
 summary: "Who {{page.title}} is, in one line."
-icon: "🧑"
+icon: person
 status: idea
 type: "Character"
 tags: [characters]

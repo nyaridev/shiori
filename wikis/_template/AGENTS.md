@@ -15,7 +15,7 @@ their content with the project's own, rename or delete what doesn't fit, and add
 | `theme.json` | Small style overrides on the app's defaults. See Theme below |
 | `cover.svg` | The deck card art, 2:3 (portrait), with the subject in the middle (card styles crop the edges). Art only, no title text: the app draws the title |
 | `pages/**/*.md` | The pages. `pages/index.md` is the home page; a folder is a sidebar section and its `index.md` is the section page |
-| `assets/` | Pictures used by pages; `assets/icons/` holds the pages' drawn icons |
+| `assets/` | Pictures used by pages; `assets/icons/` holds icons drawn for this wiki, when Shiori's set has none that fits |
 | `sync/` | Comments and answers from each PC that has this wiki, one file per PC (`pnpm wiki sync`). Commit them; never edit them |
 | `kits/` | Starting points for kinds of pages (`pnpm wiki kits`). Add your own `<name>.md` for kinds this project repeats; `{{page.title}}` and `{{page.date}}` are filled in |
 | `data/` | Written by the app: the comments database and smaller copies of pictures. Never edit or commit it |
@@ -23,8 +23,7 @@ their content with the project's own, rename or delete what doesn't fit, and add
 ## Writing pages
 
 - Frontmatter: `title`, `summary` (shown under the title and on section cards), `order` (sidebar position, lower
-  first), `hidden: true` (keeps the page out of the sidebar), `icon` (a picture drawn for the project, best an SVG in
-  `assets/icons/`: `icon: "/assets/icons/sword.svg"`; or one emoji, quoted: `icon: "🎯"`), `status`
+  first), `hidden: true` (keeps the page out of the sidebar), `icon` (see Icons below), `status`
   (`idea`, `planned`, `active`, `paused`, `done`, `archived`), `tags` (`tags: [research, audience]`; each tag is a
   category with its own page) and `type` (what kind of page it is, in the project's words: `"Feature"`, `"Product"`,
   `"Video"`). Quote values that contain `:`.
@@ -60,6 +59,14 @@ their content with the project's own, rename or delete what doesn't fit, and add
   then the body. Build the body as a portal, like a wiki's main page: `::::boxes` of titled `:::box`es, with the
   live blocks (`::recent-changes`, `::open-questions`, `::discussions`, `::open-tasks`, `::directory`) and the
   project's own links and text. Pick what fits this project, so its home is its own.
+- **Icons.** Every page gets an icon, and the same thing always gets the same one:
+  1. Pick from Shiori's drawn set by name: `icon: compass`. Toolbox → Icons (`/w/{{id}}/_/icons`) shows them all;
+     `:icon[name]` puts one in text, tables and cards, and a box takes `icon="name"`.
+  2. Only when nothing in the set fits, draw one for this wiki: an SVG on a 24 px grid, flat shapes in a few colours
+     that read on light and dark (`viewBox="0 0 24 24"`, no text, no scripts), saved in `assets/icons/<thing>.svg`
+     and named `icon: "/assets/icons/<thing>.svg"`. Look in `assets/icons/` first: reuse the wiki's own before
+     drawing another.
+  3. Never an emoji, unless the owner asks for one.
 - Don't repeat the title as a `#` heading; start the body with text or `##` sections. `##` and `###` build the
   table of contents.
 - Links: write wikilinks. `[[Goals]]` finds a page by path, file name or title, from anywhere; `[[plan/goals|our
@@ -93,7 +100,7 @@ Toolbox → Elements (`/w/{{id}}/_/elements`), and at `/dev/ui`.
 | Key | `:kbd[E]` |
 | Stats | `:::stats` with `- Label: value \| +8% change` lines (number tiles) |
 | Timeline | `:::timeline` with `- [x] When: what` lines; ticked is done, the first open one is "now" |
-| Cards | `:::cards` with `- 🎯 [Title](page) — description` lines (a grid of links) |
+| Cards | `:::cards` with `- :icon[target] [Title](page) — description` lines (a grid of links) |
 | Gallery | `:::gallery` with one `![Caption](/assets/x.png "caption")` per line (opens in the image viewer) |
 | Progress | `:progress[Label]{value="60"}`, or `{value="3" max="8"}`; works in tables |
 | Question | `::question{id=q1}` places a question from the frontmatter's `questions:` |
@@ -102,11 +109,12 @@ Toolbox → Elements (`/w/{{id}}/_/elements`), and at `/dev/ui`.
 | Contents | `::toc` puts a numbered contents box in the article |
 | Status | `:status[active]`: an inline status pill (idea, planned, active, paused, done, archived) |
 | Page chip | `:page[Goals]`: a page mentioned as a chip with its icon, found like a wikilink |
+| Icon | `:icon[compass]`: one of Shiori's drawn icons, inline (Toolbox → Icons lists them) |
 | Steps | `:::steps[Title]` around a numbered list; `1. Step title: what to do` |
 | Compare | `:::compare{pick="Option"}` with a `### Option` heading each and `- Pro:` / `- Con:` / `- Label:` lines |
 | Quote | `:::quote{by="Sam" role="…" source="…" url="…"}` around what they said |
 | Embed | `::embed[Caption]{url="https://www.youtube.com/watch?v=…"}`: YouTube, Vimeo or Figma only; quote the URL |
-| Boxes | `::::boxes` (`{columns="2\|3\|4"}`) around `:::box[Title]{icon="/assets/icons/x.svg" span="2"}` blocks: a portal grid of titled boxes |
+| Boxes | `::::boxes` (`{columns="2\|3\|4"}`) around `:::box[Title]{icon="compass" span="2"}` blocks: a portal grid of titled boxes |
 | Recent changes | `::recent-changes{count="6"}`: the pages edited last |
 | Open questions | `::open-questions{count="5"}`: open decisions across the wiki |
 | Discussions | `::discussions{count="5"}`: the latest open comment threads |

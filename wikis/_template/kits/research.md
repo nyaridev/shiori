@@ -2,7 +2,7 @@
 kit: "A research note: the question, sources, what we found, what it means for us"
 title: "{{page.title}}"
 summary: "What we learned about {{page.title}}."
-icon: "🔎"
+icon: magnifier
 status: active
 type: "Research"
 tags: [research]

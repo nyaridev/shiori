@@ -7,6 +7,7 @@ import { ago } from "../../lib/time.ts";
 import { Badge, Button, IconButton, Textarea } from "../../ui/index.ts";
 import { usePage } from "../PageContext.ts";
 import "./questions.css";
+import { PageIcon } from "../PageIcon.tsx";
 
 export function QuestionCard({ question }: { question: Question }) {
   const ctx = usePage();
@@ -34,7 +35,10 @@ export function QuestionCard({ question }: { question: Question }) {
   return (
     <section className="sh-question" id={`question-${question.id}`} data-decided={decided || undefined}>
       <header className="sh-question-head">
-        <span className="sh-question-kicker">{decided ? "✅ Decided" : "❓ Question"}</span>
+        <span className="sh-question-kicker">
+          <PageIcon icon={decided ? "checklist" : "question"} className="sh-icon-gap" />
+          {decided ? "Decided" : "Question"}
+        </span>
         {!decided && answers.length > 0 && (
           <Badge tone="accent">
             {answers.length} answer{answers.length === 1 ? "" : "s"}

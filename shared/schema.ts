@@ -35,14 +35,17 @@ export const frontmatterSchema = z.looseObject({
   /** Hidden pages render but stay out of the sidebar. */
   hidden: z.boolean().optional(),
   /**
-   * Shown before the title in the page head, the sidebar and on cards: one emoji, or a picture in the wiki
-   * (`/assets/icons/sword.svg`), drawn for the project.
+   * Shown before the title in the page head, the sidebar and on cards: a name from Shiori's icon set (`compass`), a
+   * picture drawn for this wiki (`/assets/icons/sword.svg`), or one emoji.
    */
   icon: z
     .string()
     .min(1)
     .max(200)
-    .refine((v) => [...v].length <= 16 || /\.(svg|png|webp|gif|avif|jpe?g)$/i.test(v), "one emoji, or a picture file")
+    .refine(
+      (v) => [...v].length <= 16 || /^[a-z][a-z0-9-]{0,39}$/.test(v) || /\.(svg|png|webp|gif|avif|jpe?g)$/i.test(v),
+      "an icon's name, a picture file, or one emoji",
+    )
     .optional(),
   status: z.enum(PAGE_STATUSES).optional(),
   tags: z.array(z.string().min(1)).optional(),
@@ -95,8 +98,8 @@ export const FRONTMATTER_FIELDS: { key: keyof Frontmatter; what: string; example
   },
   {
     key: "icon",
-    what: "Before the title, in the sidebar and on cards: one emoji, or a picture drawn for the project (SVG best). Quote it.",
-    example: 'icon: "/assets/icons/sword.svg"',
+    what: "Before the title, in the sidebar and on cards: a name from Shiori's icon set (Toolbox → Icons), else a picture drawn for this wiki in assets/icons/.",
+    example: "icon: compass",
   },
   { key: "order", what: "Position in the sidebar among its siblings; lower comes first.", example: "order: 2" },
   { key: "hidden", what: "Renders the page but keeps it out of the sidebar.", example: "hidden: true" },

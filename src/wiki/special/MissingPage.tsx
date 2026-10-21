@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import type { WikiIndex } from "../../../shared/api.ts";
 import { PageChip } from "../PageFoot.tsx";
 import { pageHref, specialHref } from "../PageHead.tsx";
+import { PageIcon } from "../PageIcon.tsx";
 
 export function MissingPage({ wikiId, path, index }: { wikiId: string; path: string; index?: WikiIndex }) {
   const wanted = index?.wanted.find((w) => w.path === path);
@@ -16,9 +17,7 @@ export function MissingPage({ wikiId, path, index }: { wikiId: string; path: str
       <header className="sh-page-head">
         <p className="sh-special-kicker">Not written yet</p>
         <h1 className="sh-page-title">
-          <span className="sh-page-icon" aria-hidden="true">
-            🧩
-          </span>
+          <PageIcon icon="puzzle" className="sh-page-icon" />
           {title}
         </h1>
         <p className="sh-page-summary">

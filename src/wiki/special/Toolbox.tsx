@@ -3,12 +3,14 @@
 import { Link } from "react-router";
 import type { WikiDetail } from "../../../shared/api.ts";
 import { FRONTMATTER_FIELDS } from "../../../shared/schema.ts";
+import { ICONS } from "../../icons/index.ts";
 import { api } from "../../lib/api.ts";
 import { useResource } from "../../lib/useResource.ts";
 import { Badge } from "../../ui/index.ts";
 import { CodeBlock } from "../markdown/code.tsx";
 import { Markdown } from "../markdown/Markdown.tsx";
 import { specialHref } from "../PageHead.tsx";
+import { PageIcon } from "../PageIcon.tsx";
 import { SPECIALS } from "./specials.ts";
 
 /** A command or a snippet, with the code block's copy button. */
@@ -37,9 +39,7 @@ export function Kits({ wiki }: { wiki: WikiDetail }) {
         {kits.data.map((k) => (
           <article key={k.name} className="sh-kit">
             <header className="sh-kit-head">
-              <span className="sh-kit-icon" aria-hidden="true">
-                {k.icon ?? "📄"}
-              </span>
+              <PageIcon icon={k.icon} fallback="page" className="sh-kit-icon" />
               <h2 className="sh-kit-name">{k.type ?? k.name}</h2>
               {k.source === "wiki" && <Badge tone="accent">This wiki's own</Badge>}
             </header>
@@ -107,13 +107,35 @@ export function Fields() {
   );
 }
 
+/** Shiori's icon set: what a page's `icon` names before a wiki draws its own. */
+export function Icons() {
+  const names = Object.keys(ICONS).sort();
+  return (
+    <>
+      <p className="sh-toolbox-intro">
+        Drawn icons every wiki can use. A page picks one by name in its frontmatter (<code>icon: compass</code>), and
+        the sidebar, cards and links show it. Use one of these whenever it fits, so the same thing has the same icon
+        everywhere; only when none does, draw one for the wiki in <code>assets/icons/</code> and reuse it.
+      </p>
+      <ul className="sh-icon-grid">
+        {names.map((name) => (
+          <li key={name} className="sh-icon-cell">
+            <PageIcon icon={name} className="sh-icon-big" />
+            <code>{name}</code>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
 export function Specials({ wikiId }: { wikiId: string }) {
   return (
     <ul className="sh-special-list">
       {SPECIALS.map((s) => (
         <li key={s.route} className="sh-special-row">
           <Link to={specialHref(wikiId, s.route)} className="sh-special-link">
-            <span aria-hidden="true">{s.icon}</span>
+            <PageIcon icon={s.icon} />
             {s.title}
           </Link>
           <span className="sh-special-summary">{s.summary}</span>

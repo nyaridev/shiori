@@ -4,6 +4,7 @@ import { join, posix } from "node:path";
 import { visit } from "unist-util-visit";
 import type { NavNode, PageData, PageLink } from "../shared/api.ts";
 import { type Frontmatter, frontmatterSchema, issues, type PageStatus } from "../shared/schema.ts";
+import { ICON_NAME, iconSet } from "./icons.ts";
 import { splitFrontmatter } from "./markdown/frontmatter.ts";
 import { fileUrl, type LinkContext, resolveFile } from "./markdown/links.ts";
 import { renderMarkdown } from "./markdown/render.ts";
@@ -40,10 +41,16 @@ function walk(dir: string, base: string, out: string[]) {
 export const isIconFile = (icon: string) => /\.(svg|png|webp|gif|avif|jpe?g)$/i.test(icon);
 
 /**
- * A page's icon as the app shows it: an emoji as written, a picture as its URL (from the root with a leading `/`, else
- * from the page's folder, like images). A picture that isn't there is reported and shows no icon.
+ * A page's icon as the app shows it: a name from Shiori's icon set as that icon's URL, a picture of the wiki's own as
+ * its URL (from the root with a leading `/`, else from the page's folder, like images), an emoji as written. A name
+ * that isn't in the set or a picture that isn't there is reported and shows no icon.
  */
 function iconOf(wiki: Wiki, pageDir: string, raw: string | undefined, problems?: string[]): string | undefined {
+  if (raw && ICON_NAME.test(raw)) {
+    if (iconSet().has(raw)) return raw;
+    problems?.push(`frontmatter: icon: "${raw}" isn't in Shiori's icon set (Toolbox → Icons lists them)`);
+    return undefined;
+  }
   if (!raw || !isIconFile(raw)) return raw;
   if (/^([a-z][a-z0-9+.-]*:|\/\/)/i.test(raw)) {
     problems?.push(`frontmatter: icon: "${raw}" must be a picture in the wiki, not a link`);

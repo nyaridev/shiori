@@ -1,7 +1,7 @@
 ---
 title: "Audience & market"
 summary: "Who it's for, where they are, and what they use today."
-icon: "/assets/icons/audience.svg"
+icon: people
 status: active
 order: 1
 tags: [research, audience]

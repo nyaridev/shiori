@@ -1,7 +1,7 @@
 ---
 title: "Decision log"
 summary: "What we decided, why, and what we gave up."
-icon: "/assets/icons/decisions.svg"
+icon: signpost
 status: active
 order: 1
 tags: [notes]

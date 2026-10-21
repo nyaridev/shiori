@@ -9,7 +9,7 @@ import { PageCard, PageChip } from "../PageFoot.tsx";
 import { Crumbs, pageHref, specialHref } from "../PageHead.tsx";
 import { StatusBadge } from "../StatusBadge.tsx";
 import { SPECIALS } from "./specials.ts";
-import { Elements, Fields, Kits, Specials } from "./Toolbox.tsx";
+import { Elements, Fields, Icons, Kits, Specials } from "./Toolbox.tsx";
 import "./special.css";
 import { PageIcon } from "../PageIcon.tsx";
 
@@ -29,7 +29,7 @@ function Row({ wikiId, page, lead }: { wikiId: string; page: PageEntry; lead?: R
     <li className="sh-special-row">
       {lead}
       <Link to={pageHref(wikiId, page.path)} className="sh-special-link">
-        <PageIcon icon={page.icon} fallback="📄" />
+        <PageIcon icon={page.icon} fallback="page" />
         {page.title}
       </Link>
       {page.type && <span className="sh-page-type">{page.type}</span>}
@@ -172,7 +172,7 @@ function Tasks({ wikiId, tasks }: { wikiId: string; tasks: TaskEntry[] }) {
           <section key={path} className="sh-special-group">
             <h2 className="sh-special-heading sh-tasks-heading">
               <Link to={pageHref(wikiId, path)} className="sh-special-link">
-                <PageIcon icon={page.icon} fallback="📄" />
+                <PageIcon icon={page.icon} fallback="page" />
                 {page.title}
               </Link>
               <span
@@ -247,7 +247,7 @@ function Questions({ wikiId, questions }: { wikiId: string; questions: QuestionE
                     </span>
                   )}
                   <span className="sh-special-summary">
-                    <PageIcon icon={q.page.icon} fallback="📄" className="sh-icon-gap" />
+                    <PageIcon icon={q.page.icon} fallback="page" className="sh-icon-gap" />
                     {q.page.title}
                     {q.options.length > 0 && ` · ${q.options.join(" / ")}`}
                   </span>
@@ -292,7 +292,7 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
   if (name === "categories" && arg) {
     const inside = pages.filter((p) => p.tags.includes(arg));
     head = {
-      icon: "🏷️",
+      icon: "tag",
       title: `Category: ${arg}`,
       summary: `${inside.length} page${inside.length === 1 ? "" : "s"} tagged “${arg}”.`,
     };
@@ -316,6 +316,8 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
         <Elements wiki={wiki} />
       ) : name === "fields" ? (
         <Fields />
+      ) : name === "icons" ? (
+        <Icons />
       ) : name === "special" ? (
         <Specials wikiId={wiki.id} />
       ) : (
@@ -335,7 +337,7 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
   const home = index?.pages.find((p) => p.path === "");
   const trail = [
     { path: "", title: home?.title ?? wiki.title, icon: home?.icon, isPage: true },
-    ...(arg ? [{ path: "_/categories", title: "Categories", icon: "🏷️", isPage: true }] : []),
+    ...(arg ? [{ path: "_/categories", title: "Categories", icon: "tag", isPage: true }] : []),
   ];
   return (
     <main className="sh-wiki-main sh-special" data-path={`_/${route}`}>

@@ -2,7 +2,7 @@
 kit: "An item: what it does, its numbers, how to get it"
 title: "{{page.title}}"
 summary: "What {{page.title}} does, in one line."
-icon: "🗡️"
+icon: sword
 status: idea
 type: "Item"
 tags: [items]

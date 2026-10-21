@@ -151,7 +151,7 @@ export function SearchPalette({
                   onMouseMove={() => setActive(i)}
                   onClick={() => go(hit)}
                 >
-                  <PageIcon icon={hit.icon} fallback="📄" className="sh-search-icon" />
+                  <PageIcon icon={hit.icon} fallback="page" className="sh-search-icon" />
                   <span className="sh-search-body">
                     <span className="sh-search-title">
                       <Marked text={hit.title} marks={hit.titleMarks} />

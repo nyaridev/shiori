@@ -19,7 +19,7 @@ export function PageCard({ wikiId, page }: { wikiId: string; page: PageLink }) {
   const body = (
     <>
       <span className="sh-section-top">
-        <PageIcon icon={page.icon} fallback={page.isPage ? "📄" : "📁"} className="sh-section-icon" />
+        <PageIcon icon={page.icon} fallback={page.isPage ? "page" : "folder"} className="sh-section-icon" />
         {page.status && <StatusBadge status={page.status} />}
       </span>
       <span className="sh-section-name">{page.title}</span>
@@ -62,7 +62,7 @@ export function PageChip({ wikiId, page }: { wikiId: string; page: PageLink }) {
       data-missing={page.isPage ? undefined : ""}
       title={page.isPage ? undefined : "This page hasn't been written yet"}
     >
-      <PageIcon icon={page.isPage ? page.icon : "🧩"} fallback="📄" />
+      <PageIcon icon={page.isPage ? page.icon : "puzzle"} fallback="page" />
       {page.title}
     </Link>
   );
@@ -86,7 +86,7 @@ function RecentlyUpdated({ wikiId, index }: { wikiId: string; index: PageEntry[]
         {recent.map((p) => (
           <li key={p.path}>
             <Link to={pageHref(wikiId, p.path)}>
-              <PageIcon icon={p.icon} fallback="📄" />
+              <PageIcon icon={p.icon} fallback="page" />
               <span className="sh-recent-title">{p.title}</span>
               {p.summary && <span className="sh-recent-summary">{p.summary}</span>}
             </Link>

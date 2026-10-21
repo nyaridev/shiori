@@ -1,7 +1,7 @@
 ---
 title: "Ideas"
 summary: "The backlog of everything worth trying, before it's in the plan."
-icon: "/assets/icons/ideas.svg"
+icon: bulb
 status: idea
 order: 2
 tags: [notes]

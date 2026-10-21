@@ -2,7 +2,7 @@
 kit: "A place: a level, area, store or channel, what's there and how it connects"
 title: "{{page.title}}"
 summary: "What {{page.title}} is and what happens there."
-icon: "🗺️"
+icon: pin
 status: idea
 type: "Place"
 tags: [places]

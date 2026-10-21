@@ -65,3 +65,20 @@ describe("home elements", () => {
     }
   });
 });
+
+describe("Shiori's icons", () => {
+  it("name an icon of the set in a box or inline, and report a name that isn't in it", () => {
+    const { hast, problems } = render(
+      '::::boxes\n:::box[Plan]{icon="compass"}\n:icon[target] Goals\n:::\n::::\n\n:icon[nothing-here]\n\n:::box[x]{icon="nope"}\n:::',
+    );
+    expect(find(hast, "sh-box")[0].properties).toEqual({ title: "Plan", icon: "compass" });
+    expect(find(hast, "sh-icon").map((i) => i.properties)).toEqual([{ name: "target" }, { name: "nothing-here" }]);
+    expect(problems.join("\n")).toMatch(/icon: "nothing-here" isn't in Shiori's icon set/);
+  });
+
+  it("give a card the icon before its link", () => {
+    const { hast, problems } = render(":::cards\n- :icon[map] [Roadmap](https://example.com) — Dates\n:::");
+    expect(problems).toEqual([]);
+    expect(find(hast, "sh-card")[0].properties).toEqual({ icon: "map" });
+  });
+});

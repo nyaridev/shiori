@@ -55,7 +55,8 @@ function Meta({ page, wiki }: { page: PageData; wiki: WikiDetail }) {
       ))}
       {open > 0 && (
         <a href={page.placed.questions.length ? `#question-${firstOpen}` : "#questions"} className="sh-page-questions">
-          ❓ {open} open question{open === 1 ? "" : "s"}
+          <PageIcon icon="question" className="sh-icon-gap" />
+          {open} open question{open === 1 ? "" : "s"}
         </a>
       )}
       {page.updatedAt && (

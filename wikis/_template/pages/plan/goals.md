@@ -1,7 +1,7 @@
 ---
 title: "Goals"
 summary: "What success means, in numbers we can check."
-icon: "/assets/icons/goals.svg"
+icon: target
 status: active
 order: 1
 type: "Plan"

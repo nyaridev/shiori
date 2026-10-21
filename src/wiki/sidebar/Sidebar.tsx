@@ -47,14 +47,14 @@ export function Sidebar({
       <ul className="sh-nav sh-nav-pinned">
         <li>
           <NavLink to={pageHref(wiki.id, "")} end className="sh-nav-link" onClick={onNavigate}>
-            <Icon name="home" size={15} />
+            <PageIcon icon="home" className="sh-nav-icon" />
             Home
           </NavLink>
         </li>
         {wiki.pinned.map((p) => (
           <li key={p.path}>
             <NavLink to={pageHref(wiki.id, p.path)} end className="sh-nav-link" onClick={onNavigate}>
-              <PageIcon icon={p.icon} fallback="📄" className="sh-nav-icon" />
+              <PageIcon icon={p.icon} fallback="page" className="sh-nav-icon" />
               {p.title}
             </NavLink>
           </li>
@@ -65,7 +65,7 @@ export function Sidebar({
           {recent.map((p) => (
             <li key={p.path}>
               <NavLink to={pageHref(wiki.id, p.path)} end className="sh-nav-link" onClick={onNavigate}>
-                <PageIcon icon={p.icon} fallback="📄" className="sh-nav-icon" />
+                <PageIcon icon={p.icon} fallback="page" className="sh-nav-icon" />
                 {p.title}
               </NavLink>
             </li>
@@ -90,9 +90,7 @@ export function Sidebar({
             {items.map((s) => (
               <li key={s.route}>
                 <NavLink to={`/w/${wiki.id}/_/${s.route}`} className="sh-nav-link" onClick={onNavigate}>
-                  <span className="sh-nav-icon" aria-hidden="true">
-                    {s.icon}
-                  </span>
+                  <PageIcon icon={s.icon} className="sh-nav-icon" />
                   {s.title}
                 </NavLink>
               </li>

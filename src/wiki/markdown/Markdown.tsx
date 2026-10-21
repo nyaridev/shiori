@@ -35,6 +35,7 @@ const components = {
   "sh-cards": el.CardsEl,
   "sh-card": el.CardEl,
   "sh-card-title": el.CardTitleEl,
+  "sh-icon": el.IconEl,
   "sh-gallery": el.GalleryEl,
   "sh-shot": el.ShotEl,
   "sh-progress": el.ProgressEl,

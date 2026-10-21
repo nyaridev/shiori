@@ -2,7 +2,7 @@
 kit: "A feature, product or part of the project: what it is, why, how it works, what's open"
 title: "{{page.title}}"
 summary: "One line: what {{page.title}} is and who it's for."
-icon: "✨"
+icon: sparkles
 status: idea
 type: "Feature"
 tags: [features]

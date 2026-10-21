@@ -2,7 +2,7 @@
 kit: "A decision: the question, the options side by side, what we chose and why"
 title: "{{page.title}}"
 summary: "What we decided about {{page.title}}, and why."
-icon: "⚖️"
+icon: scales
 status: active
 type: "Decision"
 tags: [decisions]

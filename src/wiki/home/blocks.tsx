@@ -68,7 +68,7 @@ export function RecentChangesEl({ count }: Props<{ count?: string }>) {
         {pages.map((p) => (
           <li key={p.path}>
             <Link to={pageHref(wiki.wikiId, p.path)} className="sh-block-link">
-              <PageIcon icon={p.icon} fallback="📄" />
+              <PageIcon icon={p.icon} fallback="page" />
               <span className="sh-block-name">{p.title}</span>
             </Link>
             {p.updatedAt && (
@@ -104,7 +104,7 @@ export function OpenQuestionsEl({ count }: Props<{ count?: string }>) {
               <span className="sh-block-name">{q.text}</span>
             </Link>
             <span className="sh-block-meta">
-              <PageIcon icon={q.page.icon} fallback="📄" className="sh-icon-gap" />
+              <PageIcon icon={q.page.icon} fallback="page" className="sh-icon-gap" />
               {q.page.title} · {q.answers} answer{q.answers === 1 ? "" : "s"}
             </span>
           </li>
@@ -136,7 +136,7 @@ export function OpenTasksEl({ count }: Props<{ count?: string }>) {
               to={`${pageHref(wiki.wikiId, t.page.path)}${t.section ? `#${t.section.id}` : ""}`}
               className="sh-block-meta sh-block-page"
             >
-              <PageIcon icon={t.page.icon} fallback="📄" className="sh-icon-gap" />
+              <PageIcon icon={t.page.icon} fallback="page" className="sh-icon-gap" />
               {t.page.title}
             </Link>
           </li>
@@ -226,7 +226,7 @@ export function DirectoryEl() {
                 .map((p) => (
                   <li key={p.path}>
                     <Link to={pageHref(wiki.wikiId, p.path)} className="sh-block-link">
-                      <PageIcon icon={p.icon} fallback="📄" />
+                      <PageIcon icon={p.icon} fallback="page" />
                       <span className="sh-block-name">{p.title}</span>
                     </Link>
                   </li>

@@ -6,11 +6,18 @@ import { join } from "node:path";
 import type { KitInfo, PageData } from "../shared/api.ts";
 import { listKits } from "./kits.ts";
 import { splitFrontmatter } from "./markdown/frontmatter.ts";
-import type { LinkContext } from "./markdown/links.ts";
+import { fileUrl, type LinkContext, resolveFile } from "./markdown/links.ts";
 import { renderMarkdown } from "./markdown/render.ts";
-import { type PageFile, pageFinder } from "./pages.ts";
+import { isIconFile, type PageFile, pageFinder } from "./pages.ts";
 import type { Wiki } from "./registry.ts";
 import { templateDir } from "./template.ts";
+
+/** A kit's icon as the app shows it: a name from the set or an emoji as written, the wiki's own picture as its URL. */
+function kitIcon(wiki: Wiki, raw: string | undefined): string | undefined {
+  if (!raw || !isIconFile(raw)) return raw;
+  const rel = resolveFile("", raw);
+  return rel === null ? undefined : fileUrl(wiki.id, rel);
+}
 
 /** The kits a wiki can use, as the toolbox shows them. */
 export function kitsOf(wiki: Wiki, appRoot: string): KitInfo[] {
@@ -26,7 +33,7 @@ export function kitsOf(wiki: Wiki, appRoot: string): KitInfo[] {
       name: kit.name,
       description: kit.description,
       source: copied ? "template" : kit.source,
-      icon: word(data.icon),
+      icon: kitIcon(wiki, word(data.icon)),
       type: word(data.type),
       sections: [...split.body.matchAll(/^## +(.+)$/gm)].map((m) => m[1].trim().replaceAll("{{page.title}}", "…")),
       fields: Object.keys(data).filter((k) => k !== "kit"),

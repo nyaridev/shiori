@@ -344,17 +344,30 @@ box are plain entries (a history, a changelog).
 ## Cards
 
 :::cards
-- 🎯 [Goals](https://example.com) — What we're aiming for, and how we'll know.
-- 🗺️ [Roadmap](https://example.com) — Milestones and dates.
-- 🔎 [Research](https://example.com) — Sources, notes and findings.
+- :icon[target] [Goals](https://example.com) — What we're aiming for, and how we'll know.
+- :icon[map] [Roadmap](https://example.com) — Milestones and dates.
+- :icon[magnifier] [Research](https://example.com) — Sources, notes and findings.
 :::
 
-A grid of links, for hub pages. Start an item with an emoji for its icon, then the link, then a short description.
+A grid of links, for hub pages. Start an item with its icon (`:icon[name]` from Shiori's set, or an emoji), then
+the link, then a short description.
 
 ```md
 :::cards
-- 🎯 [Goals](plan/goals) — What we're aiming for.
+- :icon[target] [Goals](plan/goals) — What we're aiming for.
 :::
+```
+
+## Icons
+
+Shiori draws its own icons, and every wiki can use them by name: :icon[compass] `compass`, :icon[target] `target`,
+:icon[map] `map`, :icon[bulb] `bulb`, :icon[sword] `sword`, :icon[pin] `pin`. Toolbox → Icons shows them all. A
+page names one in its frontmatter (`icon: compass`); `:icon[name]` puts one in a sentence, a table or a card. Use
+the set first, so the same thing has the same icon everywhere; only when nothing fits, draw one for the wiki in
+`assets/icons/` (`icon: "/assets/icons/carrot.svg"`) and reuse it.
+
+```md
+:icon[compass] The plan
 ```
 
 ## Gallery
@@ -401,42 +414,43 @@ with the project's own links and text and with blocks that show the whole wiki l
 every front page is different.
 
 ::::boxes
-:::box[Start here]{icon="🧭"}
+:::box[Start here]{icon="compass"}
 - :page[Plan]: goals and the roadmap
 - :page[Ideas]: everything worth trying
 :::
 
-:::box[Recent changes]{icon="🕘"}
+:::box[Recent changes]{icon="clock"}
 ::recent-changes{count="4"}
 :::
 
-:::box[Open questions]{icon="❓"}
+:::box[Open questions]{icon="question"}
 ::open-questions{count="3"}
 :::
 
-:::box[Latest discussions]{icon="💬" span="2"}
+:::box[Latest discussions]{icon="people" span="2"}
 ::discussions{count="3"}
 :::
 
-:::box[To do]{icon="✅"}
+:::box[To do]{icon="checklist"}
 ::open-tasks{count="4"}
 :::
 
-:::box[Everything in this wiki]{icon="📚" span="3"}
+:::box[Everything in this wiki]{icon="books" span="3"}
 ::directory
 :::
 ::::
 
-`::::boxes` takes `columns` (2, 3 or 4; 3 by default) and holds only `:::box`es. A box has a title, an `icon` (an
-emoji, or a picture such as `/assets/icons/map.svg`) and can `span` 2 or 3 columns. The blocks take a `count` (1 to
+`::::boxes` takes `columns` (2, 3 or 4; 3 by default) and holds only `:::box`es. A box has a title, an `icon` (a
+name from Shiori's set, a picture of the wiki's own such as `/assets/icons/carrot.svg`, or an emoji) and can `span`
+2 or 3 columns. The blocks take a `count` (1 to
 50) and link to the special page with the whole list.
 
 ```md
 ::::boxes
-:::box[Start here]{icon="/assets/icons/plan.svg"}
+:::box[Start here]{icon="compass"}
 - :page[Plan]: goals and the roadmap
 :::
-:::box[Recent changes]{icon="🕘"}
+:::box[Recent changes]{icon="clock"}
 ::recent-changes{count="6"}
 :::
 :::box[Open questions]
