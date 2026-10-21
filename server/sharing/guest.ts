@@ -306,7 +306,7 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
   api.get("/wikis/:id/files/*", async (c) => {
     const w = c.get("wiki");
     const res = await serveFile(c, w.root, c.req.path.slice(c.req.path.indexOf("/files/") + "/files/".length));
-    if (res.status === 200) res.headers.set("cache-control", "private, max-age=300");
+    if (res.status === 200 || res.status === 304) res.headers.set("cache-control", "private, no-cache");
     return res;
   });
 

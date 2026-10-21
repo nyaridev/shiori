@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import { isAbsolute, relative, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { isAbsolute, join, relative, resolve } from "node:path";
 
 /** The app repo: wikis/, wikis.local.json, dist/, docs/. */
 export const APP_ROOT = resolve(import.meta.dirname, "..");
@@ -18,6 +18,21 @@ export function readJson(file: string): { value: unknown; error: string | null }
   } catch (e) {
     return { value: undefined, error: (e as Error).message };
   }
+}
+
+/**
+ * A wiki's `data/` folder, the only place the app writes at runtime (the comment database, cached pictures). Made
+ * with a `.gitignore` of `*`, so nothing in it is committed by accident in a wiki that has its own git.
+ */
+export function dataDir(root: string, ...sub: string[]): string {
+  const data = join(root, "data");
+  if (!existsSync(data)) {
+    mkdirSync(data, { recursive: true });
+    writeFileSync(join(data, ".gitignore"), "*\n");
+  }
+  const dir = join(data, ...sub);
+  if (sub.length) mkdirSync(dir, { recursive: true });
+  return dir;
 }
 
 /** Forward slashes, as the workspace writes paths in files. */

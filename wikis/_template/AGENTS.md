@@ -16,7 +16,7 @@ their content with the project's own, rename or delete what doesn't fit, and add
 | `cover.svg` | The deck card art, 2:3 (portrait), with the subject in the middle (card styles crop the edges). Art only, no title text: the app draws the title |
 | `pages/**/*.md` | The pages. `pages/index.md` is the home page; a folder is a sidebar section and its `index.md` is the section page |
 | `assets/` | Images and media used by pages |
-| `data/` | Comments database, written by the app. Never edit or commit it |
+| `data/` | Written by the app: the comments database and smaller copies of pictures. Never edit or commit it |
 
 ## Writing pages
 
@@ -56,7 +56,9 @@ their content with the project's own, rename or delete what doesn't fit, and add
   (Special:Wanted pages lists them). If `pnpm wiki check` says a name matches several pages, write its path.
   Markdown links also work: `[Combat](combat)` is relative to the page's folder, `[Combat](/systems/combat)` starts
   at `pages/`; no `.md` needed.
-- Images go in `assets/` and are linked from the root: `![Map](/assets/map.png)`. Give each a caption (the alt
+- Images go in `assets/` and are linked from the root: `![Map](/assets/map.png)`. Only pictures (PNG, JPEG, WebP,
+  GIF, AVIF, SVG) of at most 15 MB: no videos or sounds (put videos on YouTube or Vimeo and use `::embed`). The app
+  shows smaller WebP copies, so add pictures at full size. Give each a caption (the alt
   text or a title) and the page an `image`: every picture opens in the image viewer, which steps through the whole
   wiki's pictures page by page, in sidebar order.
 - Code: fence it with its language (```` ```ts ````, `luau`, `gdscript`, `bash`, `powershell`…) and it's colored

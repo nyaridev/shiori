@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { ImageGroup, PageImage } from "../../../shared/api.ts";
 import { api } from "../../lib/api.ts";
-import { withBase } from "../../lib/base.ts";
+import { picture } from "../../lib/base.ts";
 import { useLive } from "../../lib/live.ts";
 import { useResource } from "../../lib/useResource.ts";
 import { Dialog, DialogContent, IconButton } from "../../ui/index.ts";
@@ -89,7 +89,7 @@ export function ImageViewer({
         {shown && (
           <div className="sh-viewer">
             <div className="sh-viewer-stage">
-              <img key={shown.src} src={withBase(shown.src)} alt={shown.caption ?? ""} />
+              <img key={shown.src} src={picture(shown.src, 2400)} alt={shown.caption ?? ""} />
               {flat.length > 1 && (
                 <>
                   <IconButton
@@ -158,7 +158,7 @@ export function ImageViewer({
                               aria-label={img.caption ?? `${g.page.title}, picture ${ii + 1}`}
                               onClick={() => setCurrent({ src: img.src, page: g.page.path })}
                             >
-                              <img src={withBase(img.src)} alt="" loading="lazy" />
+                              <img src={picture(img.src, 160)} alt="" loading="lazy" />
                             </button>
                           );
                         })}

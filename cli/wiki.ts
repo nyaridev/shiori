@@ -5,6 +5,7 @@ import { parseArgs } from "node:util";
 import { listAnswers } from "../server/answers.ts";
 import { importData, readBackup, writeBackup } from "../server/backup.ts";
 import { buildCorpus } from "../server/corpus.ts";
+import { mediaProblems } from "../server/files.ts";
 import { listPages, renderPage } from "../server/pages.ts";
 import { APP_ROOT, slashes } from "../server/paths.ts";
 import { discover, loadWiki, readLinks, type Wiki, writeLinks } from "../server/registry.ts";
@@ -171,7 +172,7 @@ const commands: Record<string, () => void> = {
     const targets = args[0] ? [wikiById(args[0])] : wikis;
     let count = 0;
     for (const w of targets) {
-      const problems = [...w.problems];
+      const problems = [...w.problems, ...mediaProblems(w.root)];
       const pages = listPages(w);
       if (!pages.some((p) => p.path === "")) problems.push("pages/index.md (the home page) is missing");
       for (const p of pages)

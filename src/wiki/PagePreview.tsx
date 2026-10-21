@@ -2,12 +2,12 @@
 import type { PageEntry } from "../../shared/api.ts";
 import { StatusBadge } from "./StatusBadge.tsx";
 import "./preview.css";
-import { withBase } from "../lib/base.ts";
+import { picture } from "../lib/base.ts";
 
 export function PagePreview({ page }: { page: PageEntry }) {
   return (
     <div className="sh-preview">
-      {page.image && <img className="sh-preview-image" src={withBase(page.image)} alt="" />}
+      {page.image && <img className="sh-preview-image" src={picture(page.image, 480)} alt="" />}
       <div className="sh-preview-body">
         <p className="sh-preview-title">
           {page.icon && <span aria-hidden="true">{page.icon} </span>}

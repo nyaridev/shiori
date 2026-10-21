@@ -3,7 +3,7 @@
 import { Fragment } from "react";
 import { Link } from "react-router";
 import type { PageData, PageLink, WikiDetail } from "../../shared/api.ts";
-import { withBase } from "../lib/base.ts";
+import { picture } from "../lib/base.ts";
 import { ago } from "../lib/time.ts";
 import { Badge, Button, Icon } from "../ui/index.ts";
 import { StatusBadge } from "./StatusBadge.tsx";
@@ -89,10 +89,10 @@ export function PageHead({
   const backdrop = page.banner ?? (home ? wiki.coverUrl : undefined);
   return (
     <header className="sh-page-head" data-hero={backdrop ? "" : undefined} data-banner={page.banner ? "" : undefined}>
-      {backdrop && <img className="sh-hero-backdrop" src={withBase(backdrop)} alt="" aria-hidden="true" />}
+      {backdrop && <img className="sh-hero-backdrop" src={picture(backdrop, 2400)} alt="" aria-hidden="true" />}
       {page.trail.length > 0 && <Crumbs wikiId={wiki.id} trail={page.trail} />}
       <div className="sh-page-heading">
-        {home && <img className="sh-hero-cover" src={withBase(wiki.coverUrl)} alt="" />}
+        {home && <img className="sh-hero-cover" src={picture(wiki.coverUrl, 480)} alt="" />}
         <div>
           <h1 className="sh-page-title">
             {page.icon && (

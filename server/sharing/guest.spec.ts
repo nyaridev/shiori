@@ -241,7 +241,7 @@ describe("guests", () => {
     expect((await b.get("/api/wikis/beta/images")).status).toBe(404);
     const file = await b.get("/api/wikis/alpha/files/assets/map.png");
     expect(file.status).toBe(200);
-    expect(file.headers.get("cache-control")).toBe("private, max-age=300");
+    expect(file.headers.get("cache-control")).toBe("private, no-cache");
     for (const path of [
       "/api/wikis/beta/page?path=",
       "/api/wikis/beta/files/assets/map.png",

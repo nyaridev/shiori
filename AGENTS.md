@@ -28,7 +28,8 @@ every change to a wiki.
 
 A local web app (React + a small Hono server on Node) that shows a deck of wikis and renders them with one shared
 set of components. Each wiki only nudges the design tokens with its `theme.json`. It runs in the browser only.
-Decisions: `docs/adr/` (0001 architecture, 0002 wiki pages, links and universal elements, 0003 sharing a wiki by link).
+Decisions: `docs/adr/` (0001 architecture, 0002 wiki pages, links and universal elements, 0003 sharing a wiki by link,
+0004 pictures).
 
 ## Commands
 
@@ -43,7 +44,7 @@ Decisions: `docs/adr/` (0001 architecture, 0002 wiki pages, links and universal 
 
 | Path | What |
 |---|---|
-| `server/` | Hono API: `registry.ts` (finds wikis), `pages.ts` (page list, nav, render), `threads.ts` (comments in each wiki's `data/wiki.db`), `answers.ts` (answers to pages' questions, same database), `backup.ts` (both to and from `backup.json`), `corpus.ts` (every page of a wiki rendered once: backlinks, the page index, the search index), `search.ts`, `live.ts` (file watcher → SSE), `wikiData.ts` (the per-wiki caches and versions both servers read), `files.ts` (a wiki's media), `sharing/` (ADR-0003: `shares.ts` the links, guests and the owner's name in memory, `limits.ts` rate limits, `guest.ts` the separate guest server, `tunnel.ts` the cloudflared Quick Tunnel), `markdown/` (unified pipeline, `elements.ts` directives, `links.ts`, `wikilinks.ts`, `code.ts` Shiki colors for code blocks) |
+| `server/` | Hono API: `registry.ts` (finds wikis), `pages.ts` (page list, nav, render), `threads.ts` (comments in each wiki's `data/wiki.db`), `answers.ts` (answers to pages' questions, same database), `backup.ts` (both to and from `backup.json`), `corpus.ts` (every page of a wiki rendered once: backlinks, the page index, the search index), `search.ts`, `live.ts` (file watcher → SSE), `wikiData.ts` (the per-wiki caches and versions both servers read), `files.ts` (a wiki's pictures: only images, `?w=` WebP copies cached in `data/`, and what `wiki check` says about media), `sharing/` (ADR-0003: `shares.ts` the links, guests and the owner's name in memory, `limits.ts` rate limits, `guest.ts` the separate guest server, `tunnel.ts` the cloudflared Quick Tunnel), `markdown/` (unified pipeline, `elements.ts` directives, `links.ts`, `wikilinks.ts`, `code.ts` Shiki colors for code blocks) |
 | `cli/wiki.ts` | The agent CLI (`pnpm wiki`); `server/template.ts` copies the template for it and for dev mode |
 | `shared/` | Used by server, CLI and UI: `schema.ts` (wiki.json, frontmatter), `theme.ts` (theme.json → tokens), `quote.ts` (comment anchors), `api.ts` (types) |
 | `src/ui/` | The primitives: Radix wrappers and hand-made parts, styled only with tokens (`ui.css`) |
@@ -59,8 +60,9 @@ Decisions: `docs/adr/` (0001 architecture, 0002 wiki pages, links and universal 
 
 ## Rules
 
-1. **The app never writes into its own folder or a wiki's pages at runtime.** The only runtime write is a wiki's
-   `data/wiki.db` (comments and answers to questions). Agents change pages through files.
+1. **The app never writes into its own folder or a wiki's pages at runtime.** Its only runtime writes go to a wiki's
+   `data/` (made by `dataDir()` with a `.gitignore` of `*`): `wiki.db` (comments and answers to questions) and
+   `cache/pictures/` (resized WebP copies, ADR-0004). Agents change pages through files.
 2. **The guest server is an allowlist** (`server/sharing/guest.ts`, ADR-0003). Owner features never reach guests by
    default; a new guest route needs tests for the link check, other wikis, expiry, view-only links, limits and
    `Origin`, and a security review.

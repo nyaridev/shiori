@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 import { Link } from "react-router";
-import { withBase } from "../../lib/base.ts";
+import { picture } from "../../lib/base.ts";
 import {
   Badge,
   type BadgeTone,
@@ -130,7 +130,7 @@ export function InfoboxEl({
       {title && <p className="sh-infobox-title">{title}</p>}
       {image && (
         <Zoom src={image} label={caption ?? title}>
-          <img className="sh-infobox-image" src={withBase(image)} alt={title ?? ""} />
+          <img className="sh-infobox-image" src={picture(image, 960)} alt={title ?? ""} />
         </Zoom>
       )}
       {caption && <p className="sh-infobox-caption">{caption}</p>}
@@ -235,8 +235,10 @@ const InShot = createContext(false);
 
 /** An image in a page; it opens the image viewer. Its URL is the server's, so a guest's goes under the share link. */
 export function ImgEl({ src, alt, ...rest }: ImgHTMLAttributes<HTMLImageElement>) {
-  const img = <img src={withBase(src)} alt={alt ?? ""} {...rest} />;
-  return useContext(InShot) ? (
+  const inShot = useContext(InShot);
+  // A gallery tile is small; a picture in the text can be as wide as the article.
+  const img = <img src={picture(src, inShot ? 480 : 1600)} alt={alt ?? ""} {...rest} />;
+  return inShot ? (
     img
   ) : (
     <Zoom src={src} label={rest.title ?? alt}>

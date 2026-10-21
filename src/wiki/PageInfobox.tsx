@@ -1,7 +1,7 @@
 // The fact box beside an article (ADR-0002), from the page's frontmatter: `image`, `caption`, `infobox` rows, plus
 // its type and status. It floats right at the top of the article, as on Wikipedia and Fandom.
 import type { PageData } from "../../shared/api.ts";
-import { withBase } from "../lib/base.ts";
+import { picture } from "../lib/base.ts";
 import { Markdown } from "./markdown/Markdown.tsx";
 import { StatusBadge } from "./StatusBadge.tsx";
 import { Zoom } from "./viewer/Zoom.tsx";
@@ -21,7 +21,7 @@ export function PageInfobox({ page }: { page: PageData }) {
       {box.image && (
         <figure className="sh-page-infobox-figure">
           <Zoom src={box.image} label={box.caption ?? page.title}>
-            <img src={withBase(box.image)} alt={box.caption ?? page.title} />
+            <img src={picture(box.image, 960)} alt={box.caption ?? page.title} />
           </Zoom>
           {box.caption && <figcaption>{box.caption}</figcaption>}
         </figure>

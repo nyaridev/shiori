@@ -1,10 +1,11 @@
 // Comment threads, stored in each wiki's own `data/wiki.db`. The app never writes into its own folder or into a
 // wiki's pages; this database is the only thing it writes.
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { Author, Authored, Thread, ThreadStatus } from "../shared/api.ts";
 import type { Quote } from "../shared/quote.ts";
+import { dataDir } from "./paths.ts";
 
 const MIGRATIONS = [
   `create table threads (
@@ -63,13 +64,8 @@ const open = new Map<string, DatabaseSync>();
 export function dbFor(root: string): DatabaseSync {
   const existing = open.get(root);
   if (existing) return existing;
-  const dir = join(root, "data");
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-    // Comments are local; never commit them by accident in a wiki that has its own git.
-    writeFileSync(join(dir, ".gitignore"), "*\n");
-  }
-  const db = new DatabaseSync(join(dir, "wiki.db"));
+  // Comments are local; `data/` is never committed.
+  const db = new DatabaseSync(join(dataDir(root), "wiki.db"));
   db.exec("pragma journal_mode = wal; pragma foreign_keys = on; pragma busy_timeout = 3000;");
   const version = Number((db.prepare("pragma user_version").get() as { user_version: number }).user_version);
   for (let v = version; v < MIGRATIONS.length; v++) {

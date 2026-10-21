@@ -1,7 +1,7 @@
 import { Link, NavLink, useNavigate } from "react-router";
 import type { NavNode, WikiDetail } from "../../shared/api.ts";
 import { useGuest } from "../guest/GuestContext.ts";
-import { withBase } from "../lib/base.ts";
+import { picture } from "../lib/base.ts";
 import { ShareDialog } from "../sharing/ShareDialog.tsx";
 import { Icon, IconButton, Kbd, Tooltip } from "../ui/index.ts";
 import { shortcutLabel } from "./SearchPalette.tsx";
@@ -45,7 +45,7 @@ export function Sidebar({
         )}
       </div>
       <NavLink to={`/w/${wiki.id}`} end className="sh-sidebar-wiki" onClick={onNavigate}>
-        <img src={withBase(wiki.coverUrl)} alt="" className="sh-sidebar-cover" />
+        <img src={picture(wiki.coverUrl, 160)} alt="" className="sh-sidebar-cover" />
         <span>
           <span className="sh-sidebar-title">{wiki.title}</span>
           {wiki.tagline && <span className="sh-sidebar-tagline">{wiki.tagline}</span>}

@@ -120,11 +120,13 @@ export function buildApp({ registry, live, data = createWikiData(live), shares, 
     return c.json({ hits: search(corpusOf(w).search, c.req.query("q") ?? "") });
   });
 
-  // A wiki's media. `_dev` is docs/, for the element examples on /dev/ui.
+  // A wiki's pictures. `_dev` is docs/, for the element examples on /dev/ui; it's the app's own folder, so nothing
+  // is cached there.
   app.get("/api/wikis/:id/files/*", (c) => {
-    const w = c.req.param("id") === "_dev" ? { id: "_dev", root: join(registry.appRoot, "docs") } : wikiOr404(c);
+    const dev = c.req.param("id") === "_dev";
+    const w = dev ? { id: "_dev", root: join(registry.appRoot, "docs") } : wikiOr404(c);
     if (w instanceof Response) return w;
-    return serveFile(c, w.root, c.req.path.slice(`/api/wikis/${w.id}/files/`.length));
+    return serveFile(c, w.root, c.req.path.slice(`/api/wikis/${w.id}/files/`.length), { cache: !dev });
   });
 
   app.get("/api/wikis/:id/answers", (c) => {
