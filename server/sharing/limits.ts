@@ -12,6 +12,8 @@ export const LIMITS = {
   writes: { capacity: 6, per: 60_000, refill: 6 },
   writesPerGuestPerDay: 60,
   writesPerLinkPerDay: 300,
+  /** Presence reports (which page a guest is on) per guest: 20 a minute, bursts of 10. */
+  presence: { capacity: 10, per: 60_000, refill: 20 },
   /** New guest names per client address. */
   joins: { capacity: 10, per: 3_600_000, refill: 10 },
   /** This many 429s within `strikeWindow` blocks the guest and their address for the rest of the link's life. */
@@ -105,12 +107,14 @@ export function createLinkLimits() {
   const reads = new Buckets(LIMITS.reads);
   const writes = new Buckets(LIMITS.writes);
   const joins = new Buckets(LIMITS.joins);
+  const presence = new Buckets(LIMITS.presence);
   const daily = new Windows(LIMITS.writesPerGuestPerDay, DAY);
   const linkDaily = new Windows(LIMITS.writesPerLinkPerDay, DAY);
   const strikes = new Windows(Number.POSITIVE_INFINITY, LIMITS.strikeWindow);
   return {
     read: (ip: string, now: number) => reads.take(ip, now),
     join: (ip: string, now: number) => joins.take(ip, now),
+    presence: (guest: string, now: number) => presence.take(guest, now),
     /** The per-day caps first, then the per-minute rate; a refused write uses up nothing. */
     write: (guest: string, now: number) => {
       const wait = Math.max(daily.wait(guest, now), linkDaily.wait("link", now)) || writes.take(guest, now);
@@ -123,7 +127,7 @@ export function createLinkLimits() {
     /** Counts a 429 against a key; true when the key has now struck out. */
     strike: (key: string, now: number) => strikes.count(key, now) >= LIMITS.strikes,
     prune: (now: number) => {
-      for (const l of [reads, writes, joins, daily, linkDaily, strikes]) l.prune(now);
+      for (const l of [reads, writes, joins, presence, daily, linkDaily, strikes]) l.prune(now);
     },
   };
 }

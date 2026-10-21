@@ -395,7 +395,7 @@ describe("polling", () => {
     await b.join("Ana");
     const first = await b.get("/api/wikis/alpha/changes");
     const etag = first.headers.get("etag") ?? "";
-    expect(etag).toMatch(/^"\d+\.\d+"$/);
+    expect(etag).toMatch(/^"\d+\.\d+\.\d+-\d+"$/);
     expect((await b.get("/api/wikis/alpha/changes", { "if-none-match": etag })).status).toBe(304);
     expect((await b.get("/api/wikis/alpha/changes", { "if-none-match": `W/${etag}` })).status).toBe(304);
   });

@@ -231,11 +231,13 @@ export interface Thread extends Synced {
 /** Server-sent events on /api/events. */
 /** `threads` means the wiki's data (comments and answers) changed. */
 /** `shares` means share links, their guests or their activity changed (the Share dialog, ADR-0003). */
+/** `presence` means who is on the wiki, or where, changed (ADR-0005). */
 export type LiveEvent =
   | { type: "wikis" }
   | { type: "pages"; wiki: string }
   | { type: "threads"; wiki: string }
-  | { type: "shares" };
+  | { type: "shares" }
+  | { type: "presence"; wiki: string };
 
 /** What a share link lets a guest do (ADR-0003). */
 export type ShareKind = "view" | "comment";
@@ -327,4 +329,19 @@ export interface KitInfo {
   sections: string[];
   /** The frontmatter fields it fills in. */
   fields: string[];
+}
+
+/** Someone on a wiki right now (ADR-0005): the host or a guest from a share link, and the page they're on. */
+export interface Person {
+  /** Stable while they stay; never a guest's id. */
+  id: string;
+  name: string;
+  role: "host" | "guest";
+  /** The page path, `_/…` for a special page, or null when they're on a page that doesn't exist. */
+  page: string | null;
+  /** That page's title, when it has one. */
+  title?: string;
+  lastSeen: string;
+  /** This is you. */
+  me?: boolean;
 }

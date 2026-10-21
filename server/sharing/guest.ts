@@ -27,6 +27,7 @@ import {
 import { isToolboxFile, kitsOf } from "../toolbox.ts";
 import { answerProblem, type WikiData } from "../wikiData.ts";
 import { LIMITS } from "./limits.ts";
+import { type Presence, placeOf, presenceFor, withTitles } from "./presence.ts";
 import { type Guest, newGuestId, type Share, type Shares, TOKEN } from "./shares.ts";
 
 const COOKIE = "shiori_guest";
@@ -75,6 +76,7 @@ const newAnswerSchema = z.strictObject({
   body: body(false).default(""),
 });
 const joinSchema = z.strictObject({ name: z.string().max(200) });
+const hereSchema = z.strictObject({ page: pagePath.nullable() });
 
 /** A display name: 2–32 characters after trimming, no control or invisible characters. */
 export function cleanName(raw: string): string | null {
@@ -96,9 +98,18 @@ export interface GuestAppOptions {
   staticDir?: string;
   /** Signs the guest cookie. A fresh one each run. */
   secret: string;
+  /** Who is on each wiki (ADR-0005), shared with the owner's server. */
+  presence?: Presence;
 }
 
-export function buildGuestApp({ registry, data, shares, staticDir, secret }: GuestAppOptions) {
+export function buildGuestApp({
+  registry,
+  data,
+  shares,
+  staticDir,
+  secret,
+  presence = presenceFor(shares),
+}: GuestAppOptions) {
   const app = new Hono<Env>();
   const now = () => shares.now();
 
@@ -218,6 +229,7 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
     if (current) {
       shares.log(share, current.name, `is now ${name}`);
       current.name = name;
+      presence.renamed(`guest:${current.id}`);
       return c.json(session(c));
     }
     if (share.guests.size >= LIMITS.guests) return c.json({ error: "this link is full" }, 403);
@@ -327,23 +339,67 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
   // Live updates for guests: the tunnel can't carry server-sent events, so the request itself waits (long polling).
   // With `wait` (seconds, at most 25) and the ETag the guest has, the answer comes when the wiki changes, or as an
   // empty 304 when the time is up. Either way the guest asks again at once.
-  // Live updates for guests: the tunnel can't carry server-sent events, so the request itself waits (long polling).
-  // With `wait` (seconds, at most 25) and the ETag the guest has, the answer comes when the wiki changes, or as an
-  // empty 304 when the time is up. Either way the guest asks again at once.
+  // The version covers pages, comments and who is here: the host, and this link's guests (ADR-0005).
   api.get("/wikis/:id/changes", async (c) => {
     const w = c.get("wiki");
+    const share = c.get("share");
+    const version = () => ({ ...data.version(w), presence: presence.version(w.id, share.id) });
     const tag = () => {
-      const v = data.version(w);
-      return `"${v.pages}.${v.threads}"`;
+      const v = version();
+      return `"${v.pages}.${v.threads}.${v.presence}"`;
     };
     // Cloudflare may weaken the ETag on the way.
     const known = c.req.header("if-none-match")?.replace(/^W\//, "");
     const wait = Math.min(Math.max(Number(c.req.query("wait")) || 0, 0), LIMITS.longPoll);
-    if (known === tag() && wait > 0) await data.waitForChange(w, wait * 1000, c.req.raw.signal);
+    if (known === tag() && wait > 0) {
+      // Wake on the wiki changing, on someone this guest can see moving, or on the guest leaving.
+      const wake = new AbortController();
+      const stop = () => wake.abort();
+      c.req.raw.signal.addEventListener("abort", stop);
+      const off = presence.onChange((wiki, link) => {
+        if (wiki === w.id && (link === null || link === share.id)) stop();
+      });
+      await data.waitForChange(w, wait * 1000, wake.signal);
+      off();
+      c.req.raw.signal.removeEventListener("abort", stop);
+    }
     const etag = tag();
     if (known === etag) return c.body(null, 304, { etag });
     c.header("etag", etag);
-    return c.json(data.version(w));
+    return c.json(version());
+  });
+
+  // Presence (ADR-0005): a guest says which page they're on and sees the host and their own link's guests. View
+  // links report too: reading is being here. Over the presence limit a report is dropped with a 429 that counts no
+  // strike; the read limit on every request still guards the address.
+  const here = (c: Context<WikiEnv>) => ({ key: `guest:${c.get("me").id}`, share: c.get("share").id });
+  const people = (c: Context<WikiEnv>) => {
+    const w = c.get("wiki");
+    const { key, share } = here(c);
+    return withTitles(presence.list(w.id, { role: "guest", share, key }), (p) => data.corpusOf(w).pages.get(p)?.title);
+  };
+  const reporting: MiddlewareHandler<WikiEnv> = async (c, next) => {
+    const wait = c.get("share").limits.presence(c.get("me").id, now());
+    if (!wait) return next();
+    c.header("retry-after", String(Math.max(1, Math.ceil(wait / 1000))));
+    return c.json({ error: "too many requests, slow down" }, 429);
+  };
+
+  api.get("/wikis/:id/presence", (c) => c.json({ people: people(c) }));
+
+  api.put("/wikis/:id/presence", sameOrigin, small, reporting, async (c) => {
+    const w = c.get("wiki");
+    const parsed = hereSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "bad request" }, 400);
+    const page = placeOf(parsed.data.page, (p) => data.corpusOf(w).pages.has(p));
+    const { key, share } = here(c);
+    presence.report({ key, wiki: w.id, role: "guest", share, guest: c.get("me").id, page });
+    return c.json({ people: people(c) });
+  });
+
+  api.delete("/wikis/:id/presence", sameOrigin, reporting, (c) => {
+    presence.leave(here(c).key);
+    return c.body(null, 204);
   });
 
   api.get("/wikis/:id/threads", (c) => {

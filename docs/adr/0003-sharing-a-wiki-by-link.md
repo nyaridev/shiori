@@ -86,6 +86,8 @@ Owner's app 127.0.0.1:4400 (the normal Shiori) ── never tunneled
 | The built app, under `/s/<token>/` | ✓ | ✓ |
 | Read the wiki: `wiki`, `page`, `pages` (index), `search`, `files/*` (media only, as today) | ✓ | ✓ |
 | Read `threads` and `answers` for a page | ✓ | ✓ |
+| The toolbox: `kits`, `elements`, `toolbox/assets/*` (the element reference's pictures only) | ✓ | ✓ |
+| Presence (ADR-0005): read who is here, say which page you're on, leave | ✓ | ✓ |
 | `POST` a thread, a reply, an answer | | ✓ |
 | Resolve or reopen a thread they started | | ✓ |
 | Anything else (other wikis, `/api/wikis`, `/api/dev`, `/api/events`, owner actions) | 404 | 404 |
@@ -172,7 +174,7 @@ Details settled while building the tunnel and the owner's controls (2026-10-21):
 | Owner's name | Held in memory (`PUT /api/shares/host`, 2–32 characters); the dialog remembers it in the browser and sends it with each new link, so it survives restarts. A guest can't join with it, and the owner can't take a name a guest on an active link uses |
 | Blocking | `PATCH /api/shares/:id/guests/:guest { blocked }` blocks the guest and the address they joined from (a fresh cookie doesn't get around it); letting them back in clears both. Opening or reloading a link the guest server refuses (blocked `403`, ended `410`, unknown `404`) gets the bare app with that status, so the gate says why; the API under it answers JSON and nothing from the wiki |
 | Hiding | Migration 4 adds `hidden` to `messages` and `answers`. `PATCH /api/wikis/:id/messages/:mid` and `/answers/:aid { hidden }`, for guests' text only. Guests never receive hidden text; a hidden first message hides the whole thread from them (replying to it or resolving it answers `404`). `pnpm wiki inbox` and the question counts leave it out; `pnpm wiki threads` lists it marked "hidden by the owner"; backups keep the flag |
-| Dialog | A Share button in the sidebar head. Never rendered for guests. In dev it shows the server's `409` message. It updates live: the owner's SSE stream sends a `shares` event (at most every 250 ms) when links, guests, activity, the host's name or the tunnel change |
+| Dialog | A Share button in the sidebar head (in the wiki header since ADR-0005, beside the live badge). Never rendered for guests. In dev it shows the server's `409` message. It updates live: the owner's SSE stream sends a `shares` event (at most every 250 ms) when links, guests, activity, the host's name or the tunnel change |
 
 ### Two PCs with the same wiki (phase 3)
 

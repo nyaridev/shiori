@@ -12,6 +12,7 @@ import { createLive } from "./live.ts";
 import { APP_ROOT } from "./paths.ts";
 import { createRegistry } from "./registry.ts";
 import { buildGuestApp } from "./sharing/guest.ts";
+import { presenceFor } from "./sharing/presence.ts";
 import { createShares } from "./sharing/shares.ts";
 import { createTunnel } from "./sharing/tunnel.ts";
 import { closeAll } from "./threads.ts";
@@ -43,7 +44,10 @@ const tunnel = createTunnel({ port: guestPort, log: (line) => console.log(line) 
 const shares = values.static
   ? createShares({ origin: () => tunnel.url() ?? `http://127.0.0.1:${guestPort}` })
   : undefined;
-const app = buildApp({ registry, live, data, shares, tunnel, staticDir: servedDir });
+// Who is on each wiki (ADR-0005), for both servers. Tabs that stop reporting leave after a while.
+const presence = presenceFor(shares);
+setInterval(() => presence.prune(), 10_000).unref();
+const app = buildApp({ registry, live, data, shares, tunnel, presence, staticDir: servedDir });
 
 const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
   const n = registry.all().length;
@@ -62,6 +66,7 @@ if (shares) {
     shares,
     staticDir: servedDir,
     secret: randomBytes(32).toString("base64url"),
+    presence,
   });
   shares.onChange(() => {
     const active = shares.list().length > 0;

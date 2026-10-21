@@ -13,6 +13,7 @@ import type { Live } from "./live.ts";
 import { type Registry, toCard, type Wiki } from "./registry.ts";
 import { search } from "./search.ts";
 import { cleanName } from "./sharing/guest.ts";
+import { type Presence, placeOf, presenceFor, withTitles } from "./sharing/presence.ts";
 import type { Shares } from "./sharing/shares.ts";
 import type { Tunnel } from "./sharing/tunnel.ts";
 import { addMessage, createThread, getThread, listThreads, setHidden, setStatus } from "./threads.ts";
@@ -41,6 +42,9 @@ const newShareSchema = z.strictObject({
 });
 const hostSchema = z.strictObject({ name: z.string().max(200) });
 const blockSchema = z.strictObject({ blocked: z.boolean() });
+/** A tab of the owner's app: a random id it keeps while open. */
+const tabSchema = z.string().regex(/^[A-Za-z0-9_-]{8,64}$/);
+const hereSchema = z.strictObject({ tab: tabSchema, page: z.string().max(300).nullable() });
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const isLoopback = (url: string) => {
@@ -74,11 +78,21 @@ export interface AppOptions {
   shares?: Shares;
   /** The tunnel that gives links a public address. */
   tunnel?: Pick<Tunnel, "status" | "start" | "onChange">;
+  /** Who is on each wiki (ADR-0005). Shared with the guest server. */
+  presence?: Presence;
   /** Serve the built UI from this folder (start-web). */
   staticDir?: string;
 }
 
-export function buildApp({ registry, live, data = createWikiData(live), shares, tunnel, staticDir }: AppOptions) {
+export function buildApp({
+  registry,
+  live,
+  data = createWikiData(live),
+  shares,
+  tunnel,
+  presence = presenceFor(shares),
+  staticDir,
+}: AppOptions) {
   const app = new Hono();
   const { pagesOf, corpusOf } = data;
   app.use("*", localOnly);
@@ -217,6 +231,34 @@ export function buildApp({ registry, live, data = createWikiData(live), shares, 
     return serveFile(c, join(registry.appRoot, "docs"), rel, { cache: false });
   });
 
+  // Presence (ADR-0005): each open tab says which page it's on; the owner sees everyone on the wiki.
+  const people = (w: Wiki) => withTitles(presence.list(w.id, { role: "host" }), (p) => corpusOf(w).pages.get(p)?.title);
+
+  app.get("/api/wikis/:id/presence", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    return c.json({ people: people(w) });
+  });
+
+  app.put("/api/wikis/:id/presence", async (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const body = hereSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: "bad request" }, 400);
+    const page = placeOf(body.data.page, (p) => corpusOf(w).pages.has(p));
+    presence.report({ key: `host:${body.data.tab}`, wiki: w.id, role: "host", page });
+    return c.json({ people: people(w) });
+  });
+
+  app.delete("/api/wikis/:id/presence/:tab", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const tab = tabSchema.safeParse(c.req.param("tab"));
+    if (!tab.success) return c.json({ error: "bad request" }, 400);
+    presence.leave(`host:${tab.data}`);
+    return c.body(null, 204);
+  });
+
   app.get("/api/events", (c) =>
     streamSSE(c, async (stream) => {
       const send = (e: LiveEvent) => void stream.writeSSE({ data: JSON.stringify(e) });
@@ -228,10 +270,23 @@ export function buildApp({ registry, live, data = createWikiData(live), shares, 
           send({ type: "shares" });
         }, 250);
       };
-      const offs = [live.subscribe(send), shares?.onUpdate(shared), tunnel?.onChange(shared)];
+      // Who is on which wiki: one event per wiki per quarter second at most.
+      const moved = new Map<string, NodeJS.Timeout>();
+      const here = (wiki: string) => {
+        if (moved.has(wiki)) return;
+        moved.set(
+          wiki,
+          setTimeout(() => {
+            moved.delete(wiki);
+            send({ type: "presence", wiki });
+          }, 250),
+        );
+      };
+      const offs = [live.subscribe(send), shares?.onUpdate(shared), tunnel?.onChange(shared), presence.onChange(here)];
       const off = () => {
         for (const o of offs) o?.();
         if (pending) clearTimeout(pending);
+        for (const t of moved.values()) clearTimeout(t);
       };
       stream.onAbort(off);
       while (!stream.aborted) {

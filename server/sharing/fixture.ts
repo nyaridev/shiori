@@ -12,6 +12,7 @@ import { createRegistry } from "../registry.ts";
 import { closeAll } from "../threads.ts";
 import { createWikiData } from "../wikiData.ts";
 import { buildGuestApp } from "./guest.ts";
+import { type Presence, presenceFor } from "./presence.ts";
 import { createShares, type Share, type Shares } from "./shares.ts";
 
 export const HOST = "http://share.test";
@@ -24,9 +25,10 @@ export interface Sharing {
   app: string;
   clock: number;
   shares: Shares;
+  presence: Presence;
   guestApp: ReturnType<typeof buildGuestApp>;
   ownerApp: ReturnType<typeof buildApp>;
-  /** Live events the owner's server sent, as its file watcher would. */
+  /** Live events the owner's server sent, as its file watcher or presence would. */
   emit: (e: LiveEvent) => void;
   /** A guest's browser on a link. */
   browser: (share: Share, ip?: string) => Browser;
@@ -65,6 +67,7 @@ export function sharingFixture(): Sharing {
     const data = createWikiData(live);
     const now = () => s.clock;
     const shares = createShares({ now, origin: () => HOST });
+    const presence = presenceFor(shares, now);
     const dist = join(app, "dist");
     mkdirSync(dist);
     writeFileSync(join(dist, "index.html"), SHELL);
@@ -72,8 +75,9 @@ export function sharingFixture(): Sharing {
       app,
       clock: Date.parse("2026-10-21T12:00:00Z"),
       shares,
-      guestApp: buildGuestApp({ registry, data, shares, staticDir: dist, secret: "test-secret" }),
-      ownerApp: buildApp({ registry, live, data, shares }),
+      presence,
+      guestApp: buildGuestApp({ registry, data, shares, presence, staticDir: dist, secret: "test-secret" }),
+      ownerApp: buildApp({ registry, live, data, shares, presence }),
       emit: (e: LiveEvent) => {
         for (const l of listeners) l(e);
       },
