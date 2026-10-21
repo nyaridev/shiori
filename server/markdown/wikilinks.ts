@@ -17,7 +17,7 @@ export interface Found {
   others: PageRef[];
 }
 
-const WIKILINK = /\[\[([^[\]|#]+?)(#[^[\]|]+)?(?:\|([^[\]]+))?\]\]/g;
+export const WIKILINK = /\[\[([^[\]|#]+?)(#[^[\]|]+)?(?:\|([^[\]]+))?\]\]/g;
 
 /** A heading's anchor as rehype-slug makes it, and a page name as a file name: lowercase, punctuation dropped, dashes. */
 export const slug = (text: string) =>

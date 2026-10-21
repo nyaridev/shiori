@@ -9,6 +9,7 @@ import { mediaProblems } from "../server/files.ts";
 import { listPages, renderPage } from "../server/pages.ts";
 import { APP_ROOT, slashes } from "../server/paths.ts";
 import { discover, loadWiki, readLinks, type Wiki, writeLinks } from "../server/registry.ts";
+import { applyRename, planRename, type RenamePlan } from "../server/rename.ts";
 import { copyTemplate } from "../server/template.ts";
 import { addMessage, closeAll, getThread, listThreads, setStatus, waitingForAgent } from "../server/threads.ts";
 import type { Answer, Authored, PageData, Question, Thread } from "../shared/api.ts";
@@ -23,6 +24,9 @@ const HELP = `Shiori wiki CLI
   pnpm wiki link <folder>                          Show a wiki that lives elsewhere (wikis.local.json)
   pnpm wiki unlink <id|folder>                     Stop showing a linked wiki (its files stay)
   pnpm wiki check [id]                             Validate wiki.json, theme.json, pages, links, files, elements
+  pnpm wiki rename <id> <page> <new path> [--dry-run]
+                                                   Move a page (or a section and everything under it), fix the
+                                                   links to and from it, and move its comments and answers
   pnpm wiki inbox [id]                             Open comments and answers to open questions, waiting for an agent
   pnpm wiki threads <id> [--all]                   All open (or all) threads of a wiki
   pnpm wiki reply <id> <thread> "message"          Answer or ask back; the thread stays open
@@ -44,6 +48,7 @@ const { positionals, values } = parseArgs({
     wontfix: { type: "boolean", default: false },
     all: { type: "boolean", default: false },
     replace: { type: "boolean", default: false },
+    "dry-run": { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
 });
@@ -242,6 +247,29 @@ const commands: Record<string, () => void> = {
     if (values.note) addMessage(w.root, id, "agent", values.note);
     setStatus(w.root, id, values.wontfix ? "wontfix" : "resolved");
     console.log(`#${id} ${values.wontfix ? "closed as won't fix" : "resolved"}.`);
+  },
+
+  rename() {
+    const w = wikiById(args[0]);
+    if (!args[1] || !args[2]) fail("Give the page and its new path: `pnpm wiki rename <id> plan/goals plan/aims`.");
+    let plan: RenamePlan;
+    try {
+      plan = planRename(w, args[1], args[2]);
+    } catch (e) {
+      fail((e as Error).message);
+    }
+    const links = plan.edits.reduce((n, e) => n + e.links, 0);
+    for (const m of plan.moves) console.log(`${values["dry-run"] ? "Would move" : "Moving"} ${m.from} → ${m.to}`);
+    for (const e of plan.edits) console.log(`  ${e.file}: ${e.links} link${e.links === 1 ? "" : "s"}`);
+    if (values["dry-run"]) {
+      console.log(`Would fix ${links} link${links === 1 ? "" : "s"}. Nothing changed.`);
+      return;
+    }
+    const moved = applyRename(w, plan);
+    console.log(
+      `Fixed ${links} link${links === 1 ? "" : "s"} and moved ${moved.threads} comment thread${moved.threads === 1 ? "" : "s"}` +
+        ` and ${moved.answers} answer${moved.answers === 1 ? "" : "s"}. Run \`pnpm wiki check ${w.id}\`.`,
+    );
   },
 
   backup() {

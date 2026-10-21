@@ -163,5 +163,7 @@ an infobox label costs nothing worse than an odd label. Option C remains open as
 **Later**
 
 16. [x] Page-level comments and a Discussion panel; Special:Tasks
-17. [ ] CLI: `wiki new <kit> <page>`, `wiki rename` (`wiki backup` / `restore` done, ADR-0001)
+17. [ ] CLI: `wiki new <kit> <page>` (`wiki backup` / `restore` done, ADR-0001)
+19. [x] `pnpm wiki rename`: moves a page or a section, rewrites links that the move breaks or that named the old
+    path (title wikilinks stay as written, code is left alone), and moves its comments and answers
 18. [x] Wide article column; the image viewer with the wiki's pictures in reading order

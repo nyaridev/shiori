@@ -128,6 +128,7 @@ Run these from the Shiori folder (`{{shiori}}`):
 | `pnpm wiki reply {{id}} <thread> "…"` | Answer or ask back (the thread stays open) |
 | `pnpm wiki resolve {{id}} <thread> --note "…"` | Done: say what you changed (`--wontfix` to decline) |
 | `pnpm wiki check {{id}}` | Validate the wiki: frontmatter, links, files, elements, theme |
+| `pnpm wiki rename {{id}} <page> <new path>` | Move or rename a page (a section moves with its pages); links and comments follow. Never move page files by hand |
 | `pnpm wiki backup {{id}}` / `restore {{id}}` | Save comments and answers to `backup.json` / load them back |
 
 Run `pnpm wiki check {{id}}` after every change.
