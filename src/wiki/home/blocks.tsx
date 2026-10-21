@@ -5,6 +5,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import type { Thread } from "../../../shared/api.ts";
+import { DesignsGallery } from "../../designs/DesignsGallery.tsx";
 import { authorName, useGuest } from "../../guest/GuestContext.ts";
 import { api } from "../../lib/api.ts";
 import { useLive } from "../../lib/live.ts";
@@ -189,6 +190,17 @@ export function DiscussionsEl({ count }: Props<{ count?: string }>) {
       })}
     </ul>
   );
+}
+
+/** `::designs{collection=…}`: a collection's designs, with the button that makes a new one (ADR-0006). */
+export function DesignsEl({ collection }: Props<{ collection?: string }>) {
+  const wiki = useWikiIndex();
+  const detail = useResource(wiki ? `wiki:${wiki.wikiId}` : null, () => api.wiki(wiki?.wikiId ?? ""));
+  if (!wiki) return <Placeholder>A collection's designs, and the button that starts a new one, show here.</Placeholder>;
+  const meta = collection ? detail.data?.collections[collection] : undefined;
+  if (!detail.data) return null;
+  if (!collection || !meta) return <Empty>There's no collection “{collection}” in this wiki.</Empty>;
+  return <DesignsGallery wikiId={wiki.wikiId} collection={collection} title={meta.title} item={meta.item} />;
 }
 
 /** Every section of the wiki with its pages, like a wiki portal's directory. */

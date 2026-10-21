@@ -82,3 +82,11 @@ describe("Shiori's icons", () => {
     expect(find(hast, "sh-card")[0].properties).toEqual({ icon: "map" });
   });
 });
+
+describe("designs element", () => {
+  it("shows a collection, and needs its name", () => {
+    const { hast, problems } = render('::designs{collection="mobs"}\n\n::designs');
+    expect(find(hast, "sh-designs")[0].properties).toEqual({ collection: "mobs" });
+    expect(problems).toEqual(['line 3: designs: name the collection, as ::designs{collection="mobs"}']);
+  });
+});

@@ -22,7 +22,11 @@ A wiki opens on its home page: a wide portal with the wiki's numbers and its own
 questions, discussions…). The header goes back to the deck, searches, switches between day and night (remembered
 in this browser), shows who else is on the wiki (click an avatar to go to their page) and, while it's shared, a
 **Live** badge. The sidebar has Home and pinned pages, what you viewed lately, foldable sections, and a Toolbox of
-what pages can use: page kits, elements, page fields and special pages.
+what pages can use: page kits, elements, page fields, icons and special pages.
+
+A wiki can give a kind of page its own layout (`layouts/`), and let people draw: a collection in `wiki.json` gets
+a **New** button, a drawing board, a description and pictures, saved in the wiki's `designs/`. Agents turn ready
+designs into pages (`pnpm wiki designs`). Guests on comment links can draw their own.
 
 ## Wikis
 

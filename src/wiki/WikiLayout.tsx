@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
+import { DesignPage } from "../designs/DesignPage.tsx";
 import { api } from "../lib/api.ts";
 import { isGuest } from "../lib/base.ts";
 import { useLive } from "../lib/live.ts";
@@ -27,6 +28,8 @@ export function WikiLayout() {
 
   // `_/…` is a special page (Recent changes, Categories…), not a page file.
   const special = path === "_" || path.startsWith("_/") ? path.slice(2) : null;
+  // One design (ADR-0006): `_/designs/<collection>/<id>`.
+  const design = /^designs\/([^/]+)\/([^/]+)$/.exec(special ?? "")?.slice(1) as [string, string] | undefined;
 
   const wiki = useResource(`wiki:${wikiId}`, () => api.wiki(wikiId));
   const page = useResource(special === null ? `page:${wikiId}:${path}` : null, () => api.page(wikiId, path));
@@ -123,7 +126,10 @@ export function WikiLayout() {
             </>
           )}
           {page.error && wiki.data && <MissingPage wikiId={wikiId} path={path} index={index.data} />}
-          {special !== null && wiki.data && <SpecialPage wiki={wiki.data} route={special} index={index.data} />}
+          {design && wiki.data && <DesignPage wiki={wiki.data} collection={design[0]} id={design[1]} />}
+          {special !== null && !design && wiki.data && (
+            <SpecialPage wiki={wiki.data} route={special} index={index.data} />
+          )}
           {page.data && !page.error && wiki.data && (
             <PageArea
               key={`${wikiId}:${path}`}

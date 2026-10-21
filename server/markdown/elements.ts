@@ -81,6 +81,8 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   "open-tasks": { type: "leafDirective", tag: "sh-open-tasks", attrs: { count: null }, transform: checkCount },
   discussions: { type: "leafDirective", tag: "sh-discussions", attrs: { count: null }, transform: checkCount },
   directory: { type: "leafDirective", tag: "sh-directory", attrs: {} },
+  // A collection's designs (ADR-0006), with the button that makes a new one.
+  designs: { type: "leafDirective", tag: "sh-designs", attrs: { collection: null }, transform: needsCollection },
 };
 
 const COLONS: Record<Directive["type"], string> = {
@@ -218,6 +220,10 @@ function checkIcon(node: Directive, problem: (message: string) => void) {
   if (!iconSet().has(name)) problem(`icon: "${name}" isn't in Shiori's icon set (Toolbox → Icons lists them)`);
   node.children = [];
   return { name };
+}
+
+function needsCollection(node: Directive, problem: (message: string) => void) {
+  if (!node.attributes?.collection) problem('designs: name the collection, as ::designs{collection="mobs"}');
 }
 
 /** How many entries a home block lists: 1 to 50. */

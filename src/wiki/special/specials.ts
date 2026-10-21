@@ -38,6 +38,13 @@ export const SPECIALS = [
     summary: "Pages that links point to but nobody has written yet, most wanted first.",
   },
   {
+    route: "designs",
+    group: "tools",
+    icon: "pencil",
+    title: "Designs",
+    summary: "What people drew and described for the wiki's collections, for an agent to turn into pages.",
+  },
+  {
     route: "kits",
     group: "toolbox",
     icon: "toolbox",

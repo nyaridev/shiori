@@ -47,6 +47,7 @@ app's. This keeps every wiki recognizably the same app while letting it feel lik
 |---|---|---|
 | Pages, assets, cover, theme | The wiki folder | The wiki's own repo, if any |
 | Comments | `<wiki>/data/wiki.db` (with a `data/.gitignore`) | Never |
+| Designs (ADR-0006) | `<wiki>/designs/<collection>/<id>/`: drawings, descriptions, pictures people make in the app | Yes, with the wiki |
 | Linked wiki folders | `wikis.local.json` in the app | No (machine-specific) |
 | Template | `wikis/_template/` | Yes |
 

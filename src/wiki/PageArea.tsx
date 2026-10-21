@@ -7,6 +7,7 @@ import { ThreadList } from "../comments/ThreadList.tsx";
 import { useThreads } from "../comments/useThreads.ts";
 import { Callout, IconButton, ScrollArea } from "../ui/index.ts";
 import { HomeHero } from "./home/HomeHero.tsx";
+import { LayoutView } from "./layout/LayoutView.tsx";
 import { Markdown } from "./markdown/Markdown.tsx";
 import { PageContext } from "./PageContext.ts";
 import { PageFoot } from "./PageFoot.tsx";
@@ -66,10 +67,17 @@ export function PageArea({
               </ul>
             </Callout>
           )}
-          <div ref={article} className="sh-prose">
-            <PageInfobox page={page} />
-            <Markdown hast={page.hast} />
-          </div>
+          {page.layout ? (
+            // The wiki's layout arranges the page's parts (ADR-0006); comments anchor in all of them.
+            <div ref={article}>
+              <LayoutView wiki={wiki} page={page} layout={page.layout} />
+            </div>
+          ) : (
+            <div ref={article} className="sh-prose">
+              <PageInfobox page={page} />
+              <Markdown hast={page.hast} />
+            </div>
+          )}
           <CommentLayer
             container={article}
             contentKey={page.hast}

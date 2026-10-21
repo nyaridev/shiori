@@ -407,6 +407,18 @@ in tables too:
 :progress[Episodes]{value="3" max="8"}
 ```
 
+## Designs
+
+::designs{collection="sketches"}
+
+A collection's designs: what people drew and described in the app, each with its drawing, name and status, and a
+button that starts a new one. The collection comes from the wiki's `wiki.json`; a layout's `designs` block shows
+the same.
+
+```md
+::designs{collection="sketches"}
+```
+
 ## Home page
 
 A wiki's home page (`pages/index.md`) shows wide, as a portal. Build it from titled boxes in a grid, and fill them

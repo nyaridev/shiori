@@ -58,6 +58,7 @@ const components = {
   "sh-open-tasks": home.OpenTasksEl,
   "sh-discussions": home.DiscussionsEl,
   "sh-directory": home.DirectoryEl,
+  "sh-designs": home.DesignsEl,
   "sh-unknown": el.UnknownEl,
 } as unknown as Components;
 

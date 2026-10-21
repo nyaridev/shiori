@@ -152,6 +152,20 @@ describe("layouts", () => {
     expect(bad({ ...mob, areas: [["Design", "facts"]] })).toBeTruthy();
   });
 
+  it("fall back to the template's, like kits, unless the wiki has its own of that name", async () => {
+    writeFileSync(join(alpha(), "pages", "idea.md"), "---\ntitle: Idea\nlayout: concept\n---\nx");
+    s.emit({ type: "pages", wiki: "alpha" });
+    const idea = await json<PageData>(await s.owner("/api/wikis/alpha/page?path=idea"));
+    expect(idea.layout?.name).toBe("concept");
+    expect(idea.problems).toEqual([]);
+    mkdirSync(join(alpha(), "layouts"));
+    writeFileSync(join(alpha(), "layouts", "concept.json"), '{ "areas": [] }');
+    s.emit({ type: "pages", wiki: "alpha" });
+    const broken = await json<PageData>(await s.owner("/api/wikis/alpha/page?path=idea"));
+    expect(broken.layout).toBeUndefined();
+    expect(broken.problems.join("\n")).toMatch(/layouts\/concept.json has problems/);
+  });
+
   it("arrange a page that names one, and report a missing or broken layout", async () => {
     withMobs(s.app);
     mkdirSync(join(alpha(), "layouts"));

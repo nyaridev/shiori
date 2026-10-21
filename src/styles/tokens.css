@@ -39,6 +39,8 @@
   --tone-warn: #e0b04f;
   --tone-danger: #e0705f;
   --tone-bad: #e0705f;
+  /* Drawing paper (designs, ADR-0006): white in every theme, since the drawing is made on it. */
+  --paper: #ffffff;
 
   /* Fixed scale */
   --s-1: 4px;

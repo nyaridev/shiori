@@ -1,0 +1,14 @@
+{
+  "title": "Concept",
+  "areas": [
+    ["design", "facts"],
+    ["body", "facts"],
+    ["questions", "questions"]
+  ],
+  "blocks": {
+    "design": { "type": "design" },
+    "facts": { "type": "infobox" },
+    "body": { "type": "body" },
+    "questions": { "type": "questions", "title": "Open questions" }
+  }
+}

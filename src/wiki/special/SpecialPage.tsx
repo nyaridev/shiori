@@ -4,6 +4,7 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { PageEntry, QuestionEntry, TaskEntry, WantedPage, WikiDetail, WikiIndex } from "../../../shared/api.ts";
+import { DesignsGallery } from "../../designs/DesignsGallery.tsx";
 import { Icon, Segmented } from "../../ui/index.ts";
 import { PageCard, PageChip } from "../PageFoot.tsx";
 import { Crumbs, pageHref, specialHref } from "../PageHead.tsx";
@@ -281,6 +282,32 @@ function Wanted({ wikiId, wanted }: { wikiId: string; wanted: WantedPage[] }) {
   );
 }
 
+/** Every collection of the wiki, each with its designs. */
+function Collections({ wiki }: { wiki: WikiDetail }) {
+  const all = Object.entries(wiki.collections);
+  if (!all.length)
+    return (
+      <p className="sh-special-empty">
+        This wiki has no collections yet. An agent adds one to wiki.json (`collections`) so people can draw and describe
+        things for it.
+      </p>
+    );
+  return (
+    <>
+      {all.map(([id, meta]) => (
+        <section key={id} className="sh-special-group">
+          <h2 className="sh-special-heading">
+            <Link to={specialHref(wiki.id, "designs", id)} className="sh-special-link">
+              {meta.title}
+            </Link>
+          </h2>
+          <DesignsGallery wikiId={wiki.id} collection={id} title={meta.title} item={meta.item} />
+        </section>
+      ))}
+    </>
+  );
+}
+
 export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: string; index?: WikiIndex }) {
   const [name, ...rest] = route.split("/");
   const arg = rest.length ? decodeURIComponent(rest.join("/")) : null;
@@ -289,7 +316,17 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
 
   let head: { icon: string; title: string; summary: string };
   let body: ReactNode;
-  if (name === "categories" && arg) {
+  if (name === "designs" && arg) {
+    const meta = wiki.collections[arg];
+    head = {
+      icon: "pencil",
+      title: meta?.title ?? "No such collection",
+      summary: meta
+        ? `Every ${meta.item.toLowerCase()} people drew and described. Ready ones become pages.`
+        : `There's no collection “${arg}” in this wiki.`,
+    };
+    body = meta ? <DesignsGallery wikiId={wiki.id} collection={arg} title={meta.title} item={meta.item} /> : null;
+  } else if (name === "categories" && arg) {
     const inside = pages.filter((p) => p.tags.includes(arg));
     head = {
       icon: "tag",
@@ -316,6 +353,8 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
         <Elements wiki={wiki} />
       ) : name === "fields" ? (
         <Fields />
+      ) : name === "designs" ? (
+        <Collections wiki={wiki} />
       ) : name === "icons" ? (
         <Icons />
       ) : name === "special" ? (
@@ -327,8 +366,8 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
     head = { icon: "❓", title: "No such special page", summary: `There's no special page called “${route}”.` };
     body = <Specials wikiId={wiki.id} />;
   }
-  // The toolbox reads its own data, not the page index.
-  const ready = !!index || known?.group === "toolbox" || !known;
+  // The toolbox and designs read their own data, not the page index.
+  const ready = !!index || known?.group === "toolbox" || name === "designs" || !known;
 
   useEffect(() => {
     document.title = `${head.title} · ${wiki.title}`;
@@ -337,7 +376,8 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
   const home = index?.pages.find((p) => p.path === "");
   const trail = [
     { path: "", title: home?.title ?? wiki.title, icon: home?.icon, isPage: true },
-    ...(arg ? [{ path: "_/categories", title: "Categories", icon: "tag", isPage: true }] : []),
+    ...(arg && name === "categories" ? [{ path: "_/categories", title: "Categories", icon: "tag", isPage: true }] : []),
+    ...(arg && name === "designs" ? [{ path: "_/designs", title: "Designs", icon: "pencil", isPage: true }] : []),
   ];
   return (
     <main className="sh-wiki-main sh-special" data-path={`_/${route}`}>

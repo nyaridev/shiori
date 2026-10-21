@@ -5,5 +5,8 @@
   "tagline": "{{tagline}}",
   "cover": "cover.svg",
   "order": 0,
-  "pinned": ["Roadmap"]
+  "pinned": ["Roadmap"],
+  "collections": {
+    "sketches": { "title": "Sketches", "item": "Sketch" }
+  }
 }

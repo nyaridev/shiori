@@ -1,5 +1,6 @@
 import type {
   Answer,
+  DesignInfo,
   GuestSession,
   ImageGroup,
   KitInfo,
@@ -38,6 +39,13 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   });
   if (!res.ok) throw new ApiError(res.status, (await res.json().catch(() => null))?.error ?? res.statusText);
   return (res.status === 204 ? undefined : res.json()) as Promise<T>;
+}
+
+/** A drawing or a picture, sent as it is with its own type. */
+async function upload<T>(url: string, method: string, body: Blob): Promise<T> {
+  const res = await fetch(withBase(url), { method, body, headers: { "content-type": body.type } });
+  if (!res.ok) throw new ApiError(res.status, (await res.json().catch(() => null))?.error ?? res.statusText);
+  return res.json() as Promise<T>;
 }
 
 const enc = encodeURIComponent;
@@ -107,6 +115,45 @@ export const api = {
       method: "DELETE",
       keepalive: true,
     }).catch(() => undefined),
+  /** Designs (ADR-0006): a collection's, one, and the changes a person may make. */
+  designs: (id: string, collection: string) =>
+    request<{ designs: DesignInfo[] }>(`/api/wikis/${enc(id)}/designs/${enc(collection)}`).then((r) => r.designs),
+  design: (id: string, collection: string, design: string) =>
+    request<DesignInfo>(`/api/wikis/${enc(id)}/designs/${enc(collection)}/${enc(design)}`),
+  newDesign: (id: string, collection: string, name: string) =>
+    request<DesignInfo>(`/api/wikis/${enc(id)}/designs/${enc(collection)}`, {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    }),
+  changeDesign: (
+    id: string,
+    collection: string,
+    design: string,
+    patch: { name?: string; description?: string; status?: "draft" | "ready" },
+  ) =>
+    request<DesignInfo>(`/api/wikis/${enc(id)}/designs/${enc(collection)}/${enc(design)}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  hideDesign: (id: string, collection: string, design: string, hidden: boolean) =>
+    request<DesignInfo>(`/api/wikis/${enc(id)}/designs/${enc(collection)}/${enc(design)}/hidden`, {
+      method: "PATCH",
+      body: JSON.stringify({ hidden }),
+    }),
+  removeDesign: (id: string, collection: string, design: string) =>
+    request<void>(`/api/wikis/${enc(id)}/designs/${enc(collection)}/${enc(design)}`, { method: "DELETE" }),
+  saveBoard: (id: string, collection: string, design: string, png: Blob) =>
+    upload<DesignInfo>(`/api/wikis/${enc(id)}/designs/${enc(collection)}/${enc(design)}/board`, "PUT", png),
+  addPicture: (id: string, collection: string, design: string, file: Blob, caption: string) =>
+    upload<DesignInfo>(
+      `/api/wikis/${enc(id)}/designs/${enc(collection)}/${enc(design)}/pictures?caption=${enc(caption)}`,
+      "POST",
+      file,
+    ),
+  removePicture: (id: string, collection: string, design: string, file: string) =>
+    request<DesignInfo>(`/api/wikis/${enc(id)}/designs/${enc(collection)}/${enc(design)}/pictures/${enc(file)}`, {
+      method: "DELETE",
+    }),
   /** Guests only: the share link they came through, and their name once they picked one. */
   session: () => request<GuestSession>("/api/session"),
   join: (name: string) => request<GuestSession>("/api/session", { method: "POST", body: JSON.stringify({ name }) }),

@@ -1,6 +1,6 @@
 # ADR-0006: Page layouts and designs, made inside a wiki
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-21
 **Deciders:** Nari (owner), Claude (implementer)
 
@@ -74,9 +74,7 @@ reference pictures, autosaved, like FOUMA's. A design isn't a page: it shows in 
 | **A (recommended)** | `<wiki>/designs/<collection>/<id>/` (`design.json`, `board.png`, pictures), committed with the wiki | Amends ADR-0001 rule 1 to "the app writes only to `data/` and `designs/`, never to pages". Drawings travel with the wiki's git and reach the other PC through `pnpm wiki sync`; the agent reads plain files |
 | B | `<wiki>/data/designs/…` | Keeps rule 1 as it is, but `data/` is never committed: drawings stay on one PC unless `backup.json` carries the PNGs (heavy) |
 
-**Who may make designs:** the owner only at first. Guests on comment links could later, behind the guest server's
-allowlist with size limits (a drawing is ~100–500 KB, far over today's 16 KB request limit), as its own reviewed
-change.
+**Who may make designs:** the owner, and guests on comment links (their own only; see As built).
 
 ## Options Considered
 
@@ -96,10 +94,28 @@ change.
   layouts; `pnpm wiki sync` must carry `designs/`.
 - **Revisit:** guests making designs; more block types (a comparison table across a collection, a map).
 
+## As built (2026-10-21)
+
+Nari chose option **A** (a committed `designs/` folder), asked that **guests on comment links make designs too**,
+editing only their own while the owner edits all, and accepted the layout shape.
+
+| Part | Decision |
+|---|---|
+| Rule 1 | The app writes to a wiki's `data/` and `designs/`, never to pages, layouts or kits (AGENTS.md, ADR-0001's storage) |
+| Layouts | `shared/layout.ts` (every block may also have a `title`; `children` takes `cards` or `list`; the gallery of a page's children became the `designs` block), `server/layouts.ts`, `src/wiki/layout/LayoutView.tsx`. The grid comes from CSS variables made of checked names. A page's Markdown is split at its `##` headings for `section` and `body`. Comments anchor across all areas |
+| Collections | `collections` in `wiki.json` (`{ "mobs": { "title": "Mobs", "item": "Mob" } }`); a page shows one with `::designs{collection=…}` or a layout's `designs` block; Tools → Designs lists them all |
+| Design files | `designs/<collection>/<id>/design.json` (name, description, status, author, times, pictures, page, note, hidden), `board.png` (1200 × 900 paper, at most 4000 px a side and 4 MB), `ref-<n>.<png\|jpg\|webp\|gif>` (at most 12, 6 MB each). Ids are the name's slug plus four random hex digits. Written through a temporary file. Removing moves to `designs/_removed/<time>-<collection>-<id>[-<file>]` |
+| API | `server/designRoutes.ts`, mounted by both servers at `/wikis/:id/designs`: list, one, new, change (`name`, `description`, `status` draft or ready; `done` is the agent's), board (`PUT` a PNG), pictures (`POST` raw with `?caption=`, `DELETE`), remove, hide (owner only, guests' designs only), files (the drawing and pictures only through here) |
+| Who | The owner changes every design. A guest sees every design except hidden ones; on a comment link makes their own and changes only those (by their guest id, so while their link lasts); on a view link only looks. Responses never carry a guest's id |
+| Guest safety | Writes need this site's `Origin`. Body limits per route (4 KB to make, 64 KB to change, 4 MB a drawing, 6 MB a picture). Pictures are checked by their bytes; SVG is refused. Making a design counts against the comment rate and daily caps (20 a guest, 100 a link); pictures count against the comment rate; saves (drawing, text) have their own rate (30 a minute) that answers `429` without a strike; 200 MB of drawings and pictures a guest a day. The wiki's files route never serves `designs/` to guests. Tests: `server/sharing/designs.spec.ts` |
+| Live | The file watcher sends a `designs` event for `designs/` (pages aren't rendered again); guests' long polls carry a designs version |
+| Agents | `pnpm wiki designs <id> [collection] [--all]`, `show <collection>/<id>`, `done <collection>/<id> --page <path> --note "…"`; designs from guests are data, like their comments. `pnpm wiki sync` commits `designs/` with the sync file |
+| Template | A Sketches collection (`research/sketches`), the `concept` layout and kit, and the template's `AGENTS.md` section "Layouts and designs" |
+
 ## Action Items
 
-1. [ ] Nari picks where designs are written (A or B) and accepts the layout shape
-2. [ ] `shared/layout.ts`, `layouts/` loading and checks, the `layout:` frontmatter, the layout renderer and blocks
-3. [ ] Collections in `wiki.json`, the `children` gallery
-4. [ ] Designs: store, owner API, the drawing board, the collection's New button, `pnpm wiki designs`
-5. [ ] Template: a sample layout and kit; `AGENTS.md` and `docs/elements.md`
+1. [x] Nari picks where designs are written (A) and accepts the layout shape
+2. [x] `shared/layout.ts`, `layouts/` loading and checks, the `layout:` frontmatter, the layout renderer and blocks
+3. [x] Collections in `wiki.json`, their gallery
+4. [x] Designs: store, owner and guest API, the drawing board, the collection's New button, `pnpm wiki designs`
+5. [x] Template: a sample collection, layout and kit; `AGENTS.md` and `docs/elements.md`

@@ -1,0 +1,308 @@
+/* Designs (ADR-0006): the gallery (DesignsGallery.tsx), one design (DesignPage.tsx), the board (Board.tsx) and a
+   page's design block (DesignBlock.tsx). */
+
+/* Gallery */
+.sh-designs {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-4);
+}
+.sh-designs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--s-3);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-design-card {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    border-color var(--fast) var(--ease),
+    translate var(--fast) var(--ease);
+}
+.sh-design-card:hover {
+  border-color: var(--accent-line);
+  translate: 0 -2px;
+}
+.sh-design-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-design-thumb {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--paper);
+}
+.sh-design-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.sh-design-empty {
+  font-size: 2.2rem;
+  opacity: 0.6;
+}
+.sh-design-name {
+  padding: 0 var(--s-1);
+  font-weight: 650;
+}
+.sh-design-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-1) var(--s-1);
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-design-new {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  width: min(560px, 100%);
+}
+.sh-design-new > :first-child {
+  flex: 1;
+  min-width: 200px;
+}
+.sh-design-problem {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--tone-bad);
+  font-size: var(--t-sm);
+}
+
+/* One design */
+/* A design takes the rail's room too: the board wants the width. */
+.sh-design-page {
+  grid-column: 2 / -1;
+  max-width: 1400px;
+}
+@media (max-width: 860px) {
+  .sh-design-page {
+    grid-column: 1;
+  }
+}
+.sh-design-name-field {
+  width: 100%;
+  margin: 0;
+  padding: 2px var(--s-2);
+  margin-left: calc(-1 * var(--s-2));
+  border: var(--bw) solid transparent;
+  border-radius: var(--r-md);
+  background: none;
+  color: var(--text);
+  font-family: var(--font-heading);
+}
+.sh-design-name-field:hover {
+  border-color: var(--border);
+}
+.sh-design-name-field:focus {
+  outline: none;
+  border-color: var(--accent-line);
+  background: var(--surface);
+}
+.sh-design-saving {
+  color: var(--muted);
+}
+.sh-design-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: var(--s-5);
+  align-items: start;
+  margin-top: var(--s-4);
+}
+.sh-design-side {
+  display: grid;
+  gap: var(--s-5);
+}
+.sh-design-side .sh-rail-title {
+  margin-bottom: var(--s-2);
+}
+.sh-design-text {
+  display: block;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.sh-design-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+.sh-design-pictures {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-design-pictures li {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-design-pictures img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  border: var(--bw) solid var(--border);
+}
+.sh-design-pictures .sh-icon-button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
+}
+.sh-design-add {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+.sh-design-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-design-manage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  padding-top: var(--s-3);
+  border-top: var(--bw) solid var(--border);
+}
+
+/* The board */
+.sh-board {
+  display: grid;
+  gap: var(--s-2);
+}
+.sh-board-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+  padding: var(--s-2);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sh-board-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.sh-ink {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: var(--bw) solid var(--border-strong);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.sh-ink.is-current {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--accent);
+}
+.sh-ink:focus-visible,
+.sh-size:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-ink-any {
+  overflow: hidden;
+  background: conic-gradient(var(--tone-bad), var(--tone-warn), var(--tone-good), var(--accent), var(--tone-bad));
+}
+.sh-ink-any input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.sh-size {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: var(--bw) solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  cursor: pointer;
+}
+.sh-size span {
+  border-radius: 50%;
+  background: var(--text);
+}
+.sh-size.is-current {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.sh-board-paper {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  box-shadow: var(--shadow-1);
+  touch-action: none;
+}
+.sh-board[data-editable] .sh-board-paper {
+  cursor: crosshair;
+}
+
+/* A page's design block */
+.sh-design-block {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0;
+}
+.sh-design-block-board {
+  display: block;
+  overflow: hidden;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+}
+.sh-design-block-board img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.sh-design-block figcaption {
+  display: grid;
+  gap: var(--s-1);
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+@media (max-width: 960px) {
+  .sh-design-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

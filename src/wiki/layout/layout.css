@@ -1,0 +1,32 @@
+/* A page arranged by a layout (LayoutView.tsx): the layout's grid of areas, from CSS variables made from checked
+   names. Narrow screens stack the areas in reading order. */
+.sh-layout {
+  display: grid;
+  grid-template-areas: var(--areas);
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  gap: var(--s-5);
+  align-items: start;
+}
+.sh-layout-area {
+  grid-area: var(--area);
+  min-width: 0;
+}
+/* The infobox floats beside the article on a plain page; in a layout it fills its area. */
+.sh-layout-area[data-block="infobox"] .sh-page-infobox {
+  float: none;
+  width: auto;
+  margin: 0;
+}
+.sh-prose .sh-layout-title {
+  margin: 0 0 var(--s-3);
+  font-size: var(--t-lg);
+}
+@media (max-width: 860px) {
+  .sh-layout {
+    grid-template-areas: none;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sh-layout-area {
+    grid-area: auto;
+  }
+}
