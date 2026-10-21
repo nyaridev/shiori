@@ -3,6 +3,7 @@ const PATHS = {
   comment: "M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-4.5 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z",
   close: "M6 6l12 12M18 6 6 18",
   check: "m5 12.5 4.5 4.5L19 7.5",
+  chevronLeft: "m14.5 6-6 6 6 6",
   chevronRight: "m9.5 6 6 6-6 6",
   chevronDown: "m6 9.5 6 6 6-6",
   arrowLeft: "M19 12H5m6-6-6 6 6 6",

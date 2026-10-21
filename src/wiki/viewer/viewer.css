@@ -1,0 +1,147 @@
+/* The image viewer (ImageViewer.tsx): the picture fills the window, the strip of the wiki's pictures sits below. */
+.sh-viewer {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--s-3);
+  min-height: 0;
+}
+
+.sh-viewer-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: var(--r-md);
+  background: color-mix(in oklab, var(--bg) 70%, transparent);
+}
+/* Centered in the stage at its own size, shrunk to fit; never stretched. */
+.sh-viewer-stage > img {
+  position: absolute;
+  inset: 0;
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
+  object-fit: contain;
+  animation: sh-fade 160ms var(--ease);
+}
+.sh-viewer-arrow {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+}
+.sh-viewer-arrow[data-side="left"] {
+  left: var(--s-3);
+}
+.sh-viewer-arrow[data-side="right"] {
+  right: var(--s-3);
+}
+.sh-viewer-arrow:disabled {
+  opacity: 0.3;
+}
+
+.sh-viewer-info {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.sh-viewer-info a {
+  color: var(--text-soft);
+  text-decoration: none;
+}
+.sh-viewer-info a:hover {
+  color: var(--accent);
+}
+
+/* The strip: the wiki's pictures in reading order, a group per page. */
+.sh-viewer-strip {
+  display: flex;
+  gap: var(--s-3);
+  padding-bottom: var(--s-2);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.sh-viewer-group {
+  display: grid;
+  flex: none;
+  gap: 4px;
+  align-content: start;
+  padding: var(--s-1) var(--s-2) var(--s-2);
+  border-radius: var(--r-md);
+}
+.sh-viewer-group[data-section] {
+  border-left: var(--bw) solid var(--border-strong);
+}
+.sh-viewer-group:first-child {
+  border-left: 0;
+}
+.sh-viewer-group[data-here] {
+  background: var(--accent-soft);
+}
+.sh-viewer-group-label {
+  display: grid;
+  max-width: 260px;
+  font-size: var(--t-xs);
+  line-height: 1.3;
+}
+.sh-viewer-group-label > span {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sh-viewer-group-label > strong {
+  overflow: hidden;
+  color: var(--text-soft);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sh-viewer-group[data-here] .sh-viewer-group-label > strong {
+  color: var(--text);
+}
+.sh-viewer-thumbs {
+  display: flex;
+  gap: 4px;
+}
+.sh-viewer-thumb {
+  width: 76px;
+  height: 56px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: var(--r-sm);
+  background: var(--raised);
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity var(--fast) var(--ease);
+}
+.sh-viewer-group[data-here] .sh-viewer-thumb,
+.sh-viewer-thumb:hover {
+  opacity: 1;
+}
+.sh-viewer-thumb[aria-current] {
+  border-color: var(--accent);
+  opacity: 1;
+}
+.sh-viewer-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A picture in a page that opens the viewer. */
+.sh-zoom {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+.sh-zoom > img {
+  display: block;
+}

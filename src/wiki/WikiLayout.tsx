@@ -11,6 +11,8 @@ import { SearchPalette, typing } from "./SearchPalette.tsx";
 import { Sidebar } from "./Sidebar.tsx";
 import { MissingPage } from "./special/MissingPage.tsx";
 import { SpecialPage } from "./special/SpecialPage.tsx";
+import { ImageViewer } from "./viewer/ImageViewer.tsx";
+import { ViewerContext } from "./viewer/ViewerContext.ts";
 import { WikiIndexContext } from "./WikiIndexContext.ts";
 import "./wiki.css";
 
@@ -45,6 +47,9 @@ export function WikiLayout() {
   const [navOpen, setNavOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  // The picture the image viewer shows, if it's open.
+  const [viewing, setViewing] = useState<string | null>(null);
+  const viewer = useMemo(() => ({ open: setViewing }), []);
 
   // Ctrl+K / ⌘K anywhere, or "/" outside a text field, opens search.
   useEffect(() => {
@@ -86,39 +91,42 @@ export function WikiLayout() {
 
   return (
     <WikiIndexContext.Provider value={pages}>
-      <div className="sh-wiki" data-enter={fromDeck || undefined}>
-        {wiki.data && (
-          <>
-            <ScrollArea className="sh-wiki-sidebar" data-open={navOpen || undefined}>
-              <Sidebar wiki={wiki.data} onNavigate={() => setNavOpen(false)} onSearch={() => setSearchOpen(true)} />
-            </ScrollArea>
-            {navOpen && (
-              <button type="button" className="sh-scrim" aria-label="Close menu" onClick={() => setNavOpen(false)} />
-            )}
-            <div className="sh-wiki-mobilebar">
-              <IconButton icon="menu" label="Pages" onClick={() => setNavOpen(true)} />
-              <span>{wiki.data.title}</span>
-              <IconButton icon="search" label="Search" onClick={() => setSearchOpen(true)} />
-              <IconButton icon="comment" label="Comments" onClick={() => setRailOpen((o) => !o)} />
-            </div>
-            <SearchPalette wiki={wiki.data} open={searchOpen} onOpenChange={setSearchOpen} />
-          </>
-        )}
-        {page.error && wiki.data && <MissingPage wikiId={wikiId} path={path} index={index.data} />}
-        {special !== null && wiki.data && <SpecialPage wiki={wiki.data} route={special} index={index.data} />}
-        {page.data && !page.error && wiki.data && (
-          <PageArea
-            key={`${wikiId}:${path}`}
-            wiki={wiki.data}
-            path={path}
-            page={page.data}
-            index={index.data?.pages}
-            problems={[...wiki.data.problems, ...page.data.problems]}
-            railOpen={railOpen}
-            onCloseRail={() => setRailOpen(false)}
-          />
-        )}
-      </div>
+      <ViewerContext.Provider value={viewer}>
+        <div className="sh-wiki" data-enter={fromDeck || undefined}>
+          {wiki.data && (
+            <>
+              <ScrollArea className="sh-wiki-sidebar" data-open={navOpen || undefined}>
+                <Sidebar wiki={wiki.data} onNavigate={() => setNavOpen(false)} onSearch={() => setSearchOpen(true)} />
+              </ScrollArea>
+              {navOpen && (
+                <button type="button" className="sh-scrim" aria-label="Close menu" onClick={() => setNavOpen(false)} />
+              )}
+              <div className="sh-wiki-mobilebar">
+                <IconButton icon="menu" label="Pages" onClick={() => setNavOpen(true)} />
+                <span>{wiki.data.title}</span>
+                <IconButton icon="search" label="Search" onClick={() => setSearchOpen(true)} />
+                <IconButton icon="comment" label="Comments" onClick={() => setRailOpen((o) => !o)} />
+              </div>
+              <SearchPalette wiki={wiki.data} open={searchOpen} onOpenChange={setSearchOpen} />
+            </>
+          )}
+          {page.error && wiki.data && <MissingPage wikiId={wikiId} path={path} index={index.data} />}
+          {special !== null && wiki.data && <SpecialPage wiki={wiki.data} route={special} index={index.data} />}
+          {page.data && !page.error && wiki.data && (
+            <PageArea
+              key={`${wikiId}:${path}`}
+              wiki={wiki.data}
+              path={path}
+              page={page.data}
+              index={index.data?.pages}
+              problems={[...wiki.data.problems, ...page.data.problems]}
+              railOpen={railOpen}
+              onCloseRail={() => setRailOpen(false)}
+            />
+          )}
+        </div>
+        <ImageViewer wikiId={wikiId} path={path} open={viewing} onClose={() => setViewing(null)} />
+      </ViewerContext.Provider>
     </WikiIndexContext.Provider>
   );
 }

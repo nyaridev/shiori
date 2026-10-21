@@ -2,6 +2,7 @@ import type { Root } from "hast";
 import { type Components, toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { useMemo } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+import { CodeBlock } from "./code.tsx";
 import * as el from "./elements.tsx";
 import * as uv from "./universal.tsx";
 import "./planning.css";
@@ -10,6 +11,7 @@ import "./prose.css";
 const components = {
   a: el.WikiLink,
   img: el.ImgEl,
+  pre: CodeBlock,
   h2: el.H2El,
   h3: el.H3El,
   input: el.TaskBox,

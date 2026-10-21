@@ -42,6 +42,27 @@ A link to a page that doesn't exist yet is a red link, like [[A page nobody wrot
 and Special:Wanted pages lists them all. Pointing at a link to a page shows a preview of it, and the icon after a
 heading copies a link to that section. Plain Markdown links (`[text](path)`) still work, and a broken one is reported.
 
+## Code
+
+Fence code with its language and it's colored in the wiki's theme, with the language and a copy button above it:
+
+```luau
+-- Heals the player, never past their maximum.
+local function heal(player: Player, amount: number)
+	local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+	if humanoid then
+		humanoid.Health = math.min(humanoid.Health + amount, humanoid.MaxHealth)
+	end
+end
+```
+
+```ts
+export const price = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+```
+
+Colored languages: `ts`, `tsx`, `js`, `jsx`, `json`, `css`, `html`, `bash` (`sh`), `powershell`, `python`, `lua`,
+`luau`, `gdscript`, `rust`, `csharp`, `yaml`, `toml`, `md`, `sql`, `diff`. Others show as plain text.
+
 ## Callouts
 
 :::callout

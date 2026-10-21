@@ -18,6 +18,18 @@ function find(node: Root | RootContent, tag: string): Element[] {
 }
 
 describe("renderMarkdown", () => {
+  it("colors code blocks in known languages with the theme's variables, and leaves others plain", () => {
+    const { hast, problems } = renderMarkdown("```luau\nlocal hp = 20 -- full\n```\n\n```mermaid\ngraph TD\n```", ctx);
+    const [luau, other] = find(hast, "pre");
+    expect(luau.properties).toMatchObject({ className: ["sh-code"], dataLang: "luau" });
+    const styles = find(luau, "span").map((s) => String(s.properties.style ?? ""));
+    expect(styles).toContain("color:var(--code-token-keyword)");
+    expect(styles.some((s) => s.includes("--code-token-comment"))).toBe(true);
+    expect(other.properties).toMatchObject({ className: ["sh-code"], dataLang: "mermaid" });
+    expect(find(other, "span")).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
   it("turns directives into ld elements with their label", () => {
     const { hast, problems } = renderMarkdown(':::callout[Heads up]{tone="warning"}\nText\n:::', ctx);
     const [callout] = find(hast, "sh-callout");

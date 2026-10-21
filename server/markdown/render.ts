@@ -7,6 +7,7 @@ import remarkRehype from "remark-rehype";
 import { unified } from "unified";
 import { visit } from "unist-util-visit";
 import type { TocEntry } from "../../shared/api.ts";
+import { rehypeCode } from "./code.ts";
 import { remarkElements, textOf } from "./elements.ts";
 import { type LinkContext, rehypeLinks } from "./links.ts";
 import { remarkWikilinks } from "./wikilinks.ts";
@@ -28,7 +29,8 @@ export function renderMarkdown(body: string, ctx: LinkContext, lineOffset = 0): 
     .use(remarkWikilinks, ctx.findPage ?? (() => ({ page: null, others: [] })), problems, lineOffset)
     .use(remarkRehype)
     .use(rehypeSlug)
-    .use(rehypeLinks, ctx, problems, lineOffset);
+    .use(rehypeLinks, ctx, problems, lineOffset)
+    .use(rehypeCode);
   const hast = processor.runSync(processor.parse(body)) as Root;
 
   const toc: TocEntry[] = [];

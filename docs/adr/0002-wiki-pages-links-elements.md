@@ -40,6 +40,8 @@ The page keeps three columns (sidebar, article, rail with contents and comments)
 | Last edited | A footer line: when the page file last changed, and its path (for the agent) |
 | Special pages | Wiki-wide pages live under `/w/<wiki>/_/`, like Wikipedia's `Special:` (page files can't start with `_`, so they never clash): Recent changes, All pages, Categories, one Category, and later Wanted pages, Tasks, Questions |
 | Home | Keeps its hero and adds "Recently updated" |
+| Width | The article column is wide (`--page-width`, 1180px), like a wiki: it shares the row with the floating infobox, galleries and tables |
+| Image viewer | Every picture (the infobox's, gallery tiles, images in the text) opens a full-window viewer: arrows and ← → step through pictures, and a strip below shows every picture in the wiki in reading order, grouped by page and labelled with its sections. It opens on your page, so its neighbours in the sidebar sit beside it, and stepping past a page's first or last picture carries on into the next page or section. The corpus collects the pictures (`/api/wikis/<id>/images`) |
 
 **Corpus.** The server renders every page of a wiki once into an in-memory corpus, rebuilt when a page changes.
 Pages, search, backlinks and the special pages all read from it, so they can never disagree. Nothing is written.
@@ -162,3 +164,4 @@ an infobox label costs nothing worse than an odd label. Option C remains open as
 
 16. [x] Page-level comments and a Discussion panel; Special:Tasks
 17. [ ] CLI: `wiki new <kit> <page>`, `wiki rename` (`wiki backup` / `restore` done, ADR-0001)
+18. [x] Wide article column; the image viewer with the wiki's pictures in reading order

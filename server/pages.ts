@@ -132,7 +132,7 @@ export function pageFinder(pages: PageFile[], pageDir: string): (name: string) =
 }
 
 /** The sidebar tree in reading order, home page first: what previous/next walk through. */
-function readingOrder(nav: NavNode[]): string[] {
+export function readingOrder(nav: NavNode[]): string[] {
   const out = [""];
   const walk = (nodes: NavNode[]) => {
     for (const n of nodes) {

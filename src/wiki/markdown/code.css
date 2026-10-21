@@ -1,0 +1,48 @@
+/* Code blocks (code.tsx). Shiki's colors are CSS variables, mapped here onto the wiki's tokens, so code follows
+   every wiki's theme. */
+.sh-code-block {
+  --code-foreground: var(--text);
+  --code-background: var(--surface);
+  --code-token-keyword: var(--accent);
+  --code-token-function: color-mix(in oklab, var(--accent) 45%, var(--text));
+  --code-token-string: var(--tone-good);
+  --code-token-string-expression: var(--tone-good);
+  --code-token-constant: var(--tone-warn);
+  --code-token-parameter: var(--text-soft);
+  --code-token-comment: var(--muted);
+  --code-token-punctuation: color-mix(in oklab, var(--text) 55%, var(--muted));
+  --code-token-link: var(--accent);
+  margin: var(--s-4) 0;
+  overflow: hidden;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--code-background);
+}
+
+.sh-code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: 2px var(--s-1) 2px var(--s-3);
+  border-bottom: var(--bw) solid var(--border);
+  background: var(--raised);
+}
+.sh-code-lang {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.sh-prose .sh-code-block pre.sh-code {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--code-foreground);
+}
+.sh-prose .sh-code-block pre.sh-code:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}

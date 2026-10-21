@@ -108,6 +108,12 @@ export function buildApp({ registry, live, data = createWikiData(live), shares, 
     return c.json(data.index(w));
   });
 
+  app.get("/api/wikis/:id/images", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    return c.json({ groups: corpusOf(w).images });
+  });
+
   app.get("/api/wikis/:id/search", (c) => {
     const w = wikiOr404(c);
     if (w instanceof Response) return w;

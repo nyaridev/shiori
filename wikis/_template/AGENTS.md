@@ -56,7 +56,11 @@ their content with the project's own, rename or delete what doesn't fit, and add
   (Special:Wanted pages lists them). If `pnpm wiki check` says a name matches several pages, write its path.
   Markdown links also work: `[Combat](combat)` is relative to the page's folder, `[Combat](/systems/combat)` starts
   at `pages/`; no `.md` needed.
-- Images go in `assets/` and are linked from the root: `![Map](/assets/map.png)`.
+- Images go in `assets/` and are linked from the root: `![Map](/assets/map.png)`. Give each a caption (the alt
+  text or a title) and the page an `image`: every picture opens in the image viewer, which steps through the whole
+  wiki's pictures page by page, in sidebar order.
+- Code: fence it with its language (```` ```ts ````, `luau`, `gdscript`, `bash`, `powershell`…) and it's colored
+  in the wiki's theme, with a copy button. `docs/elements.md` lists the languages.
 - No raw HTML. Use Markdown, GFM tables and task lists, and the elements below.
 
 ## Elements
@@ -75,7 +79,7 @@ The full reference with examples is `{{shiori}}/docs/elements.md`, and the app s
 | Stats | `:::stats` with `- Label: value \| +8% change` lines (number tiles) |
 | Timeline | `:::timeline` with `- [x] When: what` lines; ticked is done, the first open one is "now" |
 | Cards | `:::cards` with `- 🎯 [Title](page) — description` lines (a grid of links) |
-| Gallery | `:::gallery` with one `![Caption](/assets/x.png "caption")` per line (click to enlarge) |
+| Gallery | `:::gallery` with one `![Caption](/assets/x.png "caption")` per line (opens in the image viewer) |
 | Progress | `:progress[Label]{value="60"}`, or `{value="3" max="8"}`; works in tables |
 | Question | `::question{id=q1}` places a question from the frontmatter's `questions:` |
 | Related | `::related` (or `::related{kind="Depends on"}`) places the frontmatter's `related:` pages |

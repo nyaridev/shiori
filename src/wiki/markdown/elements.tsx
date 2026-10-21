@@ -1,10 +1,12 @@
 // React components for the `sh-*` elements the server produces (server/markdown/elements.ts).
 import {
   Children,
+  createContext,
   type ImgHTMLAttributes,
   isValidElement,
   type ReactElement,
   type ReactNode,
+  useContext,
   useEffect,
   useState,
 } from "react";
@@ -24,6 +26,8 @@ import {
   Tabs,
 } from "../../ui/index.ts";
 import { PagePreview } from "../PagePreview.tsx";
+import { useViewer } from "../viewer/ViewerContext.ts";
+import { Zoom } from "../viewer/Zoom.tsx";
 import { usePageAt } from "../WikiIndexContext.ts";
 
 type Props<T = object> = T & { children?: ReactNode };
@@ -124,7 +128,11 @@ export function InfoboxEl({
   return (
     <aside className="sh-infobox">
       {title && <p className="sh-infobox-title">{title}</p>}
-      {image && <img className="sh-infobox-image" src={withBase(image)} alt={title ?? ""} />}
+      {image && (
+        <Zoom src={image} label={caption ?? title}>
+          <img className="sh-infobox-image" src={withBase(image)} alt={title ?? ""} />
+        </Zoom>
+      )}
       {caption && <p className="sh-infobox-caption">{caption}</p>}
       <div className="sh-infobox-rows">{children}</div>
     </aside>
@@ -222,21 +230,48 @@ export function CardEl({ icon, children }: Props<{ icon?: string }>) {
 
 export const CardTitleEl = ({ children }: Props) => <p className="sh-card-title">{children}</p>;
 
-/** An image in a page. Its URL is the server's, so a guest's goes under the share link. */
-export const ImgEl = ({ src, alt, ...rest }: ImgHTMLAttributes<HTMLImageElement>) => (
-  <img src={withBase(src)} alt={alt ?? ""} {...rest} />
-);
+/** Inside a gallery tile, which is already the button that opens the picture. */
+const InShot = createContext(false);
+
+/** An image in a page; it opens the image viewer. Its URL is the server's, so a guest's goes under the share link. */
+export function ImgEl({ src, alt, ...rest }: ImgHTMLAttributes<HTMLImageElement>) {
+  const img = <img src={withBase(src)} alt={alt ?? ""} {...rest} />;
+  return useContext(InShot) ? (
+    img
+  ) : (
+    <Zoom src={src} label={rest.title ?? alt}>
+      {img}
+    </Zoom>
+  );
+}
 
 export const GalleryEl = ({ children }: Props) => <div className="sh-gallery">{children}</div>;
 
-/** A gallery tile; it opens the image large. */
+/** A gallery tile; it opens the image viewer (on /dev/ui, where there's none, a dialog with the image). */
 export function ShotEl({ caption, children }: Props<{ caption?: string }>) {
+  const viewer = useViewer();
+  const src = Children.toArray(children)
+    .filter(isValidElement)
+    .map((c) => (c.props as { src?: unknown }).src)
+    .find((s): s is string => typeof s === "string");
+  const tile = (
+    <InShot.Provider value={true}>
+      {children}
+      {caption && <span className="sh-shot-caption">{caption}</span>}
+    </InShot.Provider>
+  );
+  if (viewer && src) {
+    return (
+      <button type="button" className="sh-shot" onClick={() => viewer.open(src)}>
+        {tile}
+      </button>
+    );
+  }
   return (
     <Dialog>
       <DialogTrigger asChild>
         <button type="button" className="sh-shot">
-          {children}
-          {caption && <span className="sh-shot-caption">{caption}</span>}
+          {tile}
         </button>
       </DialogTrigger>
       <DialogContent title={caption || "Image"} size="wide">

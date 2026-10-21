@@ -218,6 +218,8 @@ describe("guests", () => {
     expect((await b.get("/api/wikis/alpha/page?path=plan")).status).toBe(200);
     expect((await b.get("/api/wikis/alpha/pages")).status).toBe(200);
     expect((await b.get("/api/wikis/alpha/search?q=plan")).status).toBe(200);
+    expect((await b.get("/api/wikis/alpha/images")).status).toBe(200);
+    expect((await b.get("/api/wikis/beta/images")).status).toBe(404);
     const file = await b.get("/api/wikis/alpha/files/assets/map.png");
     expect(file.status).toBe(200);
     expect(file.headers.get("cache-control")).toBe("private, max-age=300");

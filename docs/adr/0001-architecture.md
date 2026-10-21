@@ -97,4 +97,5 @@ The ideas (text-quote anchors, CLI inbox loop, directive elements) were carried 
 1. [x] Server, CLI, template, deck, wiki view, comments, `/dev/ui`.
 2. [x] Search across a wiki's pages (Ctrl+K / "/" palette, jumps to the matching heading).
 3. [x] Comment backups to JSON (`pnpm wiki backup` / `restore`, `<wiki>/backup.json`; answers included).
-4. [ ] Code highlighting (Shiki) in code blocks.
+4. [x] Code highlighting (Shiki) in code blocks: on the server, once per render, with a theme of CSS variables
+   (`--code-token-*`) mapped onto each wiki's tokens, so code follows the wiki's theme.

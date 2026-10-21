@@ -4,6 +4,7 @@ import type { PageData } from "../../shared/api.ts";
 import { withBase } from "../lib/base.ts";
 import { Markdown } from "./markdown/Markdown.tsx";
 import { StatusBadge } from "./StatusBadge.tsx";
+import { Zoom } from "./viewer/Zoom.tsx";
 
 export function PageInfobox({ page }: { page: PageData }) {
   const box = page.infobox;
@@ -19,7 +20,9 @@ export function PageInfobox({ page }: { page: PageData }) {
       </header>
       {box.image && (
         <figure className="sh-page-infobox-figure">
-          <img src={withBase(box.image)} alt={box.caption ?? page.title} />
+          <Zoom src={box.image} label={box.caption ?? page.title}>
+            <img src={withBase(box.image)} alt={box.caption ?? page.title} />
+          </Zoom>
           {box.caption && <figcaption>{box.caption}</figcaption>}
         </figure>
       )}

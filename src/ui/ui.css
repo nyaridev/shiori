@@ -331,6 +331,15 @@
 .sh-dialog[data-size="wide"] {
   width: min(1100px, calc(100vw - 32px));
 }
+.sh-dialog[data-size="viewer"] {
+  inset: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  width: auto;
+  padding: var(--s-3) var(--s-4) var(--s-4);
+  translate: none;
+}
 .sh-dialog[data-size="palette"] {
   top: 12vh;
   width: min(640px, calc(100vw - 32px));

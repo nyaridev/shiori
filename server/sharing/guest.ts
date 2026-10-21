@@ -297,6 +297,8 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
 
   api.get("/wikis/:id/pages", (c) => c.json(data.index(c.get("wiki"))));
 
+  api.get("/wikis/:id/images", (c) => c.json({ groups: data.corpusOf(c.get("wiki")).images }));
+
   api.get("/wikis/:id/search", (c) =>
     c.json({ hits: search(data.corpusOf(c.get("wiki")).search, (c.req.query("q") ?? "").slice(0, 200)) }),
   );

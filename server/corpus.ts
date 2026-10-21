@@ -3,9 +3,9 @@
 // changes; nothing is written.
 import type { Element, Root } from "hast";
 import { visit } from "unist-util-visit";
-import type { PageData, PageEntry, PageLink, TaskEntry, WantedPage } from "../shared/api.ts";
+import type { ImageGroup, PageData, PageEntry, PageImage, PageLink, TaskEntry, WantedPage } from "../shared/api.ts";
 import { textOf } from "./markdown/elements.ts";
-import { type PageFile, renderPage } from "./pages.ts";
+import { buildNav, type PageFile, readingOrder, renderPage } from "./pages.ts";
 import type { Wiki } from "./registry.ts";
 import { indexPage, type SearchDoc } from "./search.ts";
 
@@ -17,6 +17,8 @@ export interface Corpus {
   /** Pages red links point to, most wanted first. */
   wanted: WantedPage[];
   search: SearchDoc[];
+  /** Every page's pictures, in reading order, for the image viewer. Pages without any are left out. */
+  images: ImageGroup[];
 }
 
 /** About two lines of a page's text, cut at a space. */
@@ -97,6 +99,25 @@ function excerpt(doc: SearchDoc): string {
   return `${text.slice(0, cut > 0 ? cut : EXCERPT)}…`;
 }
 
+const text = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+
+/** A page's pictures, each once: the infobox's first, then the ones in the article (images, galleries, infoboxes). */
+function imagesIn(page: PageData): PageImage[] {
+  const found = new Map<string, PageImage>();
+  const add = (src: unknown, caption: unknown) => {
+    const s = text(src);
+    if (!s || found.has(s)) return;
+    const c = text(caption);
+    found.set(s, c ? { src: s, caption: c } : { src: s });
+  };
+  add(page.infobox?.image, page.infobox?.caption);
+  visit(page.hast, "element", (el: Element) => {
+    if (el.tagName === "img") add(el.properties.src, text(el.properties.title) ?? el.properties.alt);
+    if (el.tagName === "sh-infobox") add(el.properties.image, el.properties.caption ?? el.properties.title);
+  });
+  return [...found.values()];
+}
+
 export function buildCorpus(wiki: Wiki, files: PageFile[]): Corpus {
   const pages = new Map<string, PageData>();
   for (const f of files) {
@@ -159,5 +180,15 @@ export function buildCorpus(wiki: Wiki, files: PageFile[]): Corpus {
   );
   wantedList.sort((a, b) => b.from.length - a.from.length || a.title.localeCompare(b.title));
   const tasks = [...pages.values()].flatMap(tasksIn);
-  return { pages, index, tasks, wanted: wantedList, search };
+
+  // Hidden pages aren't in the sidebar; their pictures come last.
+  const order = readingOrder(buildNav(files));
+  const ordered = [...order, ...[...pages.keys()].filter((p) => !order.includes(p))];
+  const images = ordered.flatMap((path): ImageGroup[] => {
+    const page = pages.get(path);
+    const found = page ? imagesIn(page) : [];
+    if (!page || !found.length) return [];
+    return [{ page: linkOf(page), trail: page.trail.filter((t) => t.path).map((t) => t.title), images: found }];
+  });
+  return { pages, index, tasks, wanted: wantedList, search, images };
 }

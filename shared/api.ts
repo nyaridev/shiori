@@ -157,6 +157,20 @@ export interface WikiIndex {
   tasks: TaskEntry[];
 }
 
+/** A picture in a page, for the image viewer. `src` is the server's URL, as in the page. */
+export interface PageImage {
+  src: string;
+  caption?: string;
+}
+
+/** One page's pictures. A wiki's groups come in reading order (the sidebar's), so neighbours sit side by side. */
+export interface ImageGroup {
+  page: PageLink;
+  /** The sections above the page, from the top: ["Weapons", "Swords"]. */
+  trail: string[];
+  images: PageImage[];
+}
+
 /** `[start, end)` ranges of a string that match the search. */
 export type Marks = [number, number][];
 

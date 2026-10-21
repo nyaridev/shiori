@@ -1,6 +1,7 @@
 import type {
   Answer,
   GuestSession,
+  ImageGroup,
   PageData,
   SearchHit,
   ShareDuration,
@@ -44,6 +45,7 @@ export const api = {
   wiki: (id: string) => request<WikiDetail>(`/api/wikis/${enc(id)}`),
   page: (id: string, path: string) => request<PageData>(`/api/wikis/${enc(id)}/page?path=${enc(path)}`),
   index: (id: string) => request<WikiIndex>(`/api/wikis/${enc(id)}/pages`),
+  images: (id: string) => request<{ groups: ImageGroup[] }>(`/api/wikis/${enc(id)}/images`).then((r) => r.groups),
   search: (id: string, q: string, signal?: AbortSignal) =>
     request<{ hits: SearchHit[] }>(`/api/wikis/${enc(id)}/search?q=${enc(q)}`, { signal }).then((r) => r.hits),
   answers: (id: string, page: string) =>
