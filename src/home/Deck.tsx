@@ -8,7 +8,7 @@ import { useResource } from "../lib/useResource.ts";
 import { CARD_ASPECT, Card } from "./cards/index.ts";
 import "./deck.css";
 import { bestMatch, matchScore } from "./match.ts";
-import { openCard } from "./openCard.ts";
+import { openCard, warmOpening } from "./opening/openCard.ts";
 import { Search } from "./Search.tsx";
 import { Starfield } from "./Starfield.tsx";
 import { useDeck } from "./useDeck.ts";
@@ -67,6 +67,9 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
   const [query, setQuery] = useState("");
   useEffect(() => {
     document.title = "Shiori";
+    // Compile the opening's shader while the deck sits idle.
+    const warm = setTimeout(warmOpening, 400);
+    return () => clearTimeout(warm);
   }, []);
 
   const { count, center, dragging, travel, controls } = useDeck({
