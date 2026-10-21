@@ -49,7 +49,16 @@ function until(expiresAt: string | null): string {
   return `until ${new Date(expiresAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`;
 }
 
-function NamePrompt({ session, onJoined }: { session: GuestSession; onJoined: (s: GuestSession) => void }) {
+/** Asks a guest for their display name. `join` is the server's; /dev/screens passes a stand-in. */
+export function NamePrompt({
+  session,
+  onJoined,
+  join = api.join,
+}: {
+  session: GuestSession;
+  onJoined: (s: GuestSession) => void;
+  join?: (name: string) => Promise<GuestSession>;
+}) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -61,7 +70,7 @@ function NamePrompt({ session, onJoined }: { session: GuestSession; onJoined: (s
     setBusy(true);
     setError("");
     try {
-      onJoined(await api.join(name));
+      onJoined(await join(name));
     } catch (err) {
       setError(
         err instanceof ApiError && err.status === 409
@@ -124,7 +133,8 @@ const ENDED: Record<number, { title: string; text: string }> = {
   401: { title: "Your name was forgotten", text: "Reload the page to pick it again." },
 };
 
-function LinkEnded({ status }: { status: number }) {
+/** Why the link can't be opened: its status (404, 410, 403, 401), or 0 when the wiki can't be reached at all. */
+export function LinkEnded({ status }: { status: number }) {
   const { title, text } = ENDED[status] ?? {
     title: "Couldn't reach the wiki",
     text: "Sharing may have stopped, or the computer sharing it is off or asleep. Try again later.",

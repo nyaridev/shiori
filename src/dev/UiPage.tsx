@@ -38,6 +38,7 @@ import {
   Tooltip,
 } from "../ui/index.ts";
 import { Markdown } from "../wiki/markdown/Markdown.tsx";
+import { SCREENS } from "./Screens.tsx";
 import "./ui-page.css";
 
 const SECTIONS = [
@@ -52,6 +53,7 @@ const SECTIONS = [
   ["surfaces", "Surfaces"],
   ["icons", "Icons"],
   ["elements", "Page elements"],
+  ["screens", "Screens"],
 ] as const;
 
 const COLORS = ["bg", "surface", "raised", "border", "text", "muted", "accent", "accent-text"];
@@ -317,6 +319,23 @@ export function UiPage() {
             Rendered from <code>docs/elements.md</code>, the reference agents follow.
           </p>
           <div className="sh-prose ui-elements">{elements.data && <Markdown hast={elements.data.hast} />}</div>
+        </Section>
+
+        <Section id="screens" title="Screens">
+          <p className="ui-note">
+            The app's special screens with sample data, each in a new tab. They render the real components.
+          </p>
+          <div className="ui-screens">
+            {SCREENS.map((s) => (
+              <a key={s.name} href={`/dev/screens/${s.name}`} target="_blank" rel="noreferrer" className="ui-screen">
+                <span className="ui-screen-title">
+                  {s.title}
+                  <Icon name="arrowRight" size={14} />
+                </span>
+                <span className="ui-screen-what">{s.what}</span>
+              </a>
+            ))}
+          </div>
         </Section>
       </main>
     </div>

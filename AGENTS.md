@@ -58,7 +58,7 @@ Decisions: `docs/adr/` (0001 architecture, 0002 wiki pages, links and universal 
 | `src/guest/` | Guest mode (ADR-0003): `GuestGate.tsx` (checks the link, asks a name, says when the link ended), `GuestContext.ts` (who may comment and resolve, how authors are signed). `src/lib/base.ts` puts API and media URLs under the link |
 | `src/lib/` | API client, live events (`live.ts`: SSE for the owner, long polling for guests), `useTheme.ts` + `viewerMode.ts` (a wiki's theme on `<html>`, in the day or night the viewer picked), the resource cache |
 | `src/comments/` | Selection → composer, highlights (CSS Custom Highlight API), thread list (the rail: comments on text), `PageDiscussion.tsx` (comments on the whole page, at its bottom). The owner hides a guest's message from its card (ADR-0003) |
-| `src/dev/` | `/dev/ui`: every primitive and element in the default theme |
+| `src/dev/` | `/dev/ui` (`UiPage.tsx`): every primitive and element in the default theme, and links to `Screens.tsx`: `/dev/screens/<name>` previews each special screen (guest name prompt, link ended, blocked, name forgotten, unreachable, wiki unavailable, empty deck, error page, not found) by rendering the real component with sample data. A new special screen gets a row in `SCREENS` |
 | `src/shell/` | The error page |
 | `wikis/_template/` | Template for new wikis, with `kits/` (page kits every wiki can use). Every other folder in `wikis/` is git-ignored |
 | `docs/` | `elements.md` (element reference, shown on `/dev/ui`; its images are in `assets/`, served as wiki `_dev`), `adr/` |

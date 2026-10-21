@@ -83,14 +83,7 @@ export function WikiLayout() {
     else window.scrollTo(0, 0);
   }, [page.data?.path, special]);
 
-  if (wiki.error) {
-    return (
-      <div className="sh-wiki-missing">
-        <p>This wiki isn't available: {wiki.error.message}</p>
-        {!isGuest && <Link to="/">Back to the deck</Link>}
-      </div>
-    );
-  }
+  if (wiki.error) return <WikiUnavailable reason={wiki.error.message} />;
 
   return (
     <WikiIndexContext.Provider value={pages}>
@@ -132,5 +125,15 @@ export function WikiLayout() {
         <ImageViewer wikiId={wikiId} path={path} open={viewing} onClose={() => setViewing(null)} />
       </ViewerContext.Provider>
     </WikiIndexContext.Provider>
+  );
+}
+
+/** A wiki that can't be shown: gone, broken, or the server isn't answering. */
+export function WikiUnavailable({ reason }: { reason: string }) {
+  return (
+    <div className="sh-wiki-missing">
+      <p>This wiki isn't available: {reason}</p>
+      {!isGuest && <Link to="/">Back to the deck</Link>}
+    </div>
   );
 }

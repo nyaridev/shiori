@@ -34,17 +34,19 @@ export function Deck() {
   });
   const from = (useLocation().state as { from?: string } | null)?.from;
 
-  if (wikis.error) return <DeckMessage>The Shiori server isn't reachable. Is it running?</DeckMessage>;
+  if (wikis.error) return <DeckOffline />;
   if (!wikis.data) return <div className="deck deck-scope" />;
-  if (wikis.data.length === 0) {
-    return (
-      <DeckMessage>
-        No wikis yet. Ask an agent to make one: <code>pnpm wiki new &lt;id&gt;</code>
-      </DeckMessage>
-    );
-  }
+  if (wikis.data.length === 0) return <NoWikis />;
   return <DeckStage wikis={wikis.data} start={startIndex(wikis.data, from)} />;
 }
+
+export const DeckOffline = () => <DeckMessage>The Shiori server isn't reachable. Is it running?</DeckMessage>;
+
+export const NoWikis = () => (
+  <DeckMessage>
+    No wikis yet. Ask an agent to make one: <code>pnpm wiki new &lt;id&gt;</code>
+  </DeckMessage>
+);
 
 function DeckMessage({ children }: { children: React.ReactNode }) {
   return (

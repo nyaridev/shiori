@@ -1,4 +1,5 @@
 import { createBrowserRouter, Outlet, RouterProvider } from "react-router";
+import { Crash, SCREENS, Screen } from "./dev/Screens.tsx";
 import { UiPage } from "./dev/UiPage.tsx";
 import { GuestGate, GuestHome } from "./guest/GuestGate.tsx";
 import { Deck } from "./home/Deck.tsx";
@@ -31,6 +32,16 @@ const ownerRoutes = () =>
             { path: "/", element: <Deck /> },
             { path: "/w/:wikiId/*", element: <WikiLayout /> },
             { path: "/dev/ui", element: <UiPage /> },
+            // Previews of the special screens (Screens.tsx); the error page and "not found" are real route errors.
+            { path: "/dev/screens/error", element: <Crash /> },
+            {
+              path: "/dev/screens/:name",
+              element: <Screen />,
+              loader: ({ params }) =>
+                SCREENS.some((s) => s.name === params.name && s.render)
+                  ? null
+                  : Promise.reject(new Response("", { status: 404 })),
+            },
             notFound,
           ],
         },
