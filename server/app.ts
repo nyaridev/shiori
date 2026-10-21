@@ -33,7 +33,8 @@ const TYPES: Record<string, string> = {
   ".woff2": "font/woff2",
 };
 
-const quoteSchema = z.strictObject({ exact: z.string().min(1).max(4000), prefix: z.string(), suffix: z.string() });
+// An empty `exact` is a comment on the whole page.
+const quoteSchema = z.strictObject({ exact: z.string().max(4000), prefix: z.string(), suffix: z.string() });
 const newAnswerSchema = z.strictObject({
   page: z.string(),
   question: z.string().min(1),
@@ -114,7 +115,7 @@ export function buildApp({ registry, live, staticDir }: AppOptions) {
         answers: counts.get(`${p.path}#${q.id}`) ?? 0,
       })),
     );
-    return c.json({ pages: corpus.index, wanted: corpus.wanted, questions });
+    return c.json({ pages: corpus.index, wanted: corpus.wanted, questions, tasks: corpus.tasks });
   });
 
   app.get("/api/wikis/:id/search", (c) => {

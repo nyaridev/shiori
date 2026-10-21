@@ -2,8 +2,10 @@
 // categories, the previous and next pages in sidebar order, and when it was last edited.
 import { Link } from "react-router";
 import type { PageData, PageEntry, PageLink } from "../../shared/api.ts";
+import { PageDiscussion } from "../comments/PageDiscussion.tsx";
 import { ago } from "../lib/time.ts";
 import { Icon } from "../ui/index.ts";
+import { usePage } from "./PageContext.ts";
 import { pageHref, specialHref } from "./PageHead.tsx";
 import { QuestionCard } from "./questions/QuestionCard.tsx";
 import { Related } from "./Related.tsx";
@@ -99,6 +101,7 @@ function RecentlyUpdated({ wikiId, index }: { wikiId: string; index: PageEntry[]
 
 export function PageFoot({ wikiId, page, index }: { wikiId: string; page: PageData; index?: PageEntry[] }) {
   const home = page.path === "";
+  const ctx = usePage();
   // Questions the page doesn't place itself collect here: open ones first.
   const unplaced = page.questions
     .filter((q) => !page.placed.questions.includes(q.id))
@@ -128,6 +131,7 @@ export function PageFoot({ wikiId, page, index }: { wikiId: string; page: PageDa
         </section>
       )}
       {home && index && <RecentlyUpdated wikiId={wikiId} index={index} />}
+      {ctx && <PageDiscussion threads={ctx.threads} />}
       {page.related.length > 0 && !page.placed.related && (
         <section className="sh-foot-block" aria-labelledby="sh-related-title">
           <h2 id="sh-related-title" className="sh-sections-title">

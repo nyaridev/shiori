@@ -159,3 +159,41 @@
   justify-content: flex-end;
   gap: var(--s-1);
 }
+
+/* The rail's pointer to the comments on the whole page. */
+.sh-threads-page-link {
+  display: block;
+  padding: var(--s-2) var(--s-1);
+  color: var(--accent);
+  font-size: var(--t-sm);
+  text-decoration: none;
+}
+.sh-threads-page-link:hover {
+  text-decoration: underline;
+}
+
+/* The page's Discussion panel (PageDiscussion.tsx). */
+.sh-discussion-compose {
+  display: grid;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+.sh-discussion-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-discussion-threads {
+  display: grid;
+  gap: var(--s-2);
+}
+.sh-discussion .sh-thread {
+  background: var(--surface);
+}
+.sh-discussion-count {
+  margin-left: var(--s-2);
+  color: var(--text-soft);
+}

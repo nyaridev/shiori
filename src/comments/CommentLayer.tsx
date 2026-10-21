@@ -1,7 +1,7 @@
 // Comments on page text: select text → "Comment" bubble → composer. Anchored threads are painted with the CSS
 // Custom Highlight API, so the page's DOM is never changed. Clicking highlighted text opens its thread.
 import { type RefObject, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
-import { findQuote, quoteAt } from "../../shared/quote.ts";
+import { findQuote, isPageComment, quoteAt } from "../../shared/quote.ts";
 import { Button, Icon, Popover, PopoverAnchor, PopoverContent, Textarea } from "../ui/index.ts";
 import "./comments.css";
 import { offsetsOf, rangeAt, textIndex } from "./textIndex.ts";
@@ -48,6 +48,8 @@ export function CommentLayer({ container, contentKey, threads, active, onActivat
     const index = textIndex(el);
     const map: Anchors = new Map();
     for (const t of threads.threads) {
+      // Comments on the whole page have no text to find.
+      if (isPageComment(t.quote)) continue;
       const at = findQuote(index.text, t.quote);
       map.set(t.id, at && rangeAt(index, at.start, at.end));
     }

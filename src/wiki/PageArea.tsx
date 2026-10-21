@@ -40,7 +40,10 @@ export function PageArea({
   const [showProblems, setShowProblems] = useState(false);
   const onAnchors = useCallback((a: Anchors) => setAnchors(a), []);
   const { answers, answer } = useAnswers(wiki.id, path);
-  const context = useMemo(() => ({ wikiId: wiki.id, page, answers, answer }), [wiki.id, page, answers, answer]);
+  const context = useMemo(
+    () => ({ wikiId: wiki.id, page, answers, answer, threads }),
+    [wiki.id, page, answers, answer, threads],
+  );
 
   return (
     <PageContext.Provider value={context}>

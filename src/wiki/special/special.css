@@ -101,6 +101,43 @@
 .sh-special-empty {
   color: var(--muted);
 }
+.sh-tasks-bar {
+  margin-bottom: var(--s-4);
+}
+.sh-tasks-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.sh-task-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-2);
+  padding: 5px var(--s-2);
+  border-radius: var(--r-sm);
+  font-size: var(--t-sm);
+}
+.sh-task-row:hover {
+  background: var(--hover);
+}
+.sh-task-text {
+  flex: 1;
+  color: var(--text);
+}
+.sh-task-row[data-done] .sh-task-text {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.sh-task-section {
+  flex: none;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  text-decoration: none;
+}
+.sh-task-section:hover {
+  color: var(--accent);
+}
 .sh-special-answer {
   color: var(--tone-good);
   font-size: var(--t-sm);

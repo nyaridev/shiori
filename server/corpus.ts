@@ -3,7 +3,7 @@
 // changes; nothing is written.
 import type { Element, Root } from "hast";
 import { visit } from "unist-util-visit";
-import type { PageData, PageEntry, PageLink, WantedPage } from "../shared/api.ts";
+import type { PageData, PageEntry, PageLink, TaskEntry, WantedPage } from "../shared/api.ts";
 import { textOf } from "./markdown/elements.ts";
 import { type PageFile, renderPage } from "./pages.ts";
 import type { Wiki } from "./registry.ts";
@@ -12,6 +12,8 @@ import { indexPage, type SearchDoc } from "./search.ts";
 export interface Corpus {
   pages: Map<string, PageData>;
   index: PageEntry[];
+  /** Every checkbox in the wiki, page by page in reading order. */
+  tasks: TaskEntry[];
   /** Pages red links point to, most wanted first. */
   wanted: WantedPage[];
   search: SearchDoc[];
@@ -44,6 +46,47 @@ function linksIn(tree: Root, wikiId: string): Map<string, string> {
     const path = decodeURIComponent(href.slice(prefix.length).split("#")[0].replace(/^\//, ""));
     if (!out.has(path)) out.set(path, textOf(el as never));
   });
+  return out;
+}
+
+const isCheckbox = (n: unknown) => {
+  const el = n as Element;
+  return el?.type === "element" && el.tagName === "input" && el.properties.type === "checkbox";
+};
+
+/** A list item's own text, without the lists nested in it. */
+function ownText(li: Element): string {
+  const parts: string[] = [];
+  const walk = (node: Element | Root) => {
+    for (const c of node.children) {
+      if (c.type === "text") parts.push(c.value);
+      else if (c.type === "element" && c.tagName !== "ul" && c.tagName !== "ol") walk(c);
+    }
+  };
+  walk(li);
+  return parts.join("").replace(/\s+/g, " ").trim();
+}
+
+/** The task list items of a page (GFM `- [ ]`), each under the `##`/`###` heading it follows. */
+function tasksIn(page: PageData): TaskEntry[] {
+  const out: TaskEntry[] = [];
+  let section: TaskEntry["section"];
+  const ref = { path: page.path, title: page.title, icon: page.icon, isPage: true };
+  for (const node of page.hast.children) {
+    const el = node as Element;
+    if (el.type === "element" && (el.tagName === "h2" || el.tagName === "h3")) {
+      section = el.properties.id ? { id: String(el.properties.id), heading: textOf(el as never).trim() } : undefined;
+      continue;
+    }
+    visit(node as unknown as Root, "element", (li: Element) => {
+      if (li.tagName !== "li") return;
+      // The box is the item's first child, or the first thing in its first paragraph (loose lists).
+      const first = li.children.find((c) => c.type === "element") as Element | undefined;
+      const box = isCheckbox(first) ? first : first?.tagName === "p" ? first.children.find(isCheckbox) : undefined;
+      if (!box) return;
+      out.push({ page: ref, section, text: ownText(li), done: (box as Element).properties.checked === true });
+    });
+  }
   return out;
 }
 
@@ -115,5 +158,6 @@ export function buildCorpus(wiki: Wiki, files: PageFile[]): Corpus {
     }),
   );
   wantedList.sort((a, b) => b.from.length - a.from.length || a.title.localeCompare(b.title));
-  return { pages, index, wanted: wantedList, search };
+  const tasks = [...pages.values()].flatMap(tasksIn);
+  return { pages, index, tasks, wanted: wantedList, search };
 }

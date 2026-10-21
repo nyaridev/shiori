@@ -140,10 +140,19 @@ export interface WantedPage {
 }
 
 /** Everything lists, special pages and link previews need about a wiki's pages. */
+/** A checkbox (`- [ ] …`) somewhere in the wiki, with its page and the heading it's under. */
+export interface TaskEntry {
+  page: PageLink;
+  section?: { id: string; heading: string };
+  text: string;
+  done: boolean;
+}
+
 export interface WikiIndex {
   pages: PageEntry[];
   wanted: WantedPage[];
   questions: QuestionEntry[];
+  tasks: TaskEntry[];
 }
 
 /** `[start, end)` ranges of a string that match the search. */

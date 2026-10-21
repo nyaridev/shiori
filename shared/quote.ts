@@ -4,6 +4,10 @@
 
 export const CONTEXT = 32;
 
+/** A comment on the whole page rather than on selected text has an empty quote. */
+export const PAGE_QUOTE = { exact: "", prefix: "", suffix: "" } as const;
+export const isPageComment = (quote: Quote) => quote.exact === "";
+
 export interface Quote {
   exact: string;
   prefix: string;

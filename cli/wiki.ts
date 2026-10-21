@@ -11,6 +11,7 @@ import { discover, loadWiki, readLinks, type Wiki, writeLinks } from "../server/
 import { copyTemplate } from "../server/template.ts";
 import { addMessage, closeAll, getThread, listThreads, setStatus, waitingForAgent } from "../server/threads.ts";
 import type { Answer, PageData, Question, Thread } from "../shared/api.ts";
+import { isPageComment } from "../shared/quote.ts";
 import { wikiIdSchema } from "../shared/schema.ts";
 
 const HELP = `Shiori wiki CLI
@@ -68,7 +69,8 @@ const short = (s: string, n = 90) => (s.length > n ? `${s.slice(0, n - 1)}…` :
 
 function printThread(wiki: Wiki, t: Thread) {
   console.log(`\n#${t.id} [${t.status}] ${wiki.id} › ${t.page || "(home)"}  pages/${t.page || "index"}.md`);
-  console.log(`  quote: …${short(t.quote.prefix, 32)}«${t.quote.exact}»${short(t.quote.suffix, 32)}…`);
+  if (isPageComment(t.quote)) console.log("  on:    the whole page");
+  else console.log(`  quote: …${short(t.quote.prefix, 32)}«${t.quote.exact}»${short(t.quote.suffix, 32)}…`);
   for (const m of t.messages)
     console.log(`  ${m.author === "user" ? "user " : "agent"}: ${m.body.replace(/\n/g, "\n         ")}`);
 }

@@ -1,9 +1,10 @@
 // Special pages (ADR-0002): wiki-wide lists under /w/<wiki>/_/, like Wikipedia's "Special:" pages. Page files can't
 // start with `_`, so these never clash with a page. They read the wiki's page index, so they're always in step with
 // the files.
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Link } from "react-router";
-import type { PageEntry, QuestionEntry, WantedPage, WikiDetail, WikiIndex } from "../../../shared/api.ts";
+import type { PageEntry, QuestionEntry, TaskEntry, WantedPage, WikiDetail, WikiIndex } from "../../../shared/api.ts";
+import { Icon, Segmented } from "../../ui/index.ts";
 import { PageCard, PageChip } from "../PageFoot.tsx";
 import { Crumbs, pageHref, specialHref } from "../PageHead.tsx";
 import { StatusBadge } from "../StatusBadge.tsx";
@@ -12,6 +13,7 @@ import "./special.css";
 /** The special pages the sidebar's Tools list links to. */
 export const SPECIALS = [
   { route: "recent", icon: "🕘", title: "Recent changes", summary: "Every page, most recently edited first." },
+  { route: "tasks", icon: "✅", title: "Tasks", summary: "Every checkbox in the wiki, page by page." },
   { route: "pages", icon: "📚", title: "All pages", summary: "Every page in the wiki, from A to Z." },
   { route: "categories", icon: "🏷️", title: "Categories", summary: "Pages grouped by their tags." },
   {
@@ -156,6 +158,83 @@ function Category({ wikiId, pages }: { wikiId: string; pages: PageEntry[] }) {
   );
 }
 
+type TaskFilter = "open" | "done" | "all";
+
+function Tasks({ wikiId, tasks }: { wikiId: string; tasks: TaskEntry[] }) {
+  const [filter, setFilter] = useState<TaskFilter>("open");
+  if (!tasks.length)
+    return <p className="sh-special-empty">No page has a checklist yet. Write `- [ ] Something to do`.</p>;
+  const byPage = new Map<string, TaskEntry[]>();
+  for (const t of tasks) byPage.set(t.page.path, [...(byPage.get(t.page.path) ?? []), t]);
+  const open = tasks.filter((t) => !t.done).length;
+  return (
+    <>
+      <div className="sh-tasks-bar">
+        <Segmented
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: "open", label: `Open ${open}` },
+            { value: "done", label: `Done ${tasks.length - open}` },
+            { value: "all", label: "All" },
+          ]}
+        />
+      </div>
+      {[...byPage].map(([path, list]) => {
+        const shown = list.filter((t) => filter === "all" || (filter === "done") === t.done);
+        if (!shown.length) return null;
+        const done = list.filter((t) => t.done).length;
+        const page = list[0].page;
+        return (
+          <section key={path} className="sh-special-group">
+            <h2 className="sh-special-heading sh-tasks-heading">
+              <Link to={pageHref(wikiId, path)} className="sh-special-link">
+                <span aria-hidden="true">{page.icon ?? "📄"}</span>
+                {page.title}
+              </Link>
+              <span
+                className="sh-progress"
+                role="progressbar"
+                aria-valuenow={done}
+                aria-valuemin={0}
+                aria-valuemax={list.length}
+              >
+                <span className="sh-progress-track">
+                  <span className="sh-progress-bar" style={{ width: `${(done / list.length) * 100}%` }} />
+                </span>
+                <span className="sh-progress-value">
+                  {done}/{list.length}
+                </span>
+              </span>
+            </h2>
+            <ul className="sh-special-list">
+              {shown.map((t, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: two tasks can read the same; order is stable.
+                <li key={i} className="sh-task-row" data-done={t.done || undefined}>
+                  <span
+                    className="sh-task"
+                    data-checked={t.done || undefined}
+                    role="img"
+                    aria-label={t.done ? "done" : "open"}
+                  >
+                    {t.done && <Icon name="check" size={12} />}
+                  </span>
+                  <span className="sh-task-text">{t.text}</span>
+                  {t.section && (
+                    <Link to={`${pageHref(wikiId, path)}#${t.section.id}`} className="sh-task-section">
+                      {t.section.heading}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
+    </>
+  );
+}
+
 function Questions({ wikiId, questions }: { wikiId: string; questions: QuestionEntry[] }) {
   if (!questions.length) {
     return <p className="sh-special-empty">No page asks a question yet. Add `questions:` to a page's frontmatter.</p>;
@@ -239,6 +318,8 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
     body =
       name === "recent" ? (
         <Recent wikiId={wiki.id} pages={pages} />
+      ) : name === "tasks" ? (
+        <Tasks wikiId={wiki.id} tasks={index?.tasks ?? []} />
       ) : name === "questions" ? (
         <Questions wikiId={wiki.id} questions={index?.questions ?? []} />
       ) : name === "wanted" ? (

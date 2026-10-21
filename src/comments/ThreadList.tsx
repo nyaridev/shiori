@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Thread } from "../../shared/api.ts";
+import { isPageComment } from "../../shared/quote.ts";
 import { ago } from "../lib/time.ts";
 import { Badge, Button, cx, Segmented, Textarea } from "../ui/index.ts";
 import type { Anchors } from "./CommentLayer.tsx";
@@ -25,7 +26,9 @@ export function ThreadList({
   onActivate: (id: number | null) => void;
 }) {
   const [filter, setFilter] = useState<Filter>("open");
-  const all = threads.threads;
+  // Comments on the whole page live in the page's Discussion panel; this rail is for comments on its text.
+  const all = threads.threads.filter((t) => !isPageComment(t.quote));
+  const onPage = threads.threads.filter((t) => isPageComment(t.quote) && t.status === "open").length;
   const shown = all.filter((t) => (filter === "open") === (t.status === "open"));
   const openCount = all.filter((t) => t.status === "open").length;
 
@@ -53,6 +56,11 @@ export function ThreadList({
           {filter === "open" ? "Select text on the page to leave a comment." : "No closed comments."}
         </p>
       )}
+      {onPage > 0 && (
+        <a href="#discussion" className="sh-threads-page-link">
+          💬 {onPage} comment{onPage === 1 ? "" : "s"} on the whole page
+        </a>
+      )}
       {shown.map((t) => (
         <ThreadCard
           key={t.id}
@@ -70,7 +78,7 @@ export function ThreadList({
   );
 }
 
-function ThreadCard({
+export function ThreadCard({
   thread,
   orphaned,
   active,
@@ -115,7 +123,7 @@ function ThreadCard({
           {orphaned && <Badge tone="warn">Text changed</Badge>}
           <span className="sh-thread-time">{ago(thread.createdAt)}</span>
         </span>
-        <span className="sh-thread-quote">{thread.quote.exact}</span>
+        {!isPageComment(thread.quote) && <span className="sh-thread-quote">{thread.quote.exact}</span>}
         {!active && <span className="sh-thread-preview">{thread.messages[0]?.body}</span>}
       </button>
       {active && (

@@ -45,7 +45,8 @@ their content with the project's own, rename or delete what doesn't fit, and add
   wait in `pnpm wiki inbox`. Decide, then set that question's `status: resolved` and `answer: "…"`.
 - The app adds the rest around the body: breadcrumbs, the last-updated time and reading time, cards for the pages
   under a page ("In this section"), "What links here", the categories bar, previous/next links in sidebar order and
-  the last-edited line. The sidebar's Tools link to Recent changes, All pages and Categories. Don't write those by
+  the last-edited line. The sidebar's Tools link to Recent changes, Tasks (every `- [ ]` in the wiki), All pages,
+  Categories, Questions and Wanted pages. Don't write those by
   hand; give pages a good `summary`, `icon` and `tags` so they read well.
 - Don't repeat the title as a `#` heading; start the body with text or `##` sections. `##` and `###` build the
   table of contents.
@@ -103,6 +104,9 @@ The full reference with examples is `{{shiori}}/docs/elements.md`, and the app s
 Keep themes subtle: change the accent first, and the rest only when the project calls for it.
 
 ## Comments
+
+People comment on selected text, or on the whole page from its Discussion panel; the inbox shows the quoted text, or
+`on: the whole page`.
 
 Run these from the Shiori folder (`{{shiori}}`):
 
