@@ -11,7 +11,6 @@ Every wiki has the same structure and components, and its own light theme (color
 | Launcher | What |
 |---|---|
 | `start-web.bat` | Builds the UI and opens http://localhost:4400 |
-| `start-app.bat` | Opens Shiori in its own borderless window (the first run builds it and needs Rust) |
 | `start-dev.bat` | Hot-reload dev mode on http://localhost:4410 |
 
 Needs Node 25+ and pnpm. On the deck: drag and release to spin, scroll, or use the arrow keys; click or press
@@ -32,7 +31,7 @@ Agents: see `AGENTS.md`.
 
 The Share button on a wiki makes a temporary link for friends (view, or view and comment). Sharing needs:
 
-- **The built app**: `start-web.bat` or `start-app.bat`. Dev mode can't share.
+- **The built app**: `start-web.bat`. Dev mode can't share.
 - **cloudflared**, which gives the link a public `https://….trycloudflare.com` address (no account needed):
 
   ```bash

@@ -27,8 +27,8 @@ every change to a wiki.
 ## What this is
 
 A local web app (React + a small Hono server on Node) that shows a deck of wikis and renders them with one shared
-set of components. Each wiki only nudges the design tokens with its `theme.json`. A Tauri window
-(`start-app.bat`) wraps the same app with a custom title bar. Decisions: `docs/adr/` (0001 architecture, 0002 wiki pages, links and universal elements, 0003 sharing a wiki by link).
+set of components. Each wiki only nudges the design tokens with its `theme.json`. It runs in the browser only.
+Decisions: `docs/adr/` (0001 architecture, 0002 wiki pages, links and universal elements, 0003 sharing a wiki by link).
 
 ## Commands
 
@@ -36,7 +36,6 @@ set of components. Each wiki only nudges the design tokens with its `theme.json`
 |---|---|
 | `start-web.bat` / `pnpm build && pnpm start` | Built app on http://localhost:4400. Only the built app shares wikis (ADR-0003): while a share link is active, its guest server listens on 127.0.0.1:4420 and `cloudflared` (`winget install Cloudflare.cloudflared`) gives it a public address |
 | `start-dev.bat` / `pnpm dev` | Vite on http://localhost:4410 + API server on 4411, both reloading. Dev shows **only the template** (filled in, in the OS temp folder), repeated around the deck |
-| `start-app.bat` | The desktop window (builds `src-tauri` once; `pnpm app:build` rebuilds it, `pnpm app` runs it in dev) |
 | `pnpm check` | `tsc` + Biome + Vitest; must pass before a task is done |
 | `pnpm format` | Biome fixes |
 
@@ -50,12 +49,11 @@ set of components. Each wiki only nudges the design tokens with its `theme.json`
 | `src/ui/` | The primitives: Radix wrappers and hand-made parts, styled only with tokens (`ui.css`) |
 | `src/home/` | The deck: `useDeck.ts` (input + per-frame layout), `physics.ts`, `Deck.tsx`, `Starfield.tsx` (purple haze + parallax star layers behind the deck), `Search.tsx` + `match.ts` (type anywhere to search); `cards/` is the card: `ConstellationCard.tsx` (art, name plate) and `sky.ts` (the random constellation each cycle draws); `opening/` is the card-to-wiki transition: `openCard.ts` (the camera dive; prefetches the wiki into `lib/cache.ts`), `paintCard.ts` (the card face painted into a texture, mirroring `card.css`), `warp.ts` + `shaders.ts` (a WebGL2 canvas on `<body>` that outlives the route change: radial blur, light streaks, the flash) |
 | `src/wiki/` | `WikiLayout.tsx` (sidebar, page, rail), `PageArea.tsx` (one page), `PageHead.tsx` (breadcrumbs, title, status/tags/updated; the hero on a home page), `PageInfobox.tsx` (the frontmatter fact box), `PagePreview.tsx` + `WikiIndexContext.ts` (link previews), `PageContext.ts` (the page, for elements), `questions/` (question cards and answers), `Related.tsx`, `PageFoot.tsx` (cards for the pages below, what links here, categories, previous/next, last edited), `special/` (Recent changes, Tasks, All pages, Categories, Questions, Wanted pages under `/w/<wiki>/_/`; `MissingPage.tsx` for red links), `SearchPalette.tsx` (Ctrl+K / "/" search), `Sidebar.tsx`, `Toc.tsx`; `markdown/` renders server hast with `elements.tsx` (`planning.css` styles stats, timeline, cards, gallery, progress) |
-| `src/sharing/` | The owner's Share dialog (ADR-0003): `ShareDialog.tsx` (new link, active links with guests and activity, block, revoke, stop all; opened from the sidebar head and the desktop title bar), `useShares.ts` (polls `/api/shares` while open) |
+| `src/sharing/` | The owner's Share dialog (ADR-0003): `ShareDialog.tsx` (new link, active links with guests and activity, block, revoke, stop all; opened from the sidebar head), `useShares.ts` (polls `/api/shares` while open) |
 | `src/guest/` | Guest mode (ADR-0003): `GuestGate.tsx` (checks the link, asks a name, says when the link ended), `GuestContext.ts` (who may comment and resolve, how authors are signed). `src/lib/base.ts` puts API and media URLs under the link |
 | `src/comments/` | Selection → composer, highlights (CSS Custom Highlight API), thread list (the rail: comments on text), `PageDiscussion.tsx` (comments on the whole page, at its bottom). The owner hides a guest's message from its card (ADR-0003) |
 | `src/dev/` | `/dev/ui`: every primitive and element in the default theme |
-| `src/shell/` | Desktop title bar (only inside Tauri), the error page |
-| `src-tauri/` | The window: starts `server/main.ts --static` on 4400 and loads it |
+| `src/shell/` | The error page |
 | `wikis/_template/` | Template for new wikis. Every other folder in `wikis/` is git-ignored |
 | `docs/` | `elements.md` (element reference, shown on `/dev/ui`; its images are in `assets/`, served as wiki `_dev`), `adr/` |
 

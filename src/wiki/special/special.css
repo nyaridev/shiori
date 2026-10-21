@@ -16,7 +16,7 @@
   border-bottom: var(--bw) solid var(--border);
   color: var(--text);
   font-size: var(--t-md);
-  scroll-margin-top: calc(var(--titlebar, 0px) + var(--s-6));
+  scroll-margin-top: var(--s-6);
 }
 .sh-special-list {
   display: grid;

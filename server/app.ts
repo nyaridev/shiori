@@ -60,7 +60,7 @@ export const localOnly: MiddlewareHandler = async (c, next) => {
   if (!isLoopback(c.req.url)) return c.json({ error: "not found" }, 404);
   const origin = c.req.header("origin");
   const reads = c.req.method === "GET" || c.req.method === "HEAD";
-  if (!reads && origin && !isLoopback(origin) && origin !== "tauri://localhost") {
+  if (!reads && origin && !isLoopback(origin)) {
     return c.json({ error: "cross-site request" }, 403);
   }
   return next();
@@ -75,7 +75,7 @@ export interface AppOptions {
   shares?: Shares;
   /** The tunnel that gives links a public address. */
   tunnel?: Pick<Tunnel, "status" | "start">;
-  /** Serve the built UI from this folder (start-web / the desktop app). */
+  /** Serve the built UI from this folder (start-web). */
   staticDir?: string;
 }
 
@@ -228,7 +228,7 @@ export function buildApp({ registry, live, data = createWikiData(live), shares, 
 
   // Share links (ADR-0003), for the Share dialog; the guest server serves the links.
   const noSharing = (c: Context) =>
-    c.json({ error: "Sharing needs the built app: start Shiori with start-web.bat or start-app.bat." }, 409);
+    c.json({ error: "Sharing needs the built app: start Shiori with start-web.bat." }, 409);
 
   const state = (s: Shares): SharesState => ({
     shares: s.list().map(s.info),

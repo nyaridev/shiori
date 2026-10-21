@@ -519,9 +519,6 @@
   position: fixed;
   z-index: 35;
 }
-:root[data-shell="desktop"] .sh-scrollbar-page {
-  top: calc(36px + 2px);
-}
 .sh-scrollbar-thumb {
   position: absolute;
   top: 0;

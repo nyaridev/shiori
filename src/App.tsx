@@ -4,14 +4,12 @@ import { GuestGate, GuestHome } from "./guest/GuestGate.tsx";
 import { Deck } from "./home/Deck.tsx";
 import { BASE, isGuest } from "./lib/base.ts";
 import { ErrorPage } from "./shell/ErrorPage.tsx";
-import { TitleBar } from "./shell/TitleBar.tsx";
 import { PageScrollbar, TooltipProvider } from "./ui/index.ts";
 import { WikiLayout } from "./wiki/WikiLayout.tsx";
 
 function Shell() {
   return (
     <>
-      <TitleBar />
       <Outlet />
       <PageScrollbar />
     </>
@@ -27,7 +25,7 @@ const ownerRoutes = () =>
       errorElement: <ErrorPage />,
       children: [
         {
-          // Errors in a page land here, so the desktop title bar stays.
+          // Errors in a page land here, inside the shell.
           errorElement: <ErrorPage />,
           children: [
             { path: "/", element: <Deck /> },

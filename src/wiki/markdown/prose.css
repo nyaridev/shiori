@@ -17,7 +17,7 @@
 .sh-prose h3,
 .sh-prose h4 {
   color: var(--text);
-  scroll-margin-top: calc(var(--titlebar, 0px) + var(--s-6));
+  scroll-margin-top: var(--s-6);
 }
 /* Beside a floating infobox, headings, quotes and rules stop at its edge instead of running under it. */
 .sh-prose h2,

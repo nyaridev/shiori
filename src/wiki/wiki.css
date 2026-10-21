@@ -1,7 +1,6 @@
 .sh-wiki {
   --sidebar: 264px;
   --rail: 300px;
-  --titlebar: 0px;
   display: grid;
   grid-template-columns: var(--sidebar) minmax(0, 1fr) var(--rail);
   min-height: 100%;
@@ -10,16 +9,12 @@
   overflow: clip;
   background: var(--bg);
 }
-:root[data-shell="desktop"] .sh-wiki {
-  --titlebar: 36px;
-}
 
 .sh-wiki-sidebar,
 .sh-wiki-rail {
   position: sticky;
   top: 0;
   height: 100vh;
-  padding-top: var(--titlebar);
 }
 
 /* Sidebar */
@@ -131,7 +126,7 @@ a.sh-nav-link.active {
   width: 100%;
   max-width: 820px;
   margin: 0 auto;
-  padding: calc(var(--titlebar) + var(--s-7)) var(--s-6) 30vh;
+  padding: var(--s-7) var(--s-6) 30vh;
 }
 
 /* Rail */
@@ -139,7 +134,7 @@ a.sh-nav-link.active {
   display: grid;
   align-content: start;
   gap: var(--s-6);
-  padding: calc(var(--titlebar) + var(--s-7)) var(--s-4) var(--s-6);
+  padding: var(--s-7) var(--s-4) var(--s-6);
 }
 .sh-wiki-rail-close {
   display: none;
@@ -229,7 +224,7 @@ a.sh-nav-link.active {
     background: var(--surface);
     border-left: var(--bw) solid var(--border);
     box-shadow: var(--shadow-2);
-    padding-top: calc(var(--titlebar) + var(--s-4));
+    padding-top: var(--s-4);
     translate: 100% 0;
     transition: translate 220ms var(--ease);
   }
@@ -282,10 +277,10 @@ a.sh-nav-link.active {
     background: rgb(0 0 0 / 0.4);
   }
   .sh-wiki-main {
-    padding: calc(var(--titlebar) + 72px) var(--s-4) 30vh;
+    padding: 72px var(--s-4) 30vh;
   }
   .sh-wiki-mobilebar {
-    top: calc(var(--titlebar) + var(--s-3));
+    top: var(--s-3);
     left: var(--s-3);
     bottom: auto;
     align-items: center;

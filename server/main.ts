@@ -1,4 +1,4 @@
-// Starts the Shiori server. `--static` also serves the built UI from dist/ (start-web.bat, the desktop app) and can
+// Starts the Shiori server. `--static` also serves the built UI from dist/ (start-web.bat) and can
 // share wikis: the guest server (ADR-0003) listens on its own port while at least one share link is active, and
 // cloudflared's Quick Tunnel gives it a public address.
 // `--dev` shows only the template, filled in as a preview (pnpm dev), and can't share.
@@ -83,7 +83,7 @@ if (shares) {
   });
 }
 
-// cloudflared stops with Shiori. The desktop app, which can't let Node clean up, ends the whole process tree.
+// cloudflared stops with Shiori, however the server ends.
 process.on("exit", () => tunnel.stop());
 const shutdown = () => {
   shares?.stopAll();

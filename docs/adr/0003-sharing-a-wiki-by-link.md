@@ -53,7 +53,7 @@ Owner's app 127.0.0.1:4400 (the normal Shiori) ── never tunneled
 | Provider | Cloudflare **Quick Tunnel** (`cloudflared tunnel --url http://127.0.0.1:4420`): no account, a random `*.trycloudflare.com` address, ends with the process |
 | Its limits | No Server-Sent Events and 200 requests in flight per tunnel; no uptime promise. Guests poll instead of SSE (below); 200 is far above a friends-sized wiki |
 | Later | A **named tunnel** (free Cloudflare account, own domain, stable address, SSE) and **Tailscale Funnel** (TLS ends on the host, so the tunnel provider can't read traffic) as alternative providers behind the same interface |
-| Install | `cloudflared` from `winget install Cloudflare.cloudflared` (or brew/apt); Shiori detects it and says how to install it. The desktop app bundles it later as a Tauri sidecar |
+| Install | `cloudflared` from `winget install Cloudflare.cloudflared` (or brew/apt); Shiori detects it and says how to install it |
 
 ### Share links
 
@@ -120,7 +120,7 @@ because the guest server listens on loopback for `cloudflared` alone.
 
 ### Owner's controls
 
-A **Share** button on a wiki (the title bar and the wiki header) opens a dialog:
+A **Share** button on a wiki (the wiki header) opens a dialog:
 
 - choose the kind and the duration, then copy the link;
 - see the active links with their expiry countdown, guests (name, last seen, comments) and recent activity;
@@ -143,7 +143,7 @@ Details settled while building the guest server (2026-10-21):
 | Part | Decision |
 |---|---|
 | Code | `server/sharing/`: `shares.ts` (the links), `limits.ts` (buckets and windows), `guest.ts` (the guest app). `server/wikiData.ts` holds the corpus cache both servers read, so a page renders once for owner and guests. Client: `src/lib/base.ts` (the link's base path), `src/guest/` (the gate, the name prompt, permissions) |
-| Owner API | `GET` / `POST /api/shares`, `DELETE /api/shares/:id` (revoke), `DELETE /api/shares` (stop all). Only `--static` (start-web, the desktop app) shares; in dev these answer `409` |
+| Owner API | `GET` / `POST /api/shares`, `DELETE /api/shares/:id` (revoke), `DELETE /api/shares` (stop all). Only `--static` (start-web) shares; in dev these answer `409` |
 | Guest server | `server/main.ts` starts it on `127.0.0.1:4420` (`--guest-port`) with the first active link and closes it with the last |
 | Public files | The app's code and styles (`/assets/*`, `/favicon.svg`) are served without a link: they hold no wiki data. Everything with data is under `/s/<token>/`; `/` and every other path answer `404` |
 | Names first | Every guest, on view links too, picks a name before reading; data routes answer `401` without one. Names the owner or an agent sign with (Host, Owner, Agent, You…) and names already used on the link are refused |
@@ -167,13 +167,13 @@ Details settled while building the tunnel and the owner's controls (2026-10-21):
 | Health check | Once cloudflared logs "Registered tunnel connection" (or 5 s after the address shows), `GET <address>/` until it answers with the guest server's own 404 and CSP, every 2 s, for up to 60 s. The name is resolved through 1.1.1.1, so Windows never caches "no such name" for an address a few seconds too new |
 | States | `GET /api/shares` returns `{ shares, tunnel, host }`; `tunnel.state` is `off`, `missing` (with the install command), `starting`, `up` (with the address) or `failed` (with cloudflared's last log line). `POST /api/shares/tunnel` tries again; any link starting or ending does too |
 | Links' address | `ShareInfo.url` is on the tunnel's address only while it's `up`; otherwise on `http://127.0.0.1:4420`, which the dialog says works on this PC only |
-| Stopping | With the last link, on `SIGINT`/`SIGTERM` and on the server's exit. The desktop app ends the server with `taskkill /T`, so cloudflared goes with it |
+| Stopping | With the last link, on `SIGINT`/`SIGTERM` and on the server's exit. |
 | Owner's name | Held in memory (`PUT /api/shares/host`, 2–32 characters); the dialog remembers it in the browser and sends it with each new link, so it survives restarts. A guest can't join with it, and the owner can't take a name a guest on an active link uses |
 | Blocking | `PATCH /api/shares/:id/guests/:guest { blocked }` blocks the guest and the address they joined from (a fresh cookie doesn't get around it); letting them back in clears both. Opening or reloading a link the guest server refuses (blocked `403`, ended `410`, unknown `404`) gets the bare app with that status, so the gate says why; the API under it answers JSON and nothing from the wiki |
 | Hiding | Migration 4 adds `hidden` to `messages` and `answers`. `PATCH /api/wikis/:id/messages/:mid` and `/answers/:aid { hidden }`, for guests' text only. Guests never receive hidden text; a hidden first message hides the whole thread from them (replying to it or resolving it answers `404`). `pnpm wiki inbox` and the question counts leave it out; `pnpm wiki threads` lists it marked "hidden by the owner"; backups keep the flag |
-| Dialog | A Share button in the sidebar head and, in the desktop window, the title bar. Never rendered for guests. In dev it shows the server's `409` message |
+| Dialog | A Share button in the sidebar head. Never rendered for guests. In dev it shows the server's `409` message |
 
-### Two PCs with the same wiki (phase 2)
+### Two PCs with the same wiki (phase 3)
 
 Pages are already files in git. To merge comments too: comments and answers get IDs that can't collide (ULIDs plus
 the PC they came from) instead of counters, `backup.json` merges by ID, and `pnpm wiki sync <id>` pulls, merges the
@@ -261,10 +261,6 @@ Anything not written into it can't be reached, so new owner features stay privat
 11. [x] Share dialog: kind, duration, copy link; active links, guests, activity
 12. [x] Moderation: hide a comment, block a guest; owner's display name for guests
 
-**Phase 3: desktop**
+**Phase 3: two PCs**
 
-13. [ ] Bundle `cloudflared` as a Tauri sidecar; first-run check
-
-**Phase 4: two PCs**
-
-14. [ ] Collision-free IDs for comments and answers; merging backups; `pnpm wiki sync`
+13. [ ] Collision-free IDs for comments and answers; merging backups; `pnpm wiki sync`

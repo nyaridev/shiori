@@ -28,6 +28,3 @@ Thumbs.db
 !.vscode/extensions.json
 .idea
 
-# Desktop shell (Tauri)
-src-tauri/target/
-src-tauri/gen/

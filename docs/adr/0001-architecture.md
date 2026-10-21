@@ -16,7 +16,7 @@ anchored to text and an agent CLI. Shiori generalizes it to many wikis. The requ
 - People can't edit pages. They select text and comment; comments are stored in the wiki's folder, never in the app.
 - The home screen is a deck of portrait cards (about 2:3; the card style sets the exact shape): fling to spin, soft
   snap to center, click to expand into the wiki. No header or footer. (Soft sounds were tried and removed.)
-- It runs in the browser (`start-web.bat`, `start-dev.bat`) and in its own borderless window (`start-app.bat`).
+- It runs in the browser (`start-web.bat`, `start-dev.bat`).
 - A page showing every primitive in the default theme.
 
 ## Decision
@@ -34,7 +34,6 @@ anchored to text and an agent CLI. Shiori generalizes it to many wikis. The requ
 | Live updates | `fs.watch` (recursive) → server-sent events | Agent edits and CLI replies appear without reloading |
 | Search | In-memory index per wiki on the server, cut into sections at `##`/`###`, rebuilt when pages change | Every page is already rendered to hast, so indexing is cheap; nothing is written at runtime, and a few hundred pages need no FTS |
 | Scrollbars | Native ones hidden; the app draws overlay scrollbars | A scrollbar appearing or disappearing never shifts the layout's width |
-| Desktop | Tauri 2 window, no decorations; the UI draws the title bar | Same app as the browser; the window starts the Node server itself |
 
 ### Theme contract
 
@@ -59,7 +58,7 @@ app's. This keeps every wiki recognizably the same app while letting it feel lik
 | Complexity | Medium: a client and a small server, both TypeScript |
 | Cost | Free, local only |
 | Scalability | Hundreds of pages per wiki and dozens of wikis with no index needed yet |
-| Familiarity | House stack; PrepKit uses the same Tauri setup |
+| Familiarity | House stack |
 
 **Pros:** Radix as requested, matches every other app here, one language end to end.
 **Cons:** More wiring than SvelteKit for server routes; the FOUMA wiki code can't be reused as-is (it's Svelte).
@@ -95,7 +94,7 @@ The ideas (text-quote anchors, CLI inbox loop, directive elements) were carried 
 
 ## Action Items
 
-1. [x] Server, CLI, template, deck, wiki view, comments, `/dev/ui`, Tauri window.
+1. [x] Server, CLI, template, deck, wiki view, comments, `/dev/ui`.
 2. [x] Search across a wiki's pages (Ctrl+K / "/" palette, jumps to the matching heading).
 3. [x] Comment backups to JSON (`pnpm wiki backup` / `restore`, `<wiki>/backup.json`; answers included).
 4. [ ] Code highlighting (Shiki) in code blocks.
