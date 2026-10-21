@@ -15,7 +15,8 @@ their content with the project's own, rename or delete what doesn't fit, and add
 | `theme.json` | Small style overrides on the app's defaults. See Theme below |
 | `cover.svg` | The deck card art, 2:3 (portrait), with the subject in the middle (card styles crop the edges). Art only, no title text: the app draws the title |
 | `pages/**/*.md` | The pages. `pages/index.md` is the home page; a folder is a sidebar section and its `index.md` is the section page |
-| `assets/` | Images and media used by pages |
+| `assets/` | Pictures used by pages |
+| `kits/` | Starting points for kinds of pages (`pnpm wiki kits`). Add your own `<name>.md` for kinds this project repeats; `{{page.title}}` and `{{page.date}}` are filled in |
 | `data/` | Written by the app: the comments database and smaller copies of pictures. Never edit or commit it |
 
 ## Writing pages
@@ -128,6 +129,7 @@ Run these from the Shiori folder (`{{shiori}}`):
 | `pnpm wiki reply {{id}} <thread> "…"` | Answer or ask back (the thread stays open) |
 | `pnpm wiki resolve {{id}} <thread> --note "…"` | Done: say what you changed (`--wontfix` to decline) |
 | `pnpm wiki check {{id}}` | Validate the wiki: frontmatter, links, files, elements, theme |
+| `pnpm wiki page {{id}} <path> --kit <name>` | A new page from a kit (`pnpm wiki kits` lists them), or bare without `--kit` |
 | `pnpm wiki rename {{id}} <page> <new path>` | Move or rename a page (a section moves with its pages); links and comments follow. Never move page files by hand |
 | `pnpm wiki backup {{id}}` / `restore {{id}}` | Save comments and answers to `backup.json` / load them back |
 

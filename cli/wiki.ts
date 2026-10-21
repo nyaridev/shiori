@@ -6,6 +6,7 @@ import { listAnswers } from "../server/answers.ts";
 import { importData, readBackup, writeBackup } from "../server/backup.ts";
 import { buildCorpus } from "../server/corpus.ts";
 import { mediaProblems } from "../server/files.ts";
+import { listKits, newPage } from "../server/kits.ts";
 import { listPages, renderPage } from "../server/pages.ts";
 import { APP_ROOT, slashes } from "../server/paths.ts";
 import { discover, loadWiki, readLinks, type Wiki, writeLinks } from "../server/registry.ts";
@@ -24,6 +25,9 @@ const HELP = `Shiori wiki CLI
   pnpm wiki link <folder>                          Show a wiki that lives elsewhere (wikis.local.json)
   pnpm wiki unlink <id|folder>                     Stop showing a linked wiki (its files stay)
   pnpm wiki check [id]                             Validate wiki.json, theme.json, pages, links, files, elements
+  pnpm wiki page <id> <path> [--kit <name>] [--title "T"] [--section]
+                                                   New page, from a kit or bare (--section: the folder's index.md)
+  pnpm wiki kits [id]                              The page kits a wiki can use
   pnpm wiki rename <id> <page> <new path> [--dry-run]
                                                    Move a page (or a section and everything under it), fix the
                                                    links to and from it, and move its comments and answers
@@ -49,6 +53,8 @@ const { positionals, values } = parseArgs({
     all: { type: "boolean", default: false },
     replace: { type: "boolean", default: false },
     "dry-run": { type: "boolean", default: false },
+    kit: { type: "string" },
+    section: { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
 });
@@ -247,6 +253,32 @@ const commands: Record<string, () => void> = {
     if (values.note) addMessage(w.root, id, "agent", values.note);
     setStatus(w.root, id, values.wontfix ? "wontfix" : "resolved");
     console.log(`#${id} ${values.wontfix ? "closed as won't fix" : "resolved"}.`);
+  },
+
+  page() {
+    const w = wikiById(args[0]);
+    if (!args[1]) fail("Give the page's path: `pnpm wiki page <id> weapons/iron-sword --kit item`.");
+    let file: string;
+    try {
+      file = newPage(w, APP_ROOT, args[1], { kit: values.kit, title: values.title, section: values.section });
+    } catch (e) {
+      fail((e as Error).message);
+    }
+    console.log(
+      `Made ${file}${values.kit ? ` from the ${values.kit} kit` : ""}. Fill it in, then run \`pnpm wiki check ${w.id}\`.`,
+    );
+  },
+
+  kits() {
+    const w = args[0] ? wikiById(args[0]) : discover(APP_ROOT).wikis[0];
+    const kits = w ? listKits(w, APP_ROOT) : [];
+    if (!kits.length) console.log("No kits.");
+    for (const k of kits)
+      console.log(`${k.name.padEnd(12)} ${k.description}${k.source === "wiki" ? "  (this wiki's own)" : ""}`);
+    if (kits.length)
+      console.log(
+        "\nUse one with `pnpm wiki page <id> <path> --kit <name>`. A wiki's own kits/<name>.md override these.",
+      );
   },
 
   rename() {

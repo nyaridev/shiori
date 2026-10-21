@@ -132,7 +132,10 @@ an infobox label costs nothing worse than an odd label. Option C remains open as
   never need exact paths. Readers move between pages through backlinks, categories and previews.
 - Harder: the server renders the whole wiki on every change. If that gets slow, render only the changed page and
   re-derive the links.
-- Revisit: per-domain kits (Option C) once a few real wikis show which fields repeat.
+- Revisit: validated per-domain fields (Option C) if kits aren't enough once real wikis show which fields repeat.
+- Kits came first as plain Markdown files, the light half of Option C: a kit pre-fills `type`, `icon`, `tags`,
+  infobox labels, questions and sections; nothing is validated against it. A wiki's `kits/<name>.md` come first,
+  then the template's (feature, decision, research, character, item, place), so older wikis get new kits too.
 
 ## Action Items
 
@@ -163,7 +166,8 @@ an infobox label costs nothing worse than an odd label. Option C remains open as
 **Later**
 
 16. [x] Page-level comments and a Discussion panel; Special:Tasks
-17. [ ] CLI: `wiki new <kit> <page>` (`wiki backup` / `restore` done, ADR-0001)
+17. [x] CLI: `pnpm wiki page <id> <path> --kit <name>` and `pnpm wiki kits` (named `page`, since `wiki new` makes
+    wikis; `wiki backup` / `restore` done, ADR-0001)
 19. [x] `pnpm wiki rename`: moves a page or a section, rewrites links that the move breaks or that named the old
     path (title wikilinks stay as written, code is left alone), and moves its comments and answers
 18. [x] Wide article column; the image viewer with the wiki's pictures in reading order
