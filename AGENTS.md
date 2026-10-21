@@ -21,6 +21,7 @@ the comment waits in the wiki's inbox for an agent.
 | `pnpm wiki rename <id> <page> <new path> [--dry-run]` | Move a page or a section; fixes links to and from it and moves its comments |
 | `pnpm wiki inbox [id]` | Comments waiting for an agent, with the quoted text and page file |
 | `pnpm wiki reply <id> <n> "…"` · `resolve <id> <n> --note "…"` · `reopen <id> <n>` | Answer comments |
+| `pnpm wiki sync <id> [--no-push]` | Two PCs with one wiki (ADR-0003 phase 3): pull, merge every PC's `sync/` file, commit this PC's, push |
 | `pnpm wiki backup [id]` · `restore <id> [--replace]` | Comments and answers to `<wiki>/backup.json` and back |
 
 Elements, frontmatter and theme keys: the wiki's `AGENTS.md` and `docs/elements.md`. Run `pnpm wiki check` after
@@ -46,7 +47,7 @@ Decisions: `docs/adr/` (0001 architecture, 0002 wiki pages, links and universal 
 
 | Path | What |
 |---|---|
-| `server/` | Hono API: `registry.ts` (finds wikis), `pages.ts` (page list, nav, render), `threads.ts` (comments in each wiki's `data/wiki.db`), `answers.ts` (answers to pages' questions, same database), `backup.ts` (both to and from `backup.json`), `rename.ts` (`wiki rename`), `kits.ts` (`wiki page`, `wiki kits`), `corpus.ts` (every page of a wiki rendered once: backlinks, the page index, the search index), `search.ts`, `live.ts` (file watcher → SSE), `wikiData.ts` (the per-wiki caches and versions both servers read), `files.ts` (a wiki's pictures: only images, `?w=` WebP copies cached in `data/`, and what `wiki check` says about media), `sharing/` (ADR-0003: `shares.ts` the links, guests and the owner's name in memory, `limits.ts` rate limits, `guest.ts` the separate guest server, `tunnel.ts` the cloudflared Quick Tunnel), `markdown/` (unified pipeline, `elements.ts` directives, `links.ts`, `wikilinks.ts`, `code.ts` Shiki colors for code blocks) |
+| `server/` | Hono API: `registry.ts` (finds wikis), `pages.ts` (page list, nav, render), `threads.ts` (comments in each wiki's `data/wiki.db`), `answers.ts` (answers to pages' questions, same database), `backup.ts` (both to and from `backup.json`), `rename.ts` (`wiki rename`), `kits.ts` (`wiki page`, `wiki kits`), `sync.ts` (`wiki sync`: per-PC files merged by uid; `ids.ts` makes the uids), `corpus.ts` (every page of a wiki rendered once: backlinks, the page index, the search index), `search.ts`, `live.ts` (file watcher → SSE), `wikiData.ts` (the per-wiki caches and versions both servers read), `files.ts` (a wiki's pictures: only images, `?w=` WebP copies cached in `data/`, and what `wiki check` says about media), `sharing/` (ADR-0003: `shares.ts` the links, guests and the owner's name in memory, `limits.ts` rate limits, `guest.ts` the separate guest server, `tunnel.ts` the cloudflared Quick Tunnel), `markdown/` (unified pipeline, `elements.ts` directives, `links.ts`, `wikilinks.ts`, `code.ts` Shiki colors for code blocks) |
 | `cli/wiki.ts` | The agent CLI (`pnpm wiki`); `server/template.ts` copies the template for it and for dev mode |
 | `shared/` | Used by server, CLI and UI: `schema.ts` (wiki.json, frontmatter), `theme.ts` (theme.json → tokens), `quote.ts` (comment anchors), `api.ts` (types) |
 | `src/ui/` | The primitives: Radix wrappers and hand-made parts, styled only with tokens (`ui.css`) |

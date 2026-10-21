@@ -1,10 +1,12 @@
 // Comment threads, stored in each wiki's own `data/wiki.db`. The app never writes into its own folder or into a
-// wiki's pages; this database is the only thing it writes.
+// wiki's pages. Every thread, message and answer has a `uid` that never collides between PCs and an `updated_at`, so
+// two PCs with the same wiki can merge their comments (`pnpm wiki sync`, sync.ts).
 
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { Author, Authored, Thread, ThreadStatus } from "../shared/api.ts";
 import type { Quote } from "../shared/quote.ts";
+import { newUid } from "./ids.ts";
 import { dataDir } from "./paths.ts";
 
 const MIGRATIONS = [
@@ -57,7 +59,30 @@ const MIGRATIONS = [
   // Moderation (ADR-0003): the owner hides a guest's text from guests and from the inbox, and can show it again.
   `alter table messages add column hidden integer not null default 0;
    alter table answers add column hidden integer not null default 0;`,
+  // Two PCs (ADR-0003, phase 3): ids that never collide, and when each row last changed, for merging. Rows from
+  // before get theirs in `fillUids` below.
+  `alter table threads add column uid text;
+   alter table threads add column updated_at text;
+   alter table messages add column uid text;
+   alter table messages add column updated_at text;
+   alter table answers add column uid text;
+   alter table answers add column updated_at text;
+   create unique index threads_uid on threads(uid);
+   create unique index messages_uid on messages(uid);
+   create unique index answers_uid on answers(uid);`,
 ];
+
+/** Gives rows made before uids (or restored from an old backup) theirs, and an `updated_at`. */
+export function fillUids(db: DatabaseSync) {
+  for (const table of ["threads", "messages", "answers"]) {
+    const rows = db.prepare(`select id from ${table} where uid is null`).all() as { id: number }[];
+    const set = db.prepare(`update ${table} set uid = ? where id = ?`);
+    for (const r of rows) set.run(newUid(), r.id);
+  }
+  db.exec(`update threads set updated_at = coalesce(resolved_at, created_at) where updated_at is null;
+    update messages set updated_at = created_at where updated_at is null;
+    update answers set updated_at = created_at where updated_at is null;`);
+}
 
 const open = new Map<string, DatabaseSync>();
 
@@ -74,6 +99,7 @@ export function dbFor(root: string): DatabaseSync {
     db.exec(`pragma user_version = ${v + 1}`);
     db.exec("commit");
   }
+  fillUids(db);
   open.set(root, db);
   return db;
 }
@@ -107,6 +133,8 @@ interface ThreadRow {
   status: ThreadStatus;
   created_at: string;
   resolved_at: string | null;
+  uid: string;
+  updated_at: string;
 }
 interface MessageRow {
   id: number;
@@ -117,6 +145,8 @@ interface MessageRow {
   body: string;
   created_at: string;
   hidden: number;
+  uid: string;
+  updated_at: string;
 }
 
 function hydrate(db: DatabaseSync, rows: ThreadRow[]): Thread[] {
@@ -132,6 +162,8 @@ function hydrate(db: DatabaseSync, rows: ThreadRow[]): Thread[] {
     status: r.status,
     createdAt: r.created_at,
     resolvedAt: r.resolved_at,
+    uid: r.uid,
+    updatedAt: r.updated_at,
     messages: messages
       .filter((m) => m.thread_id === r.id)
       .map((m) => ({
@@ -140,6 +172,8 @@ function hydrate(db: DatabaseSync, rows: ThreadRow[]): Thread[] {
         body: m.body,
         createdAt: m.created_at,
         ...(m.hidden ? { hidden: true } : {}),
+        uid: m.uid,
+        updatedAt: m.updated_at,
       })),
   }));
 }
@@ -167,16 +201,16 @@ export function getThread(root: string, id: number): Thread | null {
 }
 
 const INSERT_MESSAGE =
-  "insert into messages (thread_id, author, guest_id, guest_name, body, created_at) values (?, ?, ?, ?, ?, ?)";
+  "insert into messages (thread_id, author, guest_id, guest_name, body, created_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?)";
 
 export function createThread(root: string, page: string, quote: Quote, body: string, by: Writer = "user"): Thread {
   const db = dbFor(root);
   const at = now();
   db.exec("begin");
   const { lastInsertRowid } = db
-    .prepare("insert into threads (page, quote, created_at) values (?, ?, ?)")
-    .run(page, JSON.stringify(quote), at);
-  db.prepare(INSERT_MESSAGE).run(lastInsertRowid, ...authorColumns(by), body, at);
+    .prepare("insert into threads (page, quote, created_at, uid, updated_at) values (?, ?, ?, ?, ?)")
+    .run(page, JSON.stringify(quote), at, newUid(), at);
+  db.prepare(INSERT_MESSAGE).run(lastInsertRowid, ...authorColumns(by), body, at, newUid(), at);
   db.exec("commit");
   return getThread(root, Number(lastInsertRowid)) as Thread;
 }
@@ -184,7 +218,8 @@ export function createThread(root: string, page: string, quote: Quote, body: str
 export function addMessage(root: string, id: number, by: Writer, body: string): Thread | null {
   const db = dbFor(root);
   if (!getThread(root, id)) return null;
-  db.prepare(INSERT_MESSAGE).run(id, ...authorColumns(by), body, now());
+  const at = now();
+  db.prepare(INSERT_MESSAGE).run(id, ...authorColumns(by), body, at, newUid(), at);
   return getThread(root, id);
 }
 
@@ -192,9 +227,10 @@ export function addMessage(root: string, id: number, by: Writer, body: string): 
 export const startedBy = (t: Thread): string | undefined => t.messages[0]?.guestId;
 
 export function setStatus(root: string, id: number, status: ThreadStatus): Thread | null {
+  const at = now();
   dbFor(root)
-    .prepare("update threads set status = ?, resolved_at = ? where id = ?")
-    .run(status, status === "open" ? null : now(), id);
+    .prepare("update threads set status = ?, resolved_at = ?, updated_at = ? where id = ?")
+    .run(status, status === "open" ? null : at, at, id);
   return getThread(root, id);
 }
 
@@ -209,7 +245,7 @@ export function setHidden(root: string, messageId: number, hidden: boolean): Thr
     | undefined;
   if (!row) return null;
   if (row.author !== "guest") return "not a guest's";
-  db.prepare("update messages set hidden = ? where id = ?").run(hidden ? 1 : 0, messageId);
+  db.prepare("update messages set hidden = ?, updated_at = ? where id = ?").run(hidden ? 1 : 0, now(), messageId);
   return getThread(root, row.thread_id);
 }
 

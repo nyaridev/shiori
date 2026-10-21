@@ -16,6 +16,7 @@ their content with the project's own, rename or delete what doesn't fit, and add
 | `cover.svg` | The deck card art, 2:3 (portrait), with the subject in the middle (card styles crop the edges). Art only, no title text: the app draws the title |
 | `pages/**/*.md` | The pages. `pages/index.md` is the home page; a folder is a sidebar section and its `index.md` is the section page |
 | `assets/` | Pictures used by pages |
+| `sync/` | Comments and answers from each PC that has this wiki, one file per PC (`pnpm wiki sync`). Commit them; never edit them |
 | `kits/` | Starting points for kinds of pages (`pnpm wiki kits`). Add your own `<name>.md` for kinds this project repeats; `{{page.title}}` and `{{page.date}}` are filled in |
 | `data/` | Written by the app: the comments database and smaller copies of pictures. Never edit or commit it |
 
@@ -131,6 +132,7 @@ Run these from the Shiori folder (`{{shiori}}`):
 | `pnpm wiki check {{id}}` | Validate the wiki: frontmatter, links, files, elements, theme |
 | `pnpm wiki page {{id}} <path> --kit <name>` | A new page from a kit (`pnpm wiki kits` lists them), or bare without `--kit` |
 | `pnpm wiki rename {{id}} <page> <new path>` | Move or rename a page (a section moves with its pages); links and comments follow. Never move page files by hand |
+| `pnpm wiki sync {{id}}` | When this wiki is on more than one PC: pulls, merges every PC's comments, commits this PC's `sync/` file and pushes. Only when the owner asks. Thread numbers (`#12`) are each PC's own |
 | `pnpm wiki backup {{id}}` / `restore {{id}}` | Save comments and answers to `backup.json` / load them back |
 
 Run `pnpm wiki check {{id}}` after every change.

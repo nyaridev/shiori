@@ -11,6 +11,7 @@ import { listPages, renderPage } from "../server/pages.ts";
 import { APP_ROOT, slashes } from "../server/paths.ts";
 import { discover, loadWiki, readLinks, type Wiki, writeLinks } from "../server/registry.ts";
 import { applyRename, planRename, type RenamePlan } from "../server/rename.ts";
+import { syncWiki } from "../server/sync.ts";
 import { copyTemplate } from "../server/template.ts";
 import { addMessage, closeAll, getThread, listThreads, setStatus, waitingForAgent } from "../server/threads.ts";
 import type { Answer, Authored, PageData, Question, Thread } from "../shared/api.ts";
@@ -37,7 +38,9 @@ const HELP = `Shiori wiki CLI
   pnpm wiki resolve <id> <thread> [--note "…"] [--wontfix]
   pnpm wiki reopen <id> <thread>
   pnpm wiki backup [id]                            Save comments and answers to <wiki>/backup.json (commit it)
-  pnpm wiki restore <id> [--replace]               Load <wiki>/backup.json back into the wiki's database`;
+  pnpm wiki restore <id> [--replace]               Load <wiki>/backup.json back into the wiki's database
+  pnpm wiki sync <id> [--no-push]                  Share comments with the wiki's other PCs: pull, merge every
+                                                   PC's sync/ file, write this PC's, commit it and push`;
 
 const ACCENTS = ["#e8b86d", "#7fb7a4", "#8fa8e8", "#e0846b", "#c49be0", "#d4c46a", "#6fb3d4", "#e08aa8"];
 
@@ -55,6 +58,7 @@ const { positionals, values } = parseArgs({
     "dry-run": { type: "boolean", default: false },
     kit: { type: "string" },
     section: { type: "boolean", default: false },
+    "no-push": { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
 });
@@ -302,6 +306,25 @@ const commands: Record<string, () => void> = {
       `Fixed ${links} link${links === 1 ? "" : "s"} and moved ${moved.threads} comment thread${moved.threads === 1 ? "" : "s"}` +
         ` and ${moved.answers} answer${moved.answers === 1 ? "" : "s"}. Run \`pnpm wiki check ${w.id}\`.`,
     );
+  },
+
+  sync() {
+    const w = wikiById(args[0]);
+    let result: ReturnType<typeof syncWiki>;
+    try {
+      result = syncWiki(w.root, { push: !values["no-push"] });
+    } catch (e) {
+      fail((e as Error).message);
+    }
+    const { added, updated } = result.merged;
+    const read = result.read.length;
+    console.log(
+      `Merged ${read} other PC${read === 1 ? "" : "s"}: ${added.threads} new thread${added.threads === 1 ? "" : "s"}, ` +
+        `${added.messages} new message${added.messages === 1 ? "" : "s"}, ${added.answers} new answer${added.answers === 1 ? "" : "s"}, ${updated} change${updated === 1 ? "" : "s"}.`,
+    );
+    console.log(result.wrote ? `Wrote ${result.file}.` : `${result.file} was up to date.`);
+    for (const s of result.skipped) console.log(`Skipped ${s}`);
+    for (const step of result.steps) console.log(step);
   },
 
   backup() {

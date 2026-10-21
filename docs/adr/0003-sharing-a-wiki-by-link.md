@@ -180,6 +180,16 @@ Pages are already files in git. To merge comments too: comments and answers get 
 the PC they came from) instead of counters, `backup.json` merges by ID, and `pnpm wiki sync <id>` pulls, merges the
 backups, and pushes. Page conflicts stay git's job. The main case remains **one host PC plus share links**.
 
+As built (2026-10-21):
+
+| Part | Decision |
+|---|---|
+| Ids | Every thread, message and answer has a `uid` (a ULID: time, then randomness) and an `updated_at` (migration 6; older rows and old backups get theirs). The `#12` numbers stay, and are each PC's own |
+| Files | Each PC writes everything it knows to **its own** `sync/<pc name>-<id>.json` in the wiki folder (the backup format plus which PC wrote it). The PC's name and id are made once and kept in `data/machine.json`. Since no two PCs ever write the same file, git never has to merge comments: a merge of the files themselves can't conflict |
+| Merging | Every other PC's file is merged into the database by uid: new items are added; for one both PCs have, the newer `updated_at` wins (status, hidden flags, the page after a `wiki rename`). Nothing is ever deleted, so merging only adds or updates. A PC's file is rewritten only when its data changed, so a sync with nothing new commits nothing |
+| `pnpm wiki sync <id>` | Pulls (`--rebase --autostash`; a conflict stops it before anything changes), merges, writes this PC's file, commits only that file ("Sync comments from <pc>") and pushes, unless `--no-push`. A wiki that isn't in git (a Syncthing or Dropbox folder) only merges and writes. A wiki in Shiori's own `wikis/` is ignored by the app's repo, so that repo is never used |
+| `backup.json` | Stays the one-PC backup and keeps uids now, so a restore keeps each item's identity |
+
 ## Options Considered
 
 ### Option A: Guest server on the host + Cloudflare Quick Tunnel (chosen)
@@ -265,4 +275,4 @@ Anything not written into it can't be reached, so new owner features stay privat
 
 **Phase 3: two PCs**
 
-13. [ ] Collision-free IDs for comments and answers; merging backups; `pnpm wiki sync`
+13. [x] Collision-free IDs for comments and answers; one sync file per PC, merged by uid; `pnpm wiki sync`

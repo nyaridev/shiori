@@ -219,9 +219,15 @@ export function applyRename(wiki: Wiki, plan: RenamePlan): { threads: number; an
   let answers = 0;
   db.exec("begin");
   try {
+    // A new `updated_at`, so the move reaches the wiki's other PCs when they sync.
+    const at = new Date().toISOString();
     for (const [from, to] of plan.paths) {
-      threads += Number(db.prepare("update threads set page = ? where page = ?").run(to, from).changes);
-      answers += Number(db.prepare("update answers set page = ? where page = ?").run(to, from).changes);
+      threads += Number(
+        db.prepare("update threads set page = ?, updated_at = ? where page = ?").run(to, at, from).changes,
+      );
+      answers += Number(
+        db.prepare("update answers set page = ?, updated_at = ? where page = ?").run(to, at, from).changes,
+      );
     }
     db.exec("commit");
   } catch (error) {

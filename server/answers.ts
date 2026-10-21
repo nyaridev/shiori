@@ -1,6 +1,7 @@
 // Answers to a page's open questions (ADR-0002), stored in the wiki's `data/wiki.db` next to the comments. People
 // answer in the app; agents read them in `pnpm wiki inbox` and write the decision into the page's frontmatter.
 import type { Answer } from "../shared/api.ts";
+import { newUid } from "./ids.ts";
 import { authorColumns, authoredOf, dbFor } from "./threads.ts";
 
 interface AnswerRow {
@@ -14,6 +15,8 @@ interface AnswerRow {
   guest_name: string | null;
   created_at: string;
   hidden: number;
+  uid: string;
+  updated_at: string;
 }
 
 const toAnswer = (r: AnswerRow): Answer => ({
@@ -26,6 +29,8 @@ const toAnswer = (r: AnswerRow): Answer => ({
   author: r.author,
   createdAt: r.created_at,
   ...(r.hidden ? { hidden: true } : {}),
+  uid: r.uid,
+  updatedAt: r.updated_at,
 });
 
 /** Who answers: the owner, or a guest from a share link. Agents decide in the page instead. */
@@ -49,11 +54,12 @@ export function addAnswer(
   by: Answerer = "user",
 ): Answer {
   const db = dbFor(root);
+  const at = new Date().toISOString();
   const { lastInsertRowid } = db
     .prepare(
-      "insert into answers (page, question, choice, body, author, guest_id, guest_name, created_at) values (?, ?, ?, ?, ?, ?, ?, ?)",
+      "insert into answers (page, question, choice, body, author, guest_id, guest_name, created_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
-    .run(page, question, choice, body, ...authorColumns(by), new Date().toISOString());
+    .run(page, question, choice, body, ...authorColumns(by), at, newUid(), at);
   return toAnswer(db.prepare("select * from answers where id = ?").get(lastInsertRowid) as unknown as AnswerRow);
 }
 
@@ -63,8 +69,9 @@ export function setAnswerHidden(root: string, id: number, hidden: boolean): Answ
   const row = db.prepare("select * from answers where id = ?").get(id) as unknown as AnswerRow | undefined;
   if (!row) return null;
   if (row.author !== "guest") return "not a guest's";
-  db.prepare("update answers set hidden = ? where id = ?").run(hidden ? 1 : 0, id);
-  return toAnswer({ ...row, hidden: hidden ? 1 : 0 });
+  const at = new Date().toISOString();
+  db.prepare("update answers set hidden = ?, updated_at = ? where id = ?").run(hidden ? 1 : 0, at, id);
+  return toAnswer({ ...row, hidden: hidden ? 1 : 0, updated_at: at });
 }
 
 /** How many answers each question has (hidden ones don't count), keyed `page#question`. */

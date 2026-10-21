@@ -116,7 +116,13 @@ export interface Question {
 }
 
 /** Someone's answer to a question: an option they picked and/or a note. */
-export interface Answer extends Authored {
+/** What two PCs with the same wiki merge by (`pnpm wiki sync`): an id that never collides, and when it last changed. */
+export interface Synced {
+  uid?: string;
+  updatedAt?: string;
+}
+
+export interface Answer extends Authored, Synced {
   /** Agents don't answer; they write the decision into the page. */
   author: "user" | "guest";
   id: number;
@@ -205,13 +211,14 @@ export interface Authored {
   hidden?: boolean;
 }
 
-export interface Message extends Authored {
+export interface Message extends Authored, Synced {
   id: number;
   body: string;
   createdAt: string;
 }
 
-export interface Thread {
+export interface Thread extends Synced {
+  /** This PC's number for it (`#12` in the inbox); another PC numbers it its own way. */
   id: number;
   page: string;
   quote: Quote;

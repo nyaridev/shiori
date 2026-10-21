@@ -83,8 +83,8 @@ The ideas (text-quote anchors, CLI inbox loop, directive elements) were carried 
   one CLI.
 - Harder: themes can't do anything outside the contract. That's on purpose, and the contract can grow with new
   presets.
-- Revisit: code highlighting, and a JSON backup of comments (as in FOUMA ADR-0006) when wikis carry important
-  discussions. Search may move to SQLite FTS if a wiki grows past a few thousand pages.
+- Revisit: search may move to SQLite FTS if a wiki grows past a few thousand pages. (Code highlighting and JSON
+  backups of comments, once listed here, are done: action items 3 and 4.)
 - Pages carry planning metadata (`icon`, `status`, `tags`) and the app adds breadcrumbs, section cards and
   previous/next around them, so wikis can plan any project, not only games. Planning elements: stats, timeline, cards,
   gallery, progress.

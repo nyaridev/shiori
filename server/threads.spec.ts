@@ -42,6 +42,11 @@ describe("authors", () => {
       [4, "agent", "Hello"],
     ]);
     expect(listAnswers(root)[0]).toMatchObject({ id: 1, author: "user", choice: "Steam" });
+    // Old rows get ids that never collide between PCs, and a time they last changed (two-PC sync).
+    const migrated = listThreads(root)[0];
+    expect(migrated.uid).toMatch(/^[0-9A-Z]{26}$/);
+    expect(migrated.updatedAt).toBe("2026-10-01");
+    expect(new Set([migrated.uid, ...migrated.messages.map((m) => m.uid), listAnswers(root)[0].uid]).size).toBe(4);
     addMessage(root, 7, { guest: "g1", name: "Ana" }, "Me too");
     expect(listThreads(root)[0].messages.at(-1)).toMatchObject({ id: 5, author: "guest", name: "Ana", guestId: "g1" });
   });
