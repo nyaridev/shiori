@@ -299,6 +299,12 @@
   color: var(--muted);
   font-size: var(--t-xs);
 }
+.sh-hovercard {
+  z-index: 50;
+  overflow: hidden;
+  padding: 0;
+  animation: sh-pop 140ms var(--ease);
+}
 .sh-overlay {
   position: fixed;
   inset: 0;
@@ -316,6 +322,16 @@
   padding: var(--s-5);
   z-index: 41;
   animation: sh-pop 180ms var(--ease);
+}
+.sh-dialog[data-size="wide"] {
+  width: min(1100px, calc(100vw - 32px));
+}
+.sh-dialog[data-size="palette"] {
+  top: 12vh;
+  width: min(640px, calc(100vw - 32px));
+  padding: 0;
+  overflow: hidden;
+  translate: -50% 0;
 }
 .sh-dialog-head {
   display: flex;
@@ -458,6 +474,67 @@
 .sh-checkbox:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* Overlay scrollbars (Scrollbar.tsx). */
+:where(.sh-scroll) {
+  display: flex;
+  flex-direction: column;
+}
+.sh-scroll-frame {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.sh-scroll-view {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.sh-scrollbar {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  bottom: 2px;
+  z-index: 5;
+  width: 12px;
+  opacity: 0;
+  transition: opacity 320ms var(--ease);
+}
+.sh-scrollbar[data-active],
+.sh-scrollbar[data-dragging],
+.sh-scrollbar:hover {
+  opacity: 1;
+  transition-duration: 90ms;
+}
+.sh-scrollbar[data-none] {
+  display: none;
+}
+.sh-scrollbar-page {
+  position: fixed;
+  z-index: 35;
+}
+:root[data-shell="desktop"] .sh-scrollbar-page {
+  top: calc(36px + 2px);
+}
+.sh-scrollbar-thumb {
+  position: absolute;
+  top: 0;
+  right: 3px;
+  width: 6px;
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--text) 26%, transparent);
+  transition:
+    width 150ms var(--ease),
+    right 150ms var(--ease),
+    background 150ms var(--ease);
+  will-change: transform;
+}
+.sh-scrollbar:hover .sh-scrollbar-thumb,
+.sh-scrollbar[data-dragging] .sh-scrollbar-thumb {
+  right: 2px;
+  width: 8px;
+  background: color-mix(in oklab, var(--text) 46%, transparent);
 }
 
 @keyframes sh-pop {

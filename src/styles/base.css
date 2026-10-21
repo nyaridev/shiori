@@ -56,6 +56,12 @@ select {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
+/* The page and scroll areas draw their own scrollbar over the content (ui/Scrollbar.tsx), so one showing up never
+   takes width from the layout. Other scrollers (code blocks) keep the thin native one. */
+html,
+.sh-scroll-view {
+  scrollbar-width: none;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,

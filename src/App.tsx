@@ -3,7 +3,7 @@ import { UiPage } from "./dev/UiPage.tsx";
 import { Deck } from "./home/Deck.tsx";
 import { ErrorPage } from "./shell/ErrorPage.tsx";
 import { TitleBar } from "./shell/TitleBar.tsx";
-import { TooltipProvider } from "./ui/index.ts";
+import { PageScrollbar, TooltipProvider } from "./ui/index.ts";
 import { WikiLayout } from "./wiki/WikiLayout.tsx";
 
 function Shell() {
@@ -11,6 +11,7 @@ function Shell() {
     <>
       <TitleBar />
       <Outlet />
+      <PageScrollbar />
     </>
   );
 }

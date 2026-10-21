@@ -9,22 +9,30 @@ export const DialogClose = R.Close;
 export function DialogContent({
   title,
   description,
+  size = "md",
   children,
 }: {
   title: string;
   description?: string;
+  /** `wide` for media: an image at a readable size. `palette`: near the top, no title bar (the title is for screen
+   * readers), for a search box and its results. */
+  size?: "md" | "wide" | "palette";
   children: ReactNode;
 }) {
   return (
     <R.Portal>
       <R.Overlay className="sh-overlay" />
-      <R.Content className="sh-dialog sh-surface">
-        <header className="sh-dialog-head">
-          <R.Title className="sh-dialog-title">{title}</R.Title>
-          <R.Close asChild>
-            <IconButton icon="close" label="Close" size="sm" />
-          </R.Close>
-        </header>
+      <R.Content className="sh-dialog sh-surface" data-size={size}>
+        {size === "palette" ? (
+          <R.Title className="sh-sr-only">{title}</R.Title>
+        ) : (
+          <header className="sh-dialog-head">
+            <R.Title className="sh-dialog-title">{title}</R.Title>
+            <R.Close asChild>
+              <IconButton icon="close" label="Close" size="sm" />
+            </R.Close>
+          </header>
+        )}
         {description ? (
           <R.Description className="sh-dialog-description">{description}</R.Description>
         ) : (
