@@ -1,100 +1,80 @@
+/* The error page (ErrorPage.tsx): one card in the middle, built from the tokens like the guest screens. */
 .sh-error {
   display: grid;
   place-items: center;
   min-height: 100%;
-  padding: 48px 16px;
+  padding: var(--s-7) var(--s-4);
   background:
-    radial-gradient(60% 50% at 50% 35%, rgb(224 112 95 / 0.1), transparent 70%),
-    radial-gradient(ellipse 80% 60% at 50% 45%, #15151a 0%, #08080a 70%);
+    radial-gradient(60% 50% at 50% 35%, color-mix(in oklab, var(--tone-bad) 12%, transparent), transparent 70%),
+    var(--bg);
   color: var(--text);
-  font-family: "Nunito Sans Variable", system-ui, sans-serif;
+  font-family: var(--font-body);
 }
 
-/* An ume-style frame: ink panel, gold filigree on two corners. */
 .sh-error-card {
-  position: relative;
+  display: grid;
+  gap: var(--s-3);
   width: min(520px, 100%);
-  padding: 32px 28px 26px;
-  border: 1px solid #262e40;
-  border-radius: 16px;
-  background:
-    radial-gradient(100% 50% at 0% 0%, rgb(224 112 95 / 0.1), transparent 70%),
-    linear-gradient(180deg, #10141d, #05060a);
-  box-shadow:
-    inset 0 1px 0 rgb(143 130 255 / 0.18),
-    0 24px 60px -20px rgb(0 0 0 / 0.8);
+  padding: var(--s-6) var(--s-5) var(--s-5);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
   animation: sh-pop 260ms var(--ease);
-}
-.sh-error-card::after {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border: 1.5px solid rgb(230 194 122 / 0.7);
-  border-radius: 13px;
-  pointer-events: none;
-  mask:
-    linear-gradient(#000 0 0) top left / 20px 20px no-repeat,
-    linear-gradient(#000 0 0) bottom right / 20px 20px no-repeat;
 }
 
 .sh-error-icon {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 16px;
-  border: 1px solid #262e40;
-  border-radius: 12px;
-  background:
-    radial-gradient(120% 90% at 30% 15%, rgb(224 112 95 / 0.3), transparent 60%),
-    linear-gradient(160deg, #171c28, #020306);
-  color: #ef8a7a;
+  width: 40px;
+  height: 40px;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: color-mix(in oklab, var(--tone-bad) 10%, transparent);
+  color: var(--tone-bad);
 }
 .sh-error-kicker {
   margin: 0;
-  color: #5fd4c8;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 .sh-error-title {
-  margin: 6px 0 0;
-  color: #f3ead6;
-  font-family: "Cinzel Variable", Georgia, serif;
-  font-size: 1.75rem;
-  font-weight: 650;
-  letter-spacing: 0.02em;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--t-xl);
+  line-height: 1.2;
 }
 .sh-error-message {
-  margin: 10px 0 0;
-  color: #a1aabe;
-  font-size: 0.9375rem;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--t-sm);
   line-height: 1.55;
   overflow-wrap: anywhere;
 }
 
 .sh-error-details {
-  margin-top: 16px;
-  border: 1px solid #181d29;
-  border-radius: 10px;
-  background: #05060a;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg);
 }
 .sh-error-details summary {
-  padding: 8px 12px;
-  color: #636d82;
-  font-size: 12px;
-  font-weight: 700;
+  padding: var(--s-2) var(--s-3);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
   cursor: pointer;
 }
 .sh-error-details pre {
   max-height: 220px;
   margin: 0;
-  padding: 0 12px 12px;
+  padding: 0 var(--s-3) var(--s-3);
   overflow: auto;
-  color: #8e97aa;
+  color: var(--text-soft);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--t-xs);
   line-height: 1.5;
   white-space: pre-wrap;
 }
@@ -103,19 +83,24 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
 }
 .sh-error-link {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s-2);
   margin-right: auto;
-  color: #a1aabe;
-  font-size: 13px;
-  font-weight: 650;
+  border-radius: var(--r-sm);
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+  font-weight: 600;
   text-decoration: none;
 }
 .sh-error-link:hover {
-  color: #f3ead6;
+  color: var(--text);
+}
+.sh-error-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
 }

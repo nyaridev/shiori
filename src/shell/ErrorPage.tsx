@@ -17,7 +17,7 @@ function describe(error: unknown): { title: string; message: string; stack?: str
 export function ErrorPage() {
   const { title, message, stack } = describe(useRouteError());
   return (
-    <div className="sh-error deck-scope">
+    <div className="sh-error">
       <section className="sh-error-card">
         <span className="sh-error-icon">
           <Icon name="danger" size={22} />
