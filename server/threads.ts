@@ -3,7 +3,7 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { Message, Thread, ThreadStatus } from "../shared/api.ts";
+import type { Author, Authored, Thread, ThreadStatus } from "../shared/api.ts";
 import type { Quote } from "../shared/quote.ts";
 
 const MIGRATIONS = [
@@ -34,6 +34,25 @@ const MIGRATIONS = [
      created_at text not null
    );
    create index answers_page on answers(page, question);`,
+  // Authors (ADR-0003): guests who came through a share link sign with a name. SQLite can't change a check
+  // constraint, so `messages` is rebuilt.
+  `create table messages_v3 (
+     id integer primary key,
+     thread_id integer not null references threads(id) on delete cascade,
+     author text not null check (author in ('user', 'agent', 'guest')),
+     guest_id text,
+     guest_name text,
+     body text not null,
+     created_at text not null
+   );
+   insert into messages_v3 (id, thread_id, author, body, created_at)
+     select id, thread_id, author, body, created_at from messages;
+   drop table messages;
+   alter table messages_v3 rename to messages;
+   create index messages_thread on messages(thread_id);
+   alter table answers add column author text not null default 'user' check (author in ('user', 'guest'));
+   alter table answers add column guest_id text;
+   alter table answers add column guest_name text;`,
 ];
 
 const open = new Map<string, DatabaseSync>();
@@ -67,6 +86,21 @@ export function closeAll() {
 
 const now = () => new Date().toISOString();
 
+/** Who writes: the owner, an agent, or a guest with their id and display name. */
+export type Writer = "user" | "agent" | { guest: string; name: string };
+
+/** The `author`, `guest_id` and `guest_name` columns for a writer. */
+export function authorColumns(by: Writer): [Author, string | null, string | null] {
+  return typeof by === "string" ? [by, null, null] : ["guest", by.guest, by.name];
+}
+
+/** The author fields of a row with `author`, `guest_id` and `guest_name`. */
+export function authoredOf(row: { author: Author; guest_id: string | null; guest_name: string | null }): Authored {
+  return row.author === "guest"
+    ? { author: "guest", name: row.guest_name ?? "Guest", guestId: row.guest_id ?? undefined }
+    : { author: row.author };
+}
+
 interface ThreadRow {
   id: number;
   page: string;
@@ -78,7 +112,9 @@ interface ThreadRow {
 interface MessageRow {
   id: number;
   thread_id: number;
-  author: Message["author"];
+  author: Author;
+  guest_id: string | null;
+  guest_name: string | null;
   body: string;
   created_at: string;
 }
@@ -98,7 +134,7 @@ function hydrate(db: DatabaseSync, rows: ThreadRow[]): Thread[] {
     resolvedAt: r.resolved_at,
     messages: messages
       .filter((m) => m.thread_id === r.id)
-      .map((m) => ({ id: m.id, author: m.author, body: m.body, createdAt: m.created_at })),
+      .map((m) => ({ id: m.id, ...authoredOf(m), body: m.body, createdAt: m.created_at })),
   }));
 }
 
@@ -124,33 +160,30 @@ export function getThread(root: string, id: number): Thread | null {
   return row ? hydrate(db, [row])[0] : null;
 }
 
-export function createThread(root: string, page: string, quote: Quote, body: string): Thread {
+const INSERT_MESSAGE =
+  "insert into messages (thread_id, author, guest_id, guest_name, body, created_at) values (?, ?, ?, ?, ?, ?)";
+
+export function createThread(root: string, page: string, quote: Quote, body: string, by: Writer = "user"): Thread {
   const db = dbFor(root);
   const at = now();
   db.exec("begin");
   const { lastInsertRowid } = db
     .prepare("insert into threads (page, quote, created_at) values (?, ?, ?)")
     .run(page, JSON.stringify(quote), at);
-  db.prepare("insert into messages (thread_id, author, body, created_at) values (?, 'user', ?, ?)").run(
-    lastInsertRowid,
-    body,
-    at,
-  );
+  db.prepare(INSERT_MESSAGE).run(lastInsertRowid, ...authorColumns(by), body, at);
   db.exec("commit");
   return getThread(root, Number(lastInsertRowid)) as Thread;
 }
 
-export function addMessage(root: string, id: number, author: Message["author"], body: string): Thread | null {
+export function addMessage(root: string, id: number, by: Writer, body: string): Thread | null {
   const db = dbFor(root);
   if (!getThread(root, id)) return null;
-  db.prepare("insert into messages (thread_id, author, body, created_at) values (?, ?, ?, ?)").run(
-    id,
-    author,
-    body,
-    now(),
-  );
+  db.prepare(INSERT_MESSAGE).run(id, ...authorColumns(by), body, now());
   return getThread(root, id);
 }
+
+/** The guest who started a thread, if a guest did. */
+export const startedBy = (t: Thread): string | undefined => t.messages[0]?.guestId;
 
 export function setStatus(root: string, id: number, status: ThreadStatus): Thread | null {
   dbFor(root)
@@ -159,7 +192,7 @@ export function setStatus(root: string, id: number, status: ThreadStatus): Threa
   return getThread(root, id);
 }
 
-/** Open threads whose last message is the user's: what an agent should look at. */
+/** Open threads whose last message is a person's (the owner's or a guest's): what an agent should look at. */
 export function waitingForAgent(threads: Thread[]): Thread[] {
-  return threads.filter((t) => t.status === "open" && t.messages.at(-1)?.author === "user");
+  return threads.filter((t) => t.status === "open" && t.messages.at(-1)?.author !== "agent");
 }

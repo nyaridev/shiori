@@ -2,6 +2,7 @@
 // the agent writes the decision into the page, the card shows it.
 import { useState } from "react";
 import type { Question } from "../../../shared/api.ts";
+import { authorName, canComment, useGuest } from "../../guest/GuestContext.ts";
 import { ago } from "../../lib/time.ts";
 import { Badge, Button, Textarea } from "../../ui/index.ts";
 import { usePage } from "../PageContext.ts";
@@ -9,6 +10,7 @@ import "./questions.css";
 
 export function QuestionCard({ question }: { question: Question }) {
   const ctx = usePage();
+  const guest = useGuest();
   const [choice, setChoice] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "failed">("idle");
@@ -43,7 +45,7 @@ export function QuestionCard({ question }: { question: Question }) {
 
       {decided ? (
         question.answer && <p className="sh-question-answer">{question.answer}</p>
-      ) : (
+      ) : !canComment(guest) ? null : (
         <div className="sh-question-form">
           {question.options.length > 0 && (
             <fieldset className="sh-question-options">
@@ -90,6 +92,7 @@ export function QuestionCard({ question }: { question: Question }) {
         <ul className="sh-question-answers" aria-label="Answers so far">
           {answers.map((a) => (
             <li key={a.id}>
+              {(guest || a.author === "guest") && <span className="sh-question-by">{authorName(guest, a)}</span>}
               {a.choice && <span className="sh-question-choice">{a.choice}</span>}
               {a.body && <span>{a.body}</span>}
               <time dateTime={a.createdAt}>{ago(a.createdAt)}</time>

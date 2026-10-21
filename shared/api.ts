@@ -116,7 +116,9 @@ export interface Question {
 }
 
 /** Someone's answer to a question: an option they picked and/or a note. */
-export interface Answer {
+export interface Answer extends Authored {
+  /** Agents don't answer; they write the decision into the page. */
+  author: "user" | "guest";
   id: number;
   page: string;
   question: string;
@@ -171,9 +173,24 @@ export interface SearchHit {
 
 export type ThreadStatus = "open" | "resolved" | "wontfix";
 
-export interface Message {
+/**
+ * Who wrote a message or an answer (ADR-0003): the owner (`user`), an agent through the CLI, or a guest who came
+ * through a share link.
+ */
+export type Author = "user" | "agent" | "guest";
+
+export interface Authored {
+  author: Author;
+  /** A guest's display name. Guests also see the owner's name here. */
+  name?: string;
+  /** The guest's id, for the owner's app and the CLI. Never sent to guests. */
+  guestId?: string;
+  /** Guests only: this guest wrote it. */
+  mine?: boolean;
+}
+
+export interface Message extends Authored {
   id: number;
-  author: "user" | "agent";
   body: string;
   createdAt: string;
 }
@@ -191,3 +208,45 @@ export interface Thread {
 /** Server-sent events on /api/events. */
 /** `threads` means the wiki's data (comments and answers) changed. */
 export type LiveEvent = { type: "wikis" } | { type: "pages"; wiki: string } | { type: "threads"; wiki: string };
+
+/** What a share link lets a guest do (ADR-0003). */
+export type ShareKind = "view" | "comment";
+/** How long a share link lasts; `session` ends when Shiori closes. */
+export type ShareDuration = "1h" | "24h" | "7d" | "session";
+
+/** A share link, as the owner's app lists it. */
+export interface ShareInfo {
+  id: string;
+  wiki: string;
+  kind: ShareKind;
+  label: string;
+  createdAt: string;
+  /** Null for links that last until Shiori closes. */
+  expiresAt: string | null;
+  /** The link's path on the guest server: `/s/<token>/`. */
+  path: string;
+  /** The full link, on the guest server's local address until a tunnel gives it a public one. */
+  url: string;
+  guests: { name: string; joinedAt: string; lastSeen: string; writes: number; blocked: boolean }[];
+  /** Client addresses blocked for going over the limits. */
+  blockedIps: number;
+  activity: ShareActivity[];
+}
+
+export interface ShareActivity {
+  at: string;
+  /** The guest's name, or the client address before they join. */
+  who: string;
+  what: string;
+}
+
+/** What a guest's app learns about its link from `/s/<token>/api/session`. */
+export interface GuestSession {
+  wiki: { id: string; title: string };
+  kind: ShareKind;
+  expiresAt: string | null;
+  /** Null until the guest picks a display name. */
+  guest: { name: string } | null;
+  /** How the owner's messages are signed for guests. */
+  host: string;
+}

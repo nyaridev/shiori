@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Thread } from "../../shared/api.ts";
 import { isPageComment } from "../../shared/quote.ts";
+import { authorName, canComment, canResolve, useGuest } from "../guest/GuestContext.ts";
 import { ago } from "../lib/time.ts";
 import { Badge, Button, cx, Segmented, Textarea } from "../ui/index.ts";
 import type { Anchors } from "./CommentLayer.tsx";
@@ -26,6 +27,7 @@ export function ThreadList({
   onActivate: (id: number | null) => void;
 }) {
   const [filter, setFilter] = useState<Filter>("open");
+  const writes = canComment(useGuest());
   // Comments on the whole page live in the page's Discussion panel; this rail is for comments on its text.
   const all = threads.threads.filter((t) => !isPageComment(t.quote));
   const onPage = threads.threads.filter((t) => isPageComment(t.quote) && t.status === "open").length;
@@ -53,7 +55,11 @@ export function ThreadList({
       </header>
       {shown.length === 0 && (
         <p className="sh-threads-empty">
-          {filter === "open" ? "Select text on the page to leave a comment." : "No closed comments."}
+          {filter !== "open"
+            ? "No closed comments."
+            : writes
+              ? "Select text on the page to leave a comment."
+              : "No open comments."}
         </p>
       )}
       {onPage > 0 && (
@@ -94,6 +100,8 @@ export function ThreadCard({
   const [draft, setDraft] = useState("");
   const ref = useRef<HTMLElement>(null);
   const last = thread.messages.at(-1);
+  const guest = useGuest();
+  const resolves = canResolve(guest, thread);
 
   useEffect(() => {
     if (active) ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -130,11 +138,11 @@ export function ThreadCard({
         <div className="sh-thread-body">
           {thread.messages.map((m) => (
             <div key={m.id} className="sh-message" data-author={m.author}>
-              <span className="sh-message-author">{m.author === "user" ? "You" : "Agent"}</span>
+              <span className="sh-message-author">{authorName(guest, m)}</span>
               <p>{m.body}</p>
             </div>
           ))}
-          {thread.status === "open" ? (
+          {thread.status === "open" && canComment(guest) ? (
             <>
               <Textarea
                 rows={2}
@@ -146,25 +154,30 @@ export function ThreadCard({
                 }}
               />
               <div className="sh-thread-actions">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  icon="check"
-                  onClick={() => void threads.setStatus(thread.id, "resolved")}
-                >
-                  Resolve
-                </Button>
+                {resolves && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon="check"
+                    onClick={() => void threads.setStatus(thread.id, "resolved")}
+                  >
+                    Resolve
+                  </Button>
+                )}
                 <Button size="sm" variant="soft" icon="send" disabled={!draft.trim()} onClick={() => void send()}>
                   Reply
                 </Button>
               </div>
             </>
           ) : (
-            <div className="sh-thread-actions">
-              <Button size="sm" variant="ghost" icon="undo" onClick={() => void threads.setStatus(thread.id, "open")}>
-                Reopen
-              </Button>
-            </div>
+            thread.status !== "open" &&
+            resolves && (
+              <div className="sh-thread-actions">
+                <Button size="sm" variant="ghost" icon="undo" onClick={() => void threads.setStatus(thread.id, "open")}>
+                  Reopen
+                </Button>
+              </div>
+            )
           )}
         </div>
       )}

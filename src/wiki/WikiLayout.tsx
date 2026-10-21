@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
 import { api } from "../lib/api.ts";
+import { isGuest } from "../lib/base.ts";
 import { useLive } from "../lib/live.ts";
 import { useResource } from "../lib/useResource.ts";
 import { useTheme } from "../lib/useTheme.ts";
@@ -78,7 +79,7 @@ export function WikiLayout() {
     return (
       <div className="sh-wiki-missing">
         <p>This wiki isn't available: {wiki.error.message}</p>
-        <Link to="/">Back to the deck</Link>
+        {!isGuest && <Link to="/">Back to the deck</Link>}
       </div>
     );
   }

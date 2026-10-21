@@ -108,6 +108,11 @@
   margin: 0;
   color: var(--text-soft);
 }
+.sh-question-by {
+  color: var(--text);
+  font-size: var(--t-xs);
+  font-weight: 650;
+}
 .sh-question-choice {
   padding: 0 6px;
   border-radius: var(--r-sm);

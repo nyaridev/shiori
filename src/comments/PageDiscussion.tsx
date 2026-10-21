@@ -2,6 +2,7 @@
 // page's discussion. Comments on selected text stay in the rail beside the page.
 import { useState } from "react";
 import { isPageComment, PAGE_QUOTE } from "../../shared/quote.ts";
+import { canComment, useGuest } from "../guest/GuestContext.ts";
 import { Button, Textarea } from "../ui/index.ts";
 import { ThreadCard } from "./ThreadList.tsx";
 import type { Threads } from "./useThreads.ts";
@@ -13,6 +14,7 @@ export function PageDiscussion({ threads }: { threads: Threads }) {
   const [active, setActive] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
+  const writes = canComment(useGuest());
   const shown = onPage.filter((t) => showClosed || t.status === "open" || t.id === active);
 
   const send = async () => {
@@ -33,24 +35,27 @@ export function PageDiscussion({ threads }: { threads: Threads }) {
         Discussion
         {openCount > 0 && <span className="sh-discussion-count">{openCount} open</span>}
       </h2>
-      <div className="sh-discussion-compose">
-        <Textarea
-          rows={2}
-          value={draft}
-          placeholder="Comment on this page…"
-          aria-label="Comment on this page"
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) void send();
-          }}
-        />
-        <div className="sh-discussion-actions">
-          <span>For something about the whole page. To comment on a passage, select its text.</span>
-          <Button size="sm" variant="soft" icon="send" disabled={!draft.trim() || saving} onClick={() => void send()}>
-            Comment
-          </Button>
+      {writes && (
+        <div className="sh-discussion-compose">
+          <Textarea
+            rows={2}
+            value={draft}
+            placeholder="Comment on this page…"
+            aria-label="Comment on this page"
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) void send();
+            }}
+          />
+          <div className="sh-discussion-actions">
+            <span>For something about the whole page. To comment on a passage, select its text.</span>
+            <Button size="sm" variant="soft" icon="send" disabled={!draft.trim() || saving} onClick={() => void send()}>
+              Comment
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
+      {!writes && shown.length === 0 && <p className="sh-discussion-empty">No comments on this page yet.</p>}
       {shown.length > 0 && (
         <div className="sh-discussion-threads">
           {shown.map((t) => (

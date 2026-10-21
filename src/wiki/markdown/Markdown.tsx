@@ -9,6 +9,7 @@ import "./prose.css";
 
 const components = {
   a: el.WikiLink,
+  img: el.ImgEl,
   h2: el.H2El,
   h3: el.H3El,
   input: el.TaskBox,

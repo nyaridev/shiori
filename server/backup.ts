@@ -6,10 +6,13 @@ import { join } from "node:path";
 import { z } from "zod";
 import { listAnswers } from "./answers.ts";
 import { slashes } from "./paths.ts";
-import { dbFor, listThreads } from "./threads.ts";
+import { authorColumns, dbFor, listThreads, type Writer } from "./threads.ts";
 
 export const BACKUP_FILE = "backup.json";
 const BACKUP_SCHEMA = 1;
+
+// Guests' names and ids came with ADR-0003; backups made before them have neither, and still load.
+const guestFields = { name: z.string().optional(), guestId: z.string().optional() };
 
 const backupSchema = z.object({
   schema: z.literal(BACKUP_SCHEMA),
@@ -25,7 +28,8 @@ const backupSchema = z.object({
       messages: z.array(
         z.object({
           id: z.number().int().positive(),
-          author: z.enum(["user", "agent"]),
+          author: z.enum(["user", "agent", "guest"]),
+          ...guestFields,
           body: z.string(),
           createdAt: z.string(),
         }),
@@ -39,11 +43,16 @@ const backupSchema = z.object({
       question: z.string(),
       choice: z.string().nullable(),
       body: z.string(),
+      author: z.enum(["user", "guest"]).default("user"),
+      ...guestFields,
       createdAt: z.string(),
     }),
   ),
 });
 export type Backup = z.infer<typeof backupSchema>;
+
+const writer = (r: { author: "user" | "agent" | "guest"; name?: string; guestId?: string }): Writer =>
+  r.author === "guest" ? { guest: r.guestId ?? "", name: r.name ?? "Guest" } : r.author;
 
 export function exportData(root: string): Backup {
   return {
@@ -86,15 +95,18 @@ export function importData(root: string, data: Backup, { replace = false } = {})
     const thread = db.prepare(
       "insert into threads (id, page, quote, status, created_at, resolved_at) values (?, ?, ?, ?, ?, ?)",
     );
-    const message = db.prepare("insert into messages (id, thread_id, author, body, created_at) values (?, ?, ?, ?, ?)");
+    const message = db.prepare(
+      "insert into messages (id, thread_id, author, guest_id, guest_name, body, created_at) values (?, ?, ?, ?, ?, ?, ?)",
+    );
     const answer = db.prepare(
-      "insert into answers (id, page, question, choice, body, created_at) values (?, ?, ?, ?, ?, ?)",
+      "insert into answers (id, page, question, choice, body, author, guest_id, guest_name, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     for (const t of data.threads) {
       thread.run(t.id, t.page, JSON.stringify(t.quote), t.status, t.createdAt, t.resolvedAt);
-      for (const m of t.messages) message.run(m.id, t.id, m.author, m.body, m.createdAt);
+      for (const m of t.messages) message.run(m.id, t.id, ...authorColumns(writer(m)), m.body, m.createdAt);
     }
-    for (const a of data.answers) answer.run(a.id, a.page, a.question, a.choice, a.body, a.createdAt);
+    for (const a of data.answers)
+      answer.run(a.id, a.page, a.question, a.choice, a.body, ...authorColumns(writer(a)), a.createdAt);
     db.exec("commit");
   } catch (error) {
     db.exec("rollback");

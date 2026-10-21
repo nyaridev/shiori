@@ -1,33 +1,44 @@
-// Starts the Shiori server. `--static` also serves the built UI from dist/ (start-web.bat, the desktop app);
-// `--dev` shows only the template, filled in as a preview (pnpm dev).
+// Starts the Shiori server. `--static` also serves the built UI from dist/ (start-web.bat, the desktop app) and can
+// share wikis: the guest server (ADR-0003) listens on its own port while at least one share link is active.
+// `--dev` shows only the template, filled in as a preview (pnpm dev), and can't share.
+import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { parseArgs } from "node:util";
-import { serve } from "@hono/node-server";
+import { type ServerType, serve } from "@hono/node-server";
 import { buildApp } from "./app.ts";
 import { createLive } from "./live.ts";
 import { APP_ROOT } from "./paths.ts";
 import { createRegistry } from "./registry.ts";
+import { buildGuestApp } from "./sharing/guest.ts";
+import { createShares } from "./sharing/shares.ts";
 import { closeAll } from "./threads.ts";
+import { createWikiData } from "./wikiData.ts";
 
 const { values } = parseArgs({
   options: {
     port: { type: "string", default: "4400" },
+    "guest-port": { type: "string", default: "4420" },
     static: { type: "boolean", default: false },
     dev: { type: "boolean", default: false },
   },
 });
 const port = Number(values.port);
+const guestPort = Number(values["guest-port"]);
 const staticDir = join(APP_ROOT, "dist");
 if (values.static && !existsSync(join(staticDir, "index.html"))) {
   console.error("dist/ is missing. Run `pnpm build` first.");
   process.exit(1);
 }
+const servedDir = values.static ? relative(process.cwd(), staticDir) : undefined;
 
 const registry = createRegistry(APP_ROOT, { dev: values.dev });
 const live = createLive(registry);
 live.start();
-const app = buildApp({ registry, live, staticDir: values.static ? relative(process.cwd(), staticDir) : undefined });
+const data = createWikiData(live);
+// Until the tunnel (ADR-0003, phase 2) gives links a public address, they work on this machine only.
+const shares = values.static ? createShares({ origin: () => `http://127.0.0.1:${guestPort}` }) : undefined;
+const app = buildApp({ registry, live, data, shares, staticDir: servedDir });
 
 const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
   const n = registry.all().length;
@@ -36,7 +47,36 @@ const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
   for (const b of registry.broken()) console.warn(`  skipped ${b.root}: ${b.problems.join("; ")}`);
 });
 
+// The guest server runs only while a link is active, and only on loopback: the tunnel is its one client.
+let guestServer: ServerType | null = null;
+let sweeper: NodeJS.Timeout | null = null;
+if (shares) {
+  const guestApp = buildGuestApp({
+    registry,
+    data,
+    shares,
+    staticDir: servedDir,
+    secret: randomBytes(32).toString("base64url"),
+  });
+  shares.onChange(() => {
+    const active = shares.list().length > 0;
+    if (active && !guestServer) {
+      guestServer = serve({ fetch: guestApp.fetch, port: guestPort, hostname: "127.0.0.1" }, () =>
+        console.log(`Sharing: guest server on http://127.0.0.1:${guestPort}`),
+      );
+      sweeper = setInterval(() => shares.sweep(), 30_000);
+    } else if (!active && guestServer) {
+      guestServer.close();
+      if ("closeAllConnections" in guestServer) guestServer.closeAllConnections();
+      guestServer = null;
+      if (sweeper) clearInterval(sweeper);
+      console.log("Sharing stopped.");
+    }
+  });
+}
+
 const shutdown = () => {
+  shares?.stopAll();
   live.stop();
   closeAll();
   server.close();

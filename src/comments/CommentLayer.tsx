@@ -2,6 +2,7 @@
 // Custom Highlight API, so the page's DOM is never changed. Clicking highlighted text opens its thread.
 import { type RefObject, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { findQuote, isPageComment, quoteAt } from "../../shared/quote.ts";
+import { canComment, useGuest } from "../guest/GuestContext.ts";
 import { Button, Icon, Popover, PopoverAnchor, PopoverContent, Textarea } from "../ui/index.ts";
 import "./comments.css";
 import { offsetsOf, rangeAt, textIndex } from "./textIndex.ts";
@@ -37,6 +38,8 @@ export function CommentLayer({ container, contentKey, threads, active, onActivat
   const [saving, setSaving] = useState(false);
   const [, rerender] = useReducer((n: number) => n + 1, 0);
   const anchors = useRef<Anchors>(new Map());
+  // A view-only guest (ADR-0003) sees the comments but can't start one.
+  const writes = canComment(useGuest());
   const onAnchorsRef = useRef(onAnchors);
   onAnchorsRef.current = onAnchors;
 
@@ -81,6 +84,7 @@ export function CommentLayer({ container, contentKey, threads, active, onActivat
 
   // Track the selection inside the page.
   useEffect(() => {
+    if (!writes) return;
     // After the browser has updated the selection for this mouseup/keyup.
     const check = () =>
       setTimeout(() => {
@@ -98,7 +102,7 @@ export function CommentLayer({ container, contentKey, threads, active, onActivat
       document.removeEventListener("mouseup", check);
       document.removeEventListener("keyup", check);
     };
-  }, [container]);
+  }, [container, writes]);
 
   // Keep the bubble on the text while scrolling.
   useEffect(() => {

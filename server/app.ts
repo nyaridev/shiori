@@ -1,37 +1,21 @@
-// HTTP API. Read-only for pages and files; the only writes are comment threads in the wiki's own database.
-import { existsSync, readFileSync, statSync } from "node:fs";
-import { extname, join } from "node:path";
+// The owner's HTTP API, on loopback only. Read-only for pages and files; the only writes are comments and answers in
+// the wiki's own database. Share links (ADR-0003) are made here and served by the separate guest server.
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { type Context, Hono } from "hono";
+import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
-import type { WikiDetail } from "../shared/api.ts";
-import { addAnswer, answerCounts, listAnswers } from "./answers.ts";
-import { buildCorpus, type Corpus } from "./corpus.ts";
+import { addAnswer, listAnswers } from "./answers.ts";
+import { serveFile } from "./files.ts";
 import type { Live } from "./live.ts";
 import { splitFrontmatter } from "./markdown/frontmatter.ts";
 import { renderMarkdown } from "./markdown/render.ts";
-import { buildNav, listPages, type PageFile } from "./pages.ts";
-import { inside } from "./paths.ts";
 import { type Registry, toCard, type Wiki } from "./registry.ts";
 import { search } from "./search.ts";
+import type { Shares } from "./sharing/shares.ts";
 import { addMessage, createThread, getThread, listThreads, setStatus } from "./threads.ts";
-
-const TYPES: Record<string, string> = {
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".webp": "image/webp",
-  ".gif": "image/gif",
-  ".avif": "image/avif",
-  ".mp3": "audio/mpeg",
-  ".ogg": "audio/ogg",
-  ".wav": "audio/wav",
-  ".mp4": "video/mp4",
-  ".webm": "video/webm",
-  ".woff2": "font/woff2",
-};
+import { answerProblem, createWikiData, type WikiData } from "./wikiData.ts";
 
 // An empty `exact` is a comment on the whole page.
 const quoteSchema = z.strictObject({ exact: z.string().max(4000), prefix: z.string(), suffix: z.string() });
@@ -44,40 +28,51 @@ const newAnswerSchema = z.strictObject({
 const newThreadSchema = z.strictObject({ page: z.string(), quote: quoteSchema, body: z.string().trim().min(1) });
 const messageSchema = z.strictObject({ body: z.string().trim().min(1) });
 const statusSchema = z.strictObject({ status: z.enum(["open", "resolved", "wontfix"]) });
+const newShareSchema = z.strictObject({
+  wiki: z.string(),
+  kind: z.enum(["view", "comment"]),
+  duration: z.enum(["1h", "24h", "7d", "session"]).default("24h"),
+  label: z.string().trim().max(60).default(""),
+});
+
+const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
+const isLoopback = (url: string) => {
+  try {
+    return LOOPBACK.has(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * The owner's server answers only to loopback names, so a web page can't reach it through DNS rebinding, and takes
+ * writes only from the app's own origins, so another site can't post to it (or make share links).
+ */
+export const localOnly: MiddlewareHandler = async (c, next) => {
+  if (!isLoopback(c.req.url)) return c.json({ error: "not found" }, 404);
+  const origin = c.req.header("origin");
+  const reads = c.req.method === "GET" || c.req.method === "HEAD";
+  if (!reads && origin && !isLoopback(origin) && origin !== "tauri://localhost") {
+    return c.json({ error: "cross-site request" }, 403);
+  }
+  return next();
+};
 
 export interface AppOptions {
   registry: Registry;
   live: Live;
+  /** Shared with the guest server, so both read one cache. */
+  data?: WikiData;
+  /** Share links. Only the built app shares (ADR-0003); without them `/api/shares` says so. */
+  shares?: Shares;
   /** Serve the built UI from this folder (start-web / the desktop app). */
   staticDir?: string;
 }
 
-export function buildApp({ registry, live, staticDir }: AppOptions) {
+export function buildApp({ registry, live, data = createWikiData(live), shares, staticDir }: AppOptions) {
   const app = new Hono();
-  const pageCache = new Map<string, PageFile[]>();
-  const corpusCache = new Map<string, Corpus>();
-  live.subscribe((e) => {
-    if (e.type === "threads") return;
-    pageCache.clear();
-    corpusCache.clear();
-  });
-  const pagesOf = (w: Wiki) => {
-    let pages = pageCache.get(w.id);
-    if (!pages) {
-      pages = listPages(w);
-      pageCache.set(w.id, pages);
-    }
-    return pages;
-  };
-  /** Every page of the wiki rendered once, with backlinks, the page index and the search index. */
-  const corpusOf = (w: Wiki) => {
-    let corpus = corpusCache.get(w.id);
-    if (!corpus) {
-      corpus = buildCorpus(w, pagesOf(w));
-      corpusCache.set(w.id, corpus);
-    }
-    return corpus;
-  };
+  const { pagesOf, corpusOf } = data;
+  app.use("*", localOnly);
 
   const wikiOr404 = (c: Context): Wiki | Response =>
     registry.get(c.req.param("id") ?? "") ?? c.json({ error: "no such wiki" }, 404);
@@ -87,13 +82,7 @@ export function buildApp({ registry, live, staticDir }: AppOptions) {
   app.get("/api/wikis/:id", (c) => {
     const w = wikiOr404(c);
     if (w instanceof Response) return w;
-    const detail: WikiDetail = {
-      ...toCard(w, pagesOf(w).length),
-      theme: w.theme,
-      nav: buildNav(pagesOf(w)),
-      problems: w.problems,
-    };
-    return c.json(detail);
+    return c.json(data.detail(w));
   });
 
   app.get("/api/wikis/:id/page", (c) => {
@@ -106,16 +95,7 @@ export function buildApp({ registry, live, staticDir }: AppOptions) {
   app.get("/api/wikis/:id/pages", (c) => {
     const w = wikiOr404(c);
     if (w instanceof Response) return w;
-    const corpus = corpusOf(w);
-    const counts = answerCounts(w.root);
-    const questions = [...corpus.pages.values()].flatMap((p) =>
-      p.questions.map((q) => ({
-        ...q,
-        page: { path: p.path, title: p.title, icon: p.icon, isPage: true },
-        answers: counts.get(`${p.path}#${q.id}`) ?? 0,
-      })),
-    );
-    return c.json({ pages: corpus.index, wanted: corpus.wanted, questions, tasks: corpus.tasks });
+    return c.json(data.index(w));
   });
 
   app.get("/api/wikis/:id/search", (c) => {
@@ -128,13 +108,7 @@ export function buildApp({ registry, live, staticDir }: AppOptions) {
   app.get("/api/wikis/:id/files/*", (c) => {
     const w = c.req.param("id") === "_dev" ? { id: "_dev", root: join(registry.appRoot, "docs") } : wikiOr404(c);
     if (w instanceof Response) return w;
-    const rel = decodeURIComponent(c.req.path.slice(`/api/wikis/${w.id}/files/`.length));
-    const full = inside(w.root, rel);
-    const type = TYPES[extname(rel).toLowerCase()];
-    // Only media; never the database, JSON or the agent docs.
-    if (!full || !type || rel.split("/").some((p) => p.startsWith(".") || p === "data")) return c.notFound();
-    if (!existsSync(full) || !statSync(full).isFile()) return c.notFound();
-    return c.body(readFileSync(full), 200, { "content-type": type, "cache-control": "no-cache" });
+    return serveFile(c, w.root, c.req.path.slice(`/api/wikis/${w.id}/files/`.length));
   });
 
   app.get("/api/wikis/:id/answers", (c) => {
@@ -150,13 +124,8 @@ export function buildApp({ registry, live, staticDir }: AppOptions) {
     const body = newAnswerSchema.safeParse(await c.req.json().catch(() => null));
     if (!body.success) return c.json({ error: "bad request" }, 400);
     const { page, question, choice, body: note } = body.data;
-    const q = corpusOf(w)
-      .pages.get(page)
-      ?.questions.find((x) => x.id === question);
-    if (!q) return c.json({ error: "no such question" }, 404);
-    if (q.status !== "open") return c.json({ error: "this question is already decided" }, 409);
-    if (choice !== null && !q.options.includes(choice)) return c.json({ error: "not one of the options" }, 400);
-    if (choice === null && !note) return c.json({ error: "pick an option or write an answer" }, 400);
+    const problem = answerProblem(corpusOf(w).pages.get(page), { question, choice, body: note });
+    if (problem) return c.json({ error: problem.error }, problem.status);
     return c.json(addAnswer(w.root, page, question, choice, note), 201);
   });
 
@@ -232,6 +201,35 @@ export function buildApp({ registry, live, staticDir }: AppOptions) {
       off();
     }),
   );
+
+  // Share links (ADR-0003). The Share dialog (phase 2) uses these; the guest server serves the links.
+  const noSharing = (c: Context) =>
+    c.json({ error: "Sharing needs the built app: start Shiori with start-web.bat or start-app.bat." }, 409);
+
+  app.get("/api/shares", (c) => (shares ? c.json({ shares: shares.list().map(shares.info) }) : noSharing(c)));
+
+  app.post("/api/shares", async (c) => {
+    if (!shares) return noSharing(c);
+    const body = newShareSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: "bad request" }, 400);
+    if (!registry.get(body.data.wiki)) return c.json({ error: "no such wiki" }, 404);
+    try {
+      return c.json(shares.info(shares.create(body.data)), 201);
+    } catch (e) {
+      return c.json({ error: (e as Error).message }, 409);
+    }
+  });
+
+  // Revoke one link, or every link at once ("Stop all sharing").
+  app.delete("/api/shares/:sid", (c) => {
+    if (!shares) return noSharing(c);
+    return shares.revoke(c.req.param("sid")) ? c.body(null, 204) : c.json({ error: "no such link" }, 404);
+  });
+  app.delete("/api/shares", (c) => {
+    if (!shares) return noSharing(c);
+    shares.stopAll();
+    return c.body(null, 204);
+  });
 
   app.all("/api/*", (c) => c.json({ error: "not found" }, 404));
 

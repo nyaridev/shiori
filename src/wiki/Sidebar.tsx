@@ -1,5 +1,7 @@
 import { Link, NavLink, useNavigate } from "react-router";
 import type { NavNode, WikiDetail } from "../../shared/api.ts";
+import { useGuest } from "../guest/GuestContext.ts";
+import { withBase } from "../lib/base.ts";
 import { Icon, IconButton, Kbd, Tooltip } from "../ui/index.ts";
 import { shortcutLabel } from "./SearchPalette.tsx";
 import { SPECIALS } from "./special/SpecialPage.tsx";
@@ -14,19 +16,28 @@ export function Sidebar({
   onSearch: () => void;
 }) {
   const navigate = useNavigate();
+  const guest = useGuest();
   return (
     <nav className="sh-sidebar" aria-label={`${wiki.title} pages`}>
       <div className="sh-sidebar-head">
-        <Tooltip content="Back to the deck" side="right">
-          <IconButton
-            icon="deck"
-            label="Back to the deck"
-            onClick={() => navigate("/", { state: { from: wiki.id } })}
-          />
-        </Tooltip>
+        {guest ? (
+          // A guest has no deck to go back to (ADR-0003).
+          <span className="sh-guest-badge">
+            <Icon name="comment" size={14} />
+            {guest.kind === "comment" ? "Shared with you" : "Shared with you to read"} · {guest.guest?.name}
+          </span>
+        ) : (
+          <Tooltip content="Back to the deck" side="right">
+            <IconButton
+              icon="deck"
+              label="Back to the deck"
+              onClick={() => navigate("/", { state: { from: wiki.id } })}
+            />
+          </Tooltip>
+        )}
       </div>
       <NavLink to={`/w/${wiki.id}`} end className="sh-sidebar-wiki" onClick={onNavigate}>
-        <img src={wiki.coverUrl} alt="" className="sh-sidebar-cover" />
+        <img src={withBase(wiki.coverUrl)} alt="" className="sh-sidebar-cover" />
         <span>
           <span className="sh-sidebar-title">{wiki.title}</span>
           {wiki.tagline && <span className="sh-sidebar-tagline">{wiki.tagline}</span>}
@@ -55,9 +66,11 @@ export function Sidebar({
           </li>
         ))}
       </ul>
-      <Link to="/dev/ui" className="sh-sidebar-foot">
-        UI primitives
-      </Link>
+      {!guest && (
+        <Link to="/dev/ui" className="sh-sidebar-foot">
+          UI primitives
+        </Link>
+      )}
     </nav>
   );
 }

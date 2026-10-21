@@ -1,5 +1,6 @@
 // Shown instead of React Router's default error screen when a page throws while rendering.
 import { isRouteErrorResponse, Link, useRouteError } from "react-router";
+import { isGuest } from "../lib/base.ts";
 import { Button, Icon } from "../ui/index.ts";
 import "./error.css";
 
@@ -33,7 +34,7 @@ export function ErrorPage() {
         <div className="sh-error-actions">
           <Link to="/" reloadDocument className="sh-error-link">
             <Icon name="deck" size={16} />
-            Back to the deck
+            {isGuest ? "Back to the wiki" : "Back to the deck"}
           </Link>
           <Button variant="solid" icon="undo" onClick={() => window.location.reload()}>
             Reload

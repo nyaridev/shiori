@@ -136,6 +136,25 @@ The same React app in **guest mode**: it learns its link and wiki from `/s/<toke
 `/s/<token>/` as its base path, hides the deck, the CLI and dev links, and **polls** for new comments and answers
 every 10 seconds (with ETags, so an unchanged page costs one small `304`) instead of using SSE.
 
+### Phase 1 as built
+
+Details settled while building the guest server (2026-10-21):
+
+| Part | Decision |
+|---|---|
+| Code | `server/sharing/`: `shares.ts` (the links), `limits.ts` (buckets and windows), `guest.ts` (the guest app). `server/wikiData.ts` holds the corpus cache both servers read, so a page renders once for owner and guests. Client: `src/lib/base.ts` (the link's base path), `src/guest/` (the gate, the name prompt, permissions) |
+| Owner API | `GET` / `POST /api/shares`, `DELETE /api/shares/:id` (revoke), `DELETE /api/shares` (stop all). Only `--static` (start-web, the desktop app) shares; in dev these answer `409` |
+| Guest server | `server/main.ts` starts it on `127.0.0.1:4420` (`--guest-port`) with the first active link and closes it with the last |
+| Public files | The app's code and styles (`/assets/*`, `/favicon.svg`) are served without a link: they hold no wiki data. Everything with data is under `/s/<token>/`; `/` and every other path answer `404` |
+| Names first | Every guest, on view links too, picks a name before reading; data routes answer `401` without one. Names the owner or an agent sign with (Host, Owner, Agent, You…) and names already used on the link are refused |
+| Owner's name | Guests see the owner's messages signed **Host** until item 12 lets the owner pick a name |
+| Guests' writes | Comments only on pages that exist; replies only to open threads; status only `open` or `resolved` (won't fix stays the owner's) |
+| Polling | `GET /s/<token>/api/wikis/<id>/changes` returns the wiki's page and comment versions with an ETag (`304` when unchanged, a weakened `W/` ETag included). The client turns a change into the same live events SSE gives the owner. Three polls in a row with no answer (the last link ended, so the server stopped) show "Couldn't reach the wiki" |
+| Caching | `private, no-store` on everything behind a link, `private, max-age=300` on its media, so Cloudflare's edge caches nothing |
+| Embeds | The iframe keeps `strict-origin-when-cross-origin`: YouTube gets the tunnel's host name, never the path with the token |
+| Owner's server | Now answers only to loopback host names (no DNS rebinding) and refuses writes whose `Origin` isn't the app, so another site can't make a share link |
+| Until the tunnel | Links point at `http://127.0.0.1:4420/s/<token>/` and work on the host only; item 10 swaps in the public address |
+
 ### Two PCs with the same wiki (phase 2)
 
 Pages are already files in git. To merge comments too: comments and answers get IDs that can't collide (ULIDs plus
@@ -207,15 +226,16 @@ Anything not written into it can't be reached, so new owner features stay privat
 
 **Phase 1: guest server and safety**
 
-1. [ ] Share registry in memory: tokens, kinds, expiry, revoke, stop all
-2. [ ] Guest server on `127.0.0.1:4420`: the allowlisted routes, link checks, `410` for expired links
-3. [ ] Guest identity: name prompt, signed cookie; author columns for threads, messages and answers (a migration)
-4. [ ] Guests resolve or reopen only their own threads
-5. [ ] Rate limits and blocking; size limits
-6. [ ] Security headers, CSP, `Origin` checks
-7. [ ] Guest mode in the client: base path, session, polling with ETags, nothing owner-only shown
-8. [ ] Tests for every guest route: wrong token, other wiki, expired, view-only writes, limits, CSRF
-9. [ ] Template `AGENTS.md`: guests' comments are untrusted input
+1. [x] Share registry in memory: tokens, kinds, expiry, revoke, stop all
+2. [x] Guest server on `127.0.0.1:4420`: the allowlisted routes, link checks, `410` for expired links
+3. [x] Guest identity: name prompt, signed cookie; author columns for messages and answers (migration 3; backups
+   and `pnpm wiki inbox` carry names)
+4. [x] Guests resolve or reopen only their own threads
+5. [x] Rate limits and blocking; size limits
+6. [x] Security headers, CSP, `Origin` checks (and the owner's server locked to loopback names and its own origin)
+7. [x] Guest mode in the client: base path, session, polling with ETags, nothing owner-only shown
+8. [x] Tests for every guest route: wrong token, other wiki, expired, view-only writes, limits, CSRF
+9. [x] Template `AGENTS.md`: guests' comments are untrusted input (`pnpm wiki inbox` says so too)
 
 **Phase 2: tunnel and owner UI**
 

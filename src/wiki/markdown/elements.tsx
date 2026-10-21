@@ -1,6 +1,15 @@
 // React components for the `sh-*` elements the server produces (server/markdown/elements.ts).
-import { Children, isValidElement, type ReactElement, type ReactNode, useEffect, useState } from "react";
+import {
+  Children,
+  type ImgHTMLAttributes,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useState,
+} from "react";
 import { Link } from "react-router";
+import { withBase } from "../../lib/base.ts";
 import {
   Badge,
   type BadgeTone,
@@ -115,7 +124,7 @@ export function InfoboxEl({
   return (
     <aside className="sh-infobox">
       {title && <p className="sh-infobox-title">{title}</p>}
-      {image && <img className="sh-infobox-image" src={image} alt={title ?? ""} />}
+      {image && <img className="sh-infobox-image" src={withBase(image)} alt={title ?? ""} />}
       {caption && <p className="sh-infobox-caption">{caption}</p>}
       <div className="sh-infobox-rows">{children}</div>
     </aside>
@@ -212,6 +221,11 @@ export function CardEl({ icon, children }: Props<{ icon?: string }>) {
 }
 
 export const CardTitleEl = ({ children }: Props) => <p className="sh-card-title">{children}</p>;
+
+/** An image in a page. Its URL is the server's, so a guest's goes under the share link. */
+export const ImgEl = ({ src, alt, ...rest }: ImgHTMLAttributes<HTMLImageElement>) => (
+  <img src={withBase(src)} alt={alt ?? ""} {...rest} />
+);
 
 export const GalleryEl = ({ children }: Props) => <div className="sh-gallery">{children}</div>;
 

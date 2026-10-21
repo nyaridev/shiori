@@ -24,11 +24,13 @@ describe("backups", () => {
     createThread(a, "plan", { exact: "first", prefix: "", suffix: "" }, "Too vague");
     const second = createThread(a, "", { exact: "second", prefix: "a ", suffix: " b" }, "Why?");
     addMessage(a, second.id, "agent", "Because.");
+    addMessage(a, second.id, { guest: "g1", name: "Ana" }, "Agreed");
     setStatus(a, second.id, "resolved");
     addAnswer(a, "plan", "q1", "Steam", "Most players are there");
+    addAnswer(a, "plan", "q1", "itch.io", "", { guest: "g1", name: "Ana" });
 
     const written = writeBackup(a);
-    expect(written).toMatchObject({ file: join(a, BACKUP_FILE), threads: 2, answers: 1 });
+    expect(written).toMatchObject({ file: join(a, BACKUP_FILE), threads: 2, answers: 2 });
     expect(existsSync(written.file)).toBe(true);
 
     importData(b, readBackup(a));

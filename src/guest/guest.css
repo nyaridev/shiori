@@ -1,0 +1,75 @@
+/* The way in for guests (GuestGate.tsx): one card in the middle, in the default theme. */
+.sh-guest {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: var(--s-7) var(--s-4);
+  background: radial-gradient(60% 50% at 50% 35%, var(--accent-soft), transparent 70%), var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+.sh-guest-card {
+  display: grid;
+  gap: var(--s-3);
+  width: min(420px, 100%);
+  padding: var(--s-6) var(--s-5) var(--s-5);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+}
+
+.sh-guest-kicker {
+  margin: 0;
+  color: var(--accent-text);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.sh-guest-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--t-xl);
+  line-height: 1.2;
+}
+.sh-guest-text,
+.sh-guest-hint {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+.sh-guest-hint {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-guest-label {
+  margin-top: var(--s-2);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+.sh-guest-error {
+  margin: 0;
+  color: var(--tone-bad);
+  font-size: var(--t-sm);
+}
+.sh-guest-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--tone-bad);
+}
+
+/* The sidebar's note for guests, where the owner has the deck button. */
+.sh-guest-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--muted);
+  font-size: var(--t-xs);
+}

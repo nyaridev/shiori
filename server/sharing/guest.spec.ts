@@ -1,0 +1,394 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { GuestSession, Thread } from "../../shared/api.ts";
+import { buildApp } from "../app.ts";
+import { createLive } from "../live.ts";
+import { createRegistry } from "../registry.ts";
+import { addMessage, closeAll, listThreads } from "../threads.ts";
+import { createWikiData } from "../wikiData.ts";
+import { buildGuestApp, cleanName } from "./guest.ts";
+import { LIMITS } from "./limits.ts";
+import { createShares, type Share, type Shares } from "./shares.ts";
+
+const HOST = "http://share.test";
+let app: string;
+let clock: number;
+let shares: Shares;
+let guestApp: ReturnType<typeof buildGuestApp>;
+let ownerApp: ReturnType<typeof buildApp>;
+
+function wiki(id: string) {
+  const root = join(app, "wikis", id);
+  mkdirSync(join(root, "pages"), { recursive: true });
+  mkdirSync(join(root, "assets"));
+  writeFileSync(join(root, "wiki.json"), JSON.stringify({ schema: 1, id, title: id.toUpperCase() }));
+  writeFileSync(join(root, "cover.svg"), "<svg/>");
+  writeFileSync(join(root, "assets", "map.png"), "png");
+  writeFileSync(join(root, "pages", "index.md"), "Home of the wiki.");
+  writeFileSync(
+    join(root, "pages", "plan.md"),
+    "---\ntitle: Plan\nquestions:\n  - id: q1\n    text: Which first?\n    options: [Steam, itch.io]\n---\nThe plan.",
+  );
+  return root;
+}
+
+beforeEach(() => {
+  app = mkdtempSync(join(tmpdir(), "shiori-share-"));
+  mkdirSync(join(app, "wikis", "_template"), { recursive: true });
+  wiki("alpha");
+  wiki("beta");
+  clock = Date.parse("2026-10-21T12:00:00Z");
+  const registry = createRegistry(app);
+  const live = createLive(registry);
+  const data = createWikiData(live);
+  shares = createShares({ now: () => clock, origin: () => HOST });
+  guestApp = buildGuestApp({ registry, data, shares, secret: "test-secret" });
+  ownerApp = buildApp({ registry, live, data, shares });
+});
+afterEach(() => {
+  closeAll();
+  rmSync(app, { recursive: true, force: true });
+});
+
+/** A guest's browser: keeps the cookie, sends this site's Origin on writes, comes from one address. */
+function browser(share: Share, ip = "203.0.113.7") {
+  let cookie = "";
+  const base = `/s/${share.token}`;
+  const send = async (method: string, path: string, body?: unknown, headers: Record<string, string> = {}) => {
+    const res = await guestApp.request(`${HOST}${base}${path}`, {
+      method,
+      headers: {
+        "cf-connecting-ip": ip,
+        ...(cookie ? { cookie } : {}),
+        ...(body === undefined ? {} : { "content-type": "application/json", origin: HOST }),
+        ...headers,
+      },
+      body: body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
+    });
+    const set = res.headers.get("set-cookie");
+    if (set) cookie = set.split(";")[0];
+    return res;
+  };
+  return {
+    get: (path: string, headers?: Record<string, string>) => send("GET", path, undefined, headers),
+    post: (path: string, body: unknown, headers?: Record<string, string>) => send("POST", path, body, headers),
+    patch: (path: string, body: unknown) => send("PATCH", path, body),
+    join: (name: string) => send("POST", "/api/session", { name }),
+    setCookie: (c: string) => {
+      cookie = c;
+    },
+    get cookie() {
+      return cookie;
+    },
+  };
+}
+
+const quote = { exact: "The plan", prefix: "", suffix: "." };
+const alpha = () => join(app, "wikis", "alpha");
+
+describe("the link", () => {
+  it("answers 404 to unknown tokens and anything outside a link", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "view" });
+    const bogus = `/s/${"x".repeat(43)}/api/session`;
+    for (const path of [bogus, "/s/short/api/session", "/", "/api/wikis", "/api/wikis/alpha", "/api/events"]) {
+      expect((await guestApp.request(`${HOST}${path}`)).status, path).toBe(404);
+    }
+    const b = browser(share);
+    await b.join("Ana");
+    for (const path of ["/api/wikis", "/api/events", "/api/dev/elements", "/api/shares", "/api/wikis/beta"]) {
+      expect((await b.get(path)).status, path).toBe(404);
+    }
+  });
+
+  it("answers 410 once a link expires or is revoked", async () => {
+    const day = shares.create({ wiki: "alpha", kind: "view" });
+    const hour = shares.create({ wiki: "alpha", kind: "view", duration: "1h" });
+    const forever = shares.create({ wiki: "alpha", kind: "view", duration: "session" });
+    expect((await browser(hour).get("/api/session")).status).toBe(200);
+    clock += 3_600_000;
+    expect((await browser(hour).get("/api/session")).status).toBe(410);
+    expect((await browser(day).get("/api/session")).status).toBe(200);
+    shares.revoke(day.id);
+    expect((await browser(day).get("/api/session")).status).toBe(410);
+    clock += 30 * 86_400_000;
+    expect((await browser(forever).get("/api/session")).status).toBe(200);
+    shares.stopAll();
+    expect((await browser(forever).get("/api/session")).status).toBe(410);
+  });
+
+  it("sends the security headers on everything", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "view" });
+    for (const res of [await browser(share).get("/api/session"), await guestApp.request(`${HOST}/nope`)]) {
+      expect(res.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+      expect(res.headers.get("content-security-policy")).toContain("script-src 'self';");
+      // Vite inlines small fonts.
+      expect(res.headers.get("content-security-policy")).toContain("font-src 'self' data:");
+      expect(res.headers.get("referrer-policy")).toBe("no-referrer");
+      expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+      expect(res.headers.get("cache-control")).toBe("private, no-store");
+      expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    }
+  });
+});
+
+describe("guests", () => {
+  it("pick a name before reading, and get a cookie scoped to the link", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "view" });
+    const b = browser(share);
+    const before = (await (await b.get("/api/session")).json()) as GuestSession;
+    expect(before).toMatchObject({ wiki: { id: "alpha", title: "ALPHA" }, kind: "view", guest: null });
+    expect((await b.get("/api/wikis/alpha")).status).toBe(401);
+
+    for (const bad of ["A", "x".repeat(33), "bad\u0000name", "zero​width", "  "]) {
+      expect((await b.join(bad)).status, bad).toBe(400);
+    }
+    expect((await b.join("Agent")).status).toBe(409);
+    const res = await b.join("  Ana   Lee ");
+    expect(res.status).toBe(201);
+    const set = res.headers.get("set-cookie") ?? "";
+    expect(set).toMatch(/HttpOnly/);
+    expect(set).toMatch(/Secure/);
+    expect(set).toMatch(/SameSite=Strict/);
+    expect(set).toContain(`Path=/s/${share.token}/`);
+    expect(((await res.json()) as GuestSession).guest).toEqual({ name: "Ana Lee" });
+
+    expect((await browser(share, "198.51.100.1").join("ana lee")).status).toBe(409);
+  });
+
+  it("can't use a forged cookie or one from another link", async () => {
+    const a = shares.create({ wiki: "alpha", kind: "comment" });
+    const other = shares.create({ wiki: "alpha", kind: "comment" });
+    const b = browser(a);
+    await b.join("Ana");
+    const forged = browser(a);
+    forged.setCookie(`${b.cookie.slice(0, -3)}abc`);
+    expect((await forged.get("/api/wikis/alpha")).status).toBe(401);
+    const elsewhere = browser(other);
+    elsewhere.setCookie(b.cookie);
+    expect((await elsewhere.get("/api/wikis/alpha")).status).toBe(401);
+  });
+
+  it("read only the link's wiki, its media and nothing owner-only", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "view" });
+    const b = browser(share);
+    await b.join("Ana");
+    const detail = await (await b.get("/api/wikis/alpha")).json();
+    expect(detail).toMatchObject({ id: "alpha", problems: [] });
+    expect((await b.get("/api/wikis/alpha/page?path=plan")).status).toBe(200);
+    expect((await b.get("/api/wikis/alpha/pages")).status).toBe(200);
+    expect((await b.get("/api/wikis/alpha/search?q=plan")).status).toBe(200);
+    const file = await b.get("/api/wikis/alpha/files/assets/map.png");
+    expect(file.status).toBe(200);
+    expect(file.headers.get("cache-control")).toBe("private, max-age=300");
+    for (const path of [
+      "/api/wikis/beta/page?path=",
+      "/api/wikis/beta/files/assets/map.png",
+      "/api/wikis/alpha/files/data/wiki.db",
+      "/api/wikis/alpha/files/wiki.json",
+      "/api/wikis/alpha/files/pages/plan.md",
+      "/api/wikis/alpha/files/..%2F..%2Fbeta%2Fassets%2Fmap.png",
+      "/api/wikis/alpha/files/%E0%A4%A",
+    ]) {
+      expect((await b.get(path)).status, path).toBe(404);
+    }
+  });
+
+  it("can't write through a view link", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "view" });
+    const b = browser(share);
+    await b.join("Ana");
+    expect((await b.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "Hi" })).status).toBe(403);
+    expect((await b.post("/api/wikis/alpha/answers", { page: "plan", question: "q1", choice: "Steam" })).status).toBe(
+      403,
+    );
+    expect(listThreads(alpha())).toEqual([]);
+  });
+
+  it("comment, reply and answer with their name; the owner sees who, guests never see ids", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const ana = browser(share);
+    await ana.join("Ana");
+    const res = await ana.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "Too vague" });
+    expect(res.status).toBe(201);
+    const thread = (await res.json()) as Thread;
+    expect(thread.messages[0]).toMatchObject({ author: "guest", name: "Ana", mine: true });
+    expect(thread.messages[0].guestId).toBeUndefined();
+    addMessage(alpha(), thread.id, "user", "Which part?");
+
+    const bo = browser(share, "198.51.100.2");
+    await bo.join("Bo");
+    expect((await bo.post(`/api/wikis/alpha/threads/${thread.id}/messages`, { body: "Agreed" })).status).toBe(200);
+    const seen = ((await (await bo.get("/api/wikis/alpha/threads?page=plan")).json()) as { threads: Thread[] })
+      .threads[0];
+    expect(seen.messages.map((m) => [m.author, m.name, m.mine])).toEqual([
+      ["guest", "Ana", false],
+      ["user", "Host", false],
+      ["guest", "Bo", true],
+    ]);
+    expect(JSON.stringify(seen)).not.toContain("guestId");
+
+    const owner = listThreads(alpha())[0];
+    expect(owner.messages.map((m) => [m.author, m.name])).toEqual([
+      ["guest", "Ana"],
+      ["user", undefined],
+      ["guest", "Bo"],
+    ]);
+    expect(owner.messages[0].guestId).toBeTruthy();
+
+    const answer = await bo.post("/api/wikis/alpha/answers", { page: "plan", question: "q1", choice: "Steam" });
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ author: "guest", name: "Bo", mine: true });
+    expect((await bo.post("/api/wikis/alpha/answers", { page: "plan", question: "q1", choice: "Epic" })).status).toBe(
+      400,
+    );
+    expect((await bo.post("/api/wikis/alpha/threads", { page: "nowhere", quote, body: "Hi" })).status).toBe(404);
+  });
+
+  it("resolve or reopen only threads they started, and never as won't fix", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const ana = browser(share);
+    await ana.join("Ana");
+    const bo = browser(share, "198.51.100.2");
+    await bo.join("Bo");
+    const { id } = (await (
+      await ana.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "Hm" })
+    ).json()) as Thread;
+    expect((await bo.patch(`/api/wikis/alpha/threads/${id}`, { status: "resolved" })).status).toBe(403);
+    expect((await ana.patch(`/api/wikis/alpha/threads/${id}`, { status: "wontfix" })).status).toBe(400);
+    expect((await ana.patch(`/api/wikis/alpha/threads/${id}`, { status: "resolved" })).status).toBe(200);
+    expect((await bo.post(`/api/wikis/alpha/threads/${id}/messages`, { body: "Late" })).status).toBe(409);
+    expect((await ana.patch(`/api/wikis/alpha/threads/${id}`, { status: "open" })).status).toBe(200);
+  });
+
+  it("can't be made to write from another site", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const b = browser(share);
+    await b.join("Ana");
+    const body = { page: "plan", quote, body: "Hi" };
+    expect((await b.post("/api/wikis/alpha/threads", body, { origin: "https://evil.example" })).status).toBe(403);
+    expect((await b.post("/api/wikis/alpha/threads", body, { origin: "" })).status).toBe(403);
+    expect(
+      (await browser(share).post("/api/session", { name: "Eve" }, { origin: "https://evil.example" })).status,
+    ).toBe(403);
+    expect(listThreads(alpha())).toEqual([]);
+  });
+});
+
+describe("limits", () => {
+  it("cap sizes", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const b = browser(share);
+    await b.join("Ana");
+    const long = "é".repeat(LIMITS.comment / 2 + 1);
+    expect((await b.post("/api/wikis/alpha/threads", { page: "plan", quote, body: long })).status).toBe(400);
+    const huge = JSON.stringify({ page: "plan", quote, body: "x".repeat(LIMITS.request) });
+    expect((await b.post("/api/wikis/alpha/threads", huge)).status).toBe(413);
+    const wide = { ...quote, prefix: "x".repeat(LIMITS.context + 1) };
+    expect((await b.post("/api/wikis/alpha/threads", { page: "plan", quote: wide, body: "Hi" })).status).toBe(400);
+  });
+
+  it("slow writers down with 429 and block them after five", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const b = browser(share);
+    await b.join("Ana");
+    const post = () => b.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "Spam" });
+    for (let i = 0; i < LIMITS.writes.capacity; i++) expect((await post()).status).toBe(201);
+    const limited = await post();
+    expect(limited.status).toBe(429);
+    expect(Number(limited.headers.get("retry-after"))).toBeGreaterThan(0);
+    clock += 10_000;
+    expect((await post()).status).toBe(201);
+    for (let i = 0; i < LIMITS.strikes - 1; i++) expect((await post()).status).toBe(429);
+    expect((await b.get("/api/session")).status).toBe(403);
+    // Their address is blocked too, even with a fresh name.
+    expect((await browser(share).get("/api/session")).status).toBe(403);
+    expect(shares.info(share).guests[0]).toMatchObject({ name: "Ana", blocked: true });
+    expect(shares.info(share).blockedIps).toBe(1);
+    expect(shares.info(share).activity.at(-1)?.what).toBe("blocked for going over the limits");
+  });
+
+  it("cap writes per guest per day and reads per address", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const b = browser(share);
+    await b.join("Ana");
+    for (let i = 0; i < LIMITS.writesPerGuestPerDay; i++) {
+      clock += 10_000;
+      expect((await b.post("/api/wikis/alpha/threads", { page: "plan", quote, body: `#${i}` })).status).toBe(201);
+    }
+    clock += 60_000;
+    expect((await b.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "one more" })).status).toBe(429);
+
+    const reader = browser(share, "192.0.2.50");
+    let status = 200;
+    for (let i = 0; i <= LIMITS.reads.capacity && status === 200; i++)
+      status = (await reader.get("/api/session")).status;
+    expect(status).toBe(429);
+  });
+});
+
+describe("polling", () => {
+  it("answers 304 while nothing changed", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "view" });
+    const b = browser(share);
+    await b.join("Ana");
+    const first = await b.get("/api/wikis/alpha/changes");
+    const etag = first.headers.get("etag") ?? "";
+    expect(etag).toMatch(/^"\d+\.\d+"$/);
+    expect((await b.get("/api/wikis/alpha/changes", { "if-none-match": etag })).status).toBe(304);
+    expect((await b.get("/api/wikis/alpha/changes", { "if-none-match": `W/${etag}` })).status).toBe(304);
+  });
+});
+
+describe("cleanName", () => {
+  it("trims, collapses spaces and refuses invisible characters", () => {
+    expect(cleanName(" Ana \t Lee ")).toBe("Ana Lee");
+    expect(cleanName("Zoë 🌸")).toBe("Zoë 🌸");
+    expect(cleanName("a‮b")).toBeNull();
+  });
+});
+
+describe("the owner's share routes", () => {
+  const owner = (path: string, init?: RequestInit) => ownerApp.request(`http://127.0.0.1:4400${path}`, init);
+  const json = (body: unknown) => ({
+    method: "POST",
+    headers: { "content-type": "application/json", origin: "http://localhost:4400" },
+    body: JSON.stringify(body),
+  });
+
+  it("make, list and revoke links", async () => {
+    const res = await owner("/api/shares", json({ wiki: "alpha", kind: "comment", duration: "1h" }));
+    expect(res.status).toBe(201);
+    const info = await res.json();
+    expect(info).toMatchObject({ wiki: "alpha", kind: "comment", expiresAt: "2026-10-21T13:00:00.000Z" });
+    expect(info.url).toBe(`${HOST}${info.path}`);
+    expect(info.path).toMatch(/^\/s\/[A-Za-z0-9_-]{43}\/$/);
+    expect((await (await owner("/api/shares")).json()).shares).toHaveLength(1);
+    expect((await owner(`/api/shares/${info.id}`, { method: "DELETE" })).status).toBe(204);
+    expect((await (await owner("/api/shares")).json()).shares).toHaveLength(0);
+    expect((await owner("/api/shares", json({ wiki: "nope", kind: "view" }))).status).toBe(404);
+  });
+
+  it("allow ten links at a time and stop them all at once", async () => {
+    for (let i = 0; i < LIMITS.links; i++)
+      expect((await owner("/api/shares", json({ wiki: "alpha", kind: "view" }))).status).toBe(201);
+    expect((await owner("/api/shares", json({ wiki: "alpha", kind: "view" }))).status).toBe(409);
+    expect((await owner("/api/shares", { method: "DELETE" })).status).toBe(204);
+    expect(shares.list()).toHaveLength(0);
+  });
+
+  it("refuse other sites and other host names", async () => {
+    const evil = { ...json({ wiki: "alpha", kind: "comment" }), headers: { origin: "https://evil.example" } };
+    expect((await owner("/api/shares", evil)).status).toBe(403);
+    expect((await ownerApp.request("http://rebind.evil.example:4400/api/wikis")).status).toBe(404);
+    expect(shares.list()).toHaveLength(0);
+  });
+
+  it("say so in dev, where sharing is off", async () => {
+    const registry = createRegistry(app);
+    const devApp = buildApp({ registry, live: createLive(registry) });
+    const res = await devApp.request("http://localhost:4411/api/shares");
+    expect(res.status).toBe(409);
+  });
+});

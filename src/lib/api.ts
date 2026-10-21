@@ -1,5 +1,6 @@
 import type {
   Answer,
+  GuestSession,
   PageData,
   SearchHit,
   Thread,
@@ -9,13 +10,23 @@ import type {
   WikiIndex,
 } from "../../shared/api.ts";
 import type { Quote } from "../../shared/quote.ts";
+import { withBase } from "./base.ts";
+
+/** A failed request, with its HTTP status (a guest's link answers 410 once it ends). */
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(`${status} ${message}`);
+    this.status = status;
+  }
+}
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
+  const res = await fetch(withBase(url), {
     ...init,
     headers: init?.body ? { "content-type": "application/json" } : undefined,
   });
-  if (!res.ok) throw new Error(`${res.status} ${(await res.json().catch(() => null))?.error ?? res.statusText}`);
+  if (!res.ok) throw new ApiError(res.status, (await res.json().catch(() => null))?.error ?? res.statusText);
   return res.json() as Promise<T>;
 }
 
@@ -49,4 +60,7 @@ export const api = {
     }),
   setStatus: (id: string, thread: number, status: ThreadStatus) =>
     request<Thread>(`/api/wikis/${enc(id)}/threads/${thread}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  /** Guests only: the share link they came through, and their name once they picked one. */
+  session: () => request<GuestSession>("/api/session"),
+  join: (name: string) => request<GuestSession>("/api/session", { method: "POST", body: JSON.stringify({ name }) }),
 };
