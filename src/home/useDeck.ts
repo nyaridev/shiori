@@ -1,11 +1,15 @@
 // The deck controller: drag, fling, wheel and keys move a position along a loop of card slots; every frame writes
 // transforms straight to the DOM (no React render per frame). React only hears about the centered card.
 import { type RefObject, useEffect, useRef, useState } from "react";
-import { clamp, MAX_SPEED, type MotionState, mod, offset, step } from "./physics.ts";
+import { clamp, MAX_SPEED, type MotionState, mod, moving, offset, step } from "./physics.ts";
 
 const GAP = 22;
 /** Fewer real cards than this get repeated, so the loop always fills the screen. */
 const MIN_SLOTS = 15;
+/** Wheel pixels per card: one notch of a mouse wheel (100px) moves one card. */
+const WHEEL_PX = 100;
+/** After the wheel goes quiet this long (ms), the glide picks the nearest card. */
+const WHEEL_REST = 140;
 
 export function slotCount(n: number) {
   return n === 0 ? 0 : n * Math.max(1, Math.ceil(MIN_SLOTS / n));
@@ -43,6 +47,19 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
     let last = 0;
     let lastCenter = Math.round(s.x);
     let prevX = s.x;
+    let wheelRest = 0;
+    /** The last values written to each card, so a frame only touches what changed. */
+    const written: Record<string, string>[] = [];
+    const write = (card: HTMLElement, i: number, key: string, value: string) => {
+      written[i] ??= {};
+      const last = written[i];
+      if (last[key] === value) return;
+      last[key] = value;
+      if (key.startsWith("--")) card.style.setProperty(key, value);
+      else card.style[key as "transform" | "opacity" | "zIndex" | "visibility"] = value;
+    };
+    /** Where the deck is headed: the target while it snaps or glides, else where it is. */
+    const heading = () => Math.round(s.mode === "settle" || s.mode === "glide" ? s.target : s.x);
 
     const measure = () => {
       pitch = (slots.current[0]?.offsetWidth ?? 180) + GAP;
@@ -56,19 +73,23 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
         const a = Math.abs(d);
         const px = d * pitch;
         if (Math.abs(px) > half) {
-          card.style.visibility = "hidden";
+          write(card, i, "visibility", "hidden");
           return;
         }
-        card.style.visibility = "visible";
+        write(card, i, "visibility", "visible");
         const lift = Math.max(0, 1 - a);
-        card.style.transform =
+        write(
+          card,
+          i,
+          "transform",
           `translate3d(${px.toFixed(2)}px, ${(-lift * 14).toFixed(2)}px, ${(-a * 90).toFixed(1)}px) ` +
-          `rotateY(${clamp(-d * 8, -30, 30).toFixed(2)}deg) scale(${(1 - Math.min(a, 4) * 0.05).toFixed(4)})`;
-        card.style.opacity = String(clamp(1 - Math.max(0, a - 0.5) * 0.16, 0.18, 1));
-        card.style.zIndex = String(1000 - Math.round(a * 10));
-        card.style.setProperty("--focus", lift.toFixed(3));
-        card.style.setProperty("--d", d.toFixed(3));
-        card.toggleAttribute("data-center", a < 0.5);
+            `rotateY(${clamp(-d * 8, -30, 30).toFixed(2)}deg) scale(${(1 - Math.min(a, 4) * 0.05).toFixed(4)})`,
+        );
+        write(card, i, "opacity", clamp(1 - Math.max(0, a - 0.5) * 0.16, 0.18, 1).toFixed(3));
+        write(card, i, "zIndex", String(1000 - Math.round(a * 10)));
+        // --focus restyles the whole card (its sky's glow), so it's rounded to keep most frames from touching it.
+        write(card, i, "--focus", lift.toFixed(2));
+        if (card.hasAttribute("data-center") !== a < 0.5) card.toggleAttribute("data-center", a < 0.5);
       });
     };
 
@@ -88,11 +109,12 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
     };
 
     const frame = (t: number) => {
-      const dt = Math.min(0.04, (t - last) / 1000);
+      // A frame's timestamp can be a hair before the moment `run` started the loop: never step backward.
+      const dt = clamp((t - last) / 1000, 0, 0.04);
       last = t;
       s = step(s, dt);
       afterMove();
-      if (s.mode === "coast" || s.mode === "settle") raf = requestAnimationFrame(frame);
+      if (moving(s.mode)) raf = requestAnimationFrame(frame);
       else raf = 0;
     };
     const run = () => {
@@ -167,12 +189,20 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
       run();
     };
 
+    // Wheel and trackpad move a target and the deck glides after it; once the wheel rests, it lands on a card.
     const wheel = (e: WheelEvent) => {
       if (live.current.disabled) return;
       e.preventDefault();
       const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-      const scale = e.deltaMode === 1 ? 16 : 1;
-      s = { ...s, v: clamp(s.v + delta * scale * 0.018, -MAX_SPEED, MAX_SPEED), mode: "coast" };
+      const px = delta * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? window.innerWidth : 1);
+      const from = s.mode === "glide" || s.mode === "settle" ? s.target : s.x;
+      s = { ...s, mode: "glide", target: clamp(from + px / WHEEL_PX, s.x - 8, s.x + 8) };
+      clearTimeout(wheelRest);
+      wheelRest = window.setTimeout(() => {
+        if (s.mode !== "glide") return;
+        s = { ...s, target: Math.round(s.target) };
+        run();
+      }, WHEEL_REST);
       run();
     };
 
@@ -180,7 +210,7 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
       if (live.current.disabled || e.altKey || e.ctrlKey || e.metaKey) return;
       // Typing in the search field: its keys are its own.
       if (e.target instanceof HTMLInputElement) return;
-      const base = s.mode === "settle" ? s.target : Math.round(s.x);
+      const base = heading();
       if (e.key === "ArrowRight" || e.key === "ArrowDown") snapTo(base + 1);
       else if (e.key === "ArrowLeft" || e.key === "ArrowUp") snapTo(base - 1);
       else if (e.key === "Enter" || e.key === " ") live.current.onOpen(mod(Math.round(s.x), count));
@@ -191,7 +221,7 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
     controls.current = {
       // The nearest slot that shows that wiki, so the deck takes the short way round.
       goTo: (wiki) => {
-        const base = s.mode === "settle" ? s.target : Math.round(s.x);
+        const base = heading();
         let best = base;
         let bestDist = Number.POSITIVE_INFINITY;
         for (let slot = wiki; slot < count; slot += n) {
@@ -203,7 +233,7 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
         }
         if (best !== base || s.mode !== "idle") snapTo(best);
       },
-      openCenter: () => live.current.onOpen(mod(Math.round(s.mode === "settle" ? s.target : s.x), count)),
+      openCenter: () => live.current.onOpen(mod(heading(), count)),
     };
 
     const resize = () => {
@@ -226,6 +256,7 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
     window.addEventListener("resize", resize);
     return () => {
       cancelAnimationFrame(raf);
+      clearTimeout(wheelRest);
       el.removeEventListener("pointerdown", down);
       el.removeEventListener("pointermove", move);
       el.removeEventListener("pointerup", up);

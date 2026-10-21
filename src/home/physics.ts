@@ -8,8 +8,14 @@ export const SETTLE_SPEED = 2.2;
 export const STIFFNESS = 140;
 export const DAMPING = 19;
 export const MAX_SPEED = 70;
+/** Wheel glide: a critically damped spring toward the wheel's target, so it eases in and out without a bounce. */
+export const GLIDE_STIFFNESS = 120;
+export const GLIDE_DAMPING = 2 * Math.sqrt(GLIDE_STIFFNESS);
 
-export type Mode = "idle" | "drag" | "coast" | "settle";
+export type Mode = "idle" | "drag" | "coast" | "settle" | "glide";
+
+/** Modes that move on their own, frame after frame. */
+export const moving = (mode: Mode) => mode === "coast" || mode === "settle" || mode === "glide";
 
 export interface MotionState {
   x: number;
@@ -29,11 +35,13 @@ export function step(s: MotionState, dt: number): MotionState {
       // Lean into the direction of travel so the last card doesn't snap back.
       target = Math.round(x + v * 0.12);
     }
-  } else if (mode === "settle") {
-    const a = STIFFNESS * (target - x) - DAMPING * v;
+  } else if (mode === "settle" || mode === "glide") {
+    const [k, c] = mode === "settle" ? [STIFFNESS, DAMPING] : [GLIDE_STIFFNESS, GLIDE_DAMPING];
+    const a = k * (target - x) - c * v;
     v += a * dt;
     x += v * dt;
-    if (Math.abs(target - x) < 0.0008 && Math.abs(v) < 0.02) {
+    // A glide only comes to rest once its target is a card (the wheel has stopped).
+    if (Number.isInteger(target) && Math.abs(target - x) < 0.0008 && Math.abs(v) < 0.02) {
       x = target;
       v = 0;
       mode = "idle";
