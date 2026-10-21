@@ -2,7 +2,6 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
-import { PALETTES } from "../shared/theme.ts";
 import { slashes } from "./paths.ts";
 
 export interface TemplateVars {
@@ -56,7 +55,8 @@ export const PREVIEW_VARS = (appRoot: string): TemplateVars => ({
   id: "template",
   title: "Template",
   tagline: "The default wiki every new project starts from",
-  accent: PALETTES.dark.accent,
+  // A calm blue, so the template doesn't look like the app's own sand-colored chrome.
+  accent: "#74a7e6",
   shiori: appRoot,
 });
 
