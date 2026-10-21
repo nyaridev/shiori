@@ -161,4 +161,4 @@ an infobox label costs nothing worse than an odd label. Option C remains open as
 **Later**
 
 16. [ ] Page-level comments and a comments panel; Special:Tasks
-17. [ ] CLI: `wiki new <kit> <page>`, `wiki rename`, `wiki backup` / `restore`
+17. [ ] CLI: `wiki new <kit> <page>`, `wiki rename` (`wiki backup` / `restore` done, ADR-0001)

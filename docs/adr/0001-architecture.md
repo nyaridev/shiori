@@ -96,5 +96,5 @@ The ideas (text-quote anchors, CLI inbox loop, directive elements) were carried 
 
 1. [x] Server, CLI, template, deck, wiki view, comments, `/dev/ui`, Tauri window.
 2. [x] Search across a wiki's pages (Ctrl+K / "/" palette, jumps to the matching heading).
-3. [ ] Comment backups to JSON.
+3. [x] Comment backups to JSON (`pnpm wiki backup` / `restore`, `<wiki>/backup.json`; answers included).
 4. [ ] Code highlighting (Shiki) in code blocks.

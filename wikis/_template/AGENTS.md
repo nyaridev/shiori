@@ -112,5 +112,10 @@ Run these from the Shiori folder (`{{shiori}}`):
 | `pnpm wiki reply {{id}} <thread> "…"` | Answer or ask back (the thread stays open) |
 | `pnpm wiki resolve {{id}} <thread> --note "…"` | Done: say what you changed (`--wontfix` to decline) |
 | `pnpm wiki check {{id}}` | Validate the wiki: frontmatter, links, files, elements, theme |
+| `pnpm wiki backup {{id}}` / `restore {{id}}` | Save comments and answers to `backup.json` / load them back |
 
 Run `pnpm wiki check {{id}}` after every change.
+
+Comments and answers live in `data/wiki.db`, which is never committed. After working through the inbox, run
+`pnpm wiki backup {{id}}`: it saves them to `backup.json` in the wiki folder, which can be committed with the pages.
+`pnpm wiki restore {{id}}` loads it back (on a new machine, or after losing `data/`).

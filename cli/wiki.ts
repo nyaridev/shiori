@@ -3,6 +3,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { listAnswers } from "../server/answers.ts";
+import { importData, readBackup, writeBackup } from "../server/backup.ts";
 import { buildCorpus } from "../server/corpus.ts";
 import { listPages, renderPage } from "../server/pages.ts";
 import { APP_ROOT, slashes } from "../server/paths.ts";
@@ -24,7 +25,9 @@ const HELP = `Shiori wiki CLI
   pnpm wiki threads <id> [--all]                   All open (or all) threads of a wiki
   pnpm wiki reply <id> <thread> "message"          Answer or ask back; the thread stays open
   pnpm wiki resolve <id> <thread> [--note "…"] [--wontfix]
-  pnpm wiki reopen <id> <thread>`;
+  pnpm wiki reopen <id> <thread>
+  pnpm wiki backup [id]                            Save comments and answers to <wiki>/backup.json (commit it)
+  pnpm wiki restore <id> [--replace]               Load <wiki>/backup.json back into the wiki's database`;
 
 const ACCENTS = ["#e8b86d", "#7fb7a4", "#8fa8e8", "#e0846b", "#c49be0", "#d4c46a", "#6fb3d4", "#e08aa8"];
 
@@ -38,6 +41,7 @@ const { positionals, values } = parseArgs({
     note: { type: "string" },
     wontfix: { type: "boolean", default: false },
     all: { type: "boolean", default: false },
+    replace: { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
 });
@@ -220,6 +224,29 @@ const commands: Record<string, () => void> = {
     if (values.note) addMessage(w.root, id, "agent", values.note);
     setStatus(w.root, id, values.wontfix ? "wontfix" : "resolved");
     console.log(`#${id} ${values.wontfix ? "closed as won't fix" : "resolved"}.`);
+  },
+
+  backup() {
+    const targets = args[0] ? [wikiById(args[0])] : discover(APP_ROOT).wikis;
+    for (const w of targets) {
+      const { file, threads, answers } = writeBackup(w.root);
+      console.log(
+        `${w.id}: ${threads} thread${threads === 1 ? "" : "s"}, ${answers} answer${answers === 1 ? "" : "s"} → ${slashes(file)}`,
+      );
+    }
+    if (!targets.length) console.log("No wikis to back up.");
+  },
+
+  restore() {
+    const w = wikiById(args[0]);
+    try {
+      const { threads, answers } = importData(w.root, readBackup(w.root), { replace: values.replace });
+      console.log(
+        `${w.id}: restored ${threads} thread${threads === 1 ? "" : "s"} and ${answers} answer${answers === 1 ? "" : "s"}.`,
+      );
+    } catch (error) {
+      fail((error as Error).message);
+    }
   },
 
   reopen() {
