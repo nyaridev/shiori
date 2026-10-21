@@ -9,7 +9,8 @@ import { usePresence } from "../presence/usePresence.ts";
 import { ScrollArea } from "../ui/index.ts";
 import { PageArea } from "./PageArea.tsx";
 import { SearchPalette, typing } from "./SearchPalette.tsx";
-import { Sidebar } from "./Sidebar.tsx";
+import { rememberViewed } from "./sidebar/recent.ts";
+import { Sidebar } from "./sidebar/Sidebar.tsx";
 import { MissingPage } from "./special/MissingPage.tsx";
 import { SpecialPage } from "./special/SpecialPage.tsx";
 import { ImageViewer } from "./viewer/ImageViewer.tsx";
@@ -31,7 +32,8 @@ export function WikiLayout() {
   const page = useResource(special === null ? `page:${wikiId}:${path}` : null, () => api.page(wikiId, path));
   const index = useResource(`pages:${wikiId}`, () => api.index(wikiId));
   const pages = useMemo(
-    () => (index.data ? { wikiId, byPath: new Map(index.data.pages.map((p) => [p.path, p])) } : null),
+    () =>
+      index.data ? { wikiId, byPath: new Map(index.data.pages.map((p) => [p.path, p])), index: index.data } : null,
     [index.data, wikiId],
   );
   const { reload: reloadWiki } = wiki;
@@ -46,6 +48,13 @@ export function WikiLayout() {
   });
   useTheme(wiki.data?.theme);
   const people = usePresence(wikiId, path);
+  // Home mode: the home page is a wide portal, with the sidebar and the rail as drawers.
+  const home = path === "" && !page.error;
+
+  // Remembered for the sidebar's Recently viewed.
+  useEffect(() => {
+    if (page.data && !page.error) rememberViewed(wikiId, page.data);
+  }, [wikiId, page.data, page.error]);
 
   const [navOpen, setNavOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(false);
@@ -88,17 +97,23 @@ export function WikiLayout() {
   return (
     <WikiIndexContext.Provider value={pages}>
       <ViewerContext.Provider value={viewer}>
-        <div className="sh-wiki" data-enter={fromDeck || undefined}>
+        <div className="sh-wiki" data-enter={fromDeck || undefined} data-home={home || undefined}>
           {wiki.data && (
             <>
               <ScrollArea className="sh-wiki-sidebar" data-open={navOpen || undefined}>
-                <Sidebar wiki={wiki.data} onNavigate={() => setNavOpen(false)} onSearch={() => setSearchOpen(true)} />
+                <Sidebar
+                  wiki={wiki.data}
+                  path={path}
+                  onNavigate={() => setNavOpen(false)}
+                  onSearch={() => setSearchOpen(true)}
+                />
               </ScrollArea>
               {navOpen && (
                 <button type="button" className="sh-scrim" aria-label="Close menu" onClick={() => setNavOpen(false)} />
               )}
               <WikiHeader
                 wiki={wiki.data}
+                home={home}
                 people={people}
                 onPages={() => setNavOpen(true)}
                 onSearch={() => setSearchOpen(true)}

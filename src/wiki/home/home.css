@@ -1,0 +1,350 @@
+/* The home page: the hero (HomeHero.tsx), titled boxes in a grid, and the live blocks (blocks.tsx). */
+
+/* Boxes */
+.sh-boxes {
+  --columns: 3;
+  display: grid;
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  gap: var(--s-4);
+  margin: var(--s-5) 0;
+}
+.sh-boxes[data-columns="2"] {
+  --columns: 2;
+}
+.sh-boxes[data-columns="4"] {
+  --columns: 4;
+}
+.sh-box {
+  min-width: 0;
+  overflow: hidden;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+.sh-box[data-span="2"] {
+  grid-column: span 2;
+}
+.sh-box[data-span="3"] {
+  grid-column: span 3;
+}
+.sh-box .sh-box-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  padding: var(--s-2) var(--s-4);
+  border-bottom: var(--bw) solid var(--border);
+  background: color-mix(in oklab, var(--accent) 12%, var(--raised));
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-size: var(--t-md);
+  font-weight: 650;
+}
+.sh-box-icon {
+  font-size: 1.1em;
+}
+.sh-box-body {
+  padding: var(--s-3) var(--s-4) var(--s-4);
+  font-size: var(--t-sm);
+}
+.sh-box-body > :first-child {
+  margin-top: 0;
+}
+.sh-box-body > :last-child {
+  margin-bottom: 0;
+}
+.sh-box-body .sh-cards {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  margin: 0;
+}
+
+/* Live blocks */
+.sh-prose .sh-block-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-prose .sh-block-list > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 var(--s-3);
+  padding: 6px 0;
+  border-bottom: var(--bw) solid color-mix(in oklab, var(--border) 60%, transparent);
+}
+.sh-block-list > li:last-child {
+  border-bottom: 0;
+}
+.sh-block-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text);
+  font-weight: 560;
+  text-decoration: none;
+}
+.sh-block-link:hover {
+  color: var(--accent);
+}
+.sh-block-name {
+  overflow-wrap: anywhere;
+}
+.sh-block-when,
+.sh-block-meta {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  white-space: nowrap;
+}
+.sh-prose .sh-block-questions > li,
+.sh-prose .sh-block-discussions > li {
+  display: grid;
+  gap: 2px;
+}
+.sh-block-questions .sh-block-meta,
+.sh-block-discussions .sh-block-meta {
+  white-space: normal;
+}
+.sh-block-discussions .sh-block-name {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-weight: 400;
+  color: var(--text-soft);
+}
+.sh-block-discussions strong {
+  color: var(--text);
+  font-weight: 650;
+}
+.sh-block-task {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+.sh-block-task .sh-task {
+  translate: 0 2px;
+}
+a.sh-block-page {
+  text-decoration: none;
+}
+a.sh-block-page:hover {
+  color: var(--text);
+}
+.sh-block-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--s-2);
+  color: var(--accent);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  text-decoration: none;
+}
+.sh-block-more:hover {
+  color: var(--accent-hover);
+}
+.sh-block-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+/* Directory */
+.sh-directory {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--s-4);
+}
+.sh-prose .sh-directory-title {
+  margin: 0 0 var(--s-1);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sh-directory-title .sh-block-link {
+  color: var(--muted);
+  font-weight: 650;
+}
+.sh-prose .sh-directory-list {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 960px) {
+  .sh-boxes,
+  .sh-boxes[data-columns="4"] {
+    --columns: 2;
+  }
+}
+@media (max-width: 640px) {
+  .sh-boxes,
+  .sh-boxes[data-columns] {
+    --columns: 1;
+  }
+  .sh-box[data-span] {
+    grid-column: auto;
+  }
+}
+
+/* The hero: the wiki's picture behind its name, where it stands, its numbers and where to go first. */
+.sh-home-hero {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--s-4);
+  padding: var(--s-7) var(--s-5) calc(var(--s-7) + var(--s-4));
+  overflow: hidden;
+  isolation: isolate;
+  text-align: center;
+}
+.sh-home-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(2px) saturate(1.05);
+  opacity: 0.55;
+  scale: 1.03;
+}
+.sh-home-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(70% 60% at 50% 40%, color-mix(in oklab, var(--bg) 35%, transparent), transparent),
+    linear-gradient(180deg, color-mix(in oklab, var(--bg) 30%, transparent) 0%, var(--bg) 100%);
+}
+.sh-home-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 5px var(--s-3);
+  border: var(--bw) solid color-mix(in oklab, var(--border) 80%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--surface) 75%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--text-soft);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sh-home-pill .sh-badge {
+  height: auto;
+  padding: 0;
+  background: none;
+}
+.sh-home-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.sh-home-summary {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  line-height: 1.45;
+  text-wrap: balance;
+}
+.sh-home-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 170px));
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+}
+.sh-home-stat {
+  display: grid;
+  gap: 2px;
+  padding: var(--s-3) var(--s-4);
+  border: var(--bw) solid color-mix(in oklab, var(--border) 80%, transparent);
+  border-radius: var(--r-lg);
+  background: color-mix(in oklab, var(--surface) 70%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--text);
+  text-decoration: none;
+}
+a.sh-home-stat:hover {
+  border-color: var(--accent-line);
+}
+.sh-home-stat-value {
+  font-family: var(--font-heading);
+  font-size: var(--t-xl);
+  font-weight: 700;
+}
+.sh-home-stat-label {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sh-home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+.sh-home-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 38px;
+  padding: 0 var(--s-4);
+  border: var(--bw) solid var(--border-strong);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--surface) 70%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--text);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+.sh-home-action:hover {
+  background: var(--raised);
+}
+.sh-home-action[data-primary] {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.sh-home-action[data-primary]:hover {
+  background: var(--accent-hover);
+}
+.sh-home-action:focus-visible,
+.sh-home-stat:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+@media (max-width: 640px) {
+  .sh-home-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .sh-home-stat {
+    padding: var(--s-2);
+  }
+}

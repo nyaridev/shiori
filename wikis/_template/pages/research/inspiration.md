@@ -1,7 +1,7 @@
 ---
 title: "Inspiration"
 summary: "The mood board: looks, feelings and references we want to borrow from."
-icon: "✨"
+icon: "/assets/icons/inspiration.svg"
 status: active
 order: 2
 tags: [research, art]

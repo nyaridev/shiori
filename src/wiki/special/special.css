@@ -153,10 +153,6 @@
   gap: var(--s-1);
   padding-left: 22px;
 }
-.sh-sidebar-tools-title {
-  margin: var(--s-5) 0 var(--s-1);
-  padding: 0 var(--s-2);
-}
 .sh-missing-links {
   margin-top: var(--s-6);
   color: var(--muted);

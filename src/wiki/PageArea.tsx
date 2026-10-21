@@ -1,11 +1,12 @@
 // One page of a wiki: its head, the article (where comments anchor), its foot, and the rail with the contents and
-// comment threads.
+// comment threads. The home page is wide: a hero instead of the head, and the rail only as a drawer.
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { PageData, PageEntry, WikiDetail } from "../../shared/api.ts";
 import { type Anchors, CommentLayer } from "../comments/CommentLayer.tsx";
 import { ThreadList } from "../comments/ThreadList.tsx";
 import { useThreads } from "../comments/useThreads.ts";
 import { Callout, IconButton, ScrollArea } from "../ui/index.ts";
+import { HomeHero } from "./home/HomeHero.tsx";
 import { Markdown } from "./markdown/Markdown.tsx";
 import { PageContext } from "./PageContext.ts";
 import { PageFoot } from "./PageFoot.tsx";
@@ -45,32 +46,40 @@ export function PageArea({
     [wiki.id, page, answers, answer, hideAnswer, threads],
   );
 
+  const home = path === "";
+  const onProblems = () => setShowProblems((s) => !s);
   return (
     <PageContext.Provider value={context}>
-      <main className="sh-wiki-main" data-path={path}>
-        <PageHead wiki={wiki} page={page} problems={problems.length} onProblems={() => setShowProblems((s) => !s)} />
-        {showProblems && (
-          <Callout tone="warning" title="Problems (for the agent: run pnpm wiki check)">
-            <ul>
-              {problems.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
-          </Callout>
+      <main className="sh-wiki-main" data-path={path} data-home={home || undefined}>
+        {home ? (
+          <HomeHero wiki={wiki} page={page} problems={problems.length} onProblems={onProblems} />
+        ) : (
+          <PageHead wiki={wiki} page={page} problems={problems.length} onProblems={onProblems} />
         )}
-        <div ref={article} className="sh-prose">
-          <PageInfobox page={page} />
-          <Markdown hast={page.hast} />
+        <div className="sh-page-body">
+          {showProblems && (
+            <Callout tone="warning" title="Problems (for the agent: run pnpm wiki check)">
+              <ul>
+                {problems.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </Callout>
+          )}
+          <div ref={article} className="sh-prose">
+            <PageInfobox page={page} />
+            <Markdown hast={page.hast} />
+          </div>
+          <CommentLayer
+            container={article}
+            contentKey={page.hast}
+            threads={threads}
+            active={active}
+            onActivate={setActive}
+            onAnchors={onAnchors}
+          />
+          <PageFoot wikiId={wiki.id} page={page} index={index} />
         </div>
-        <CommentLayer
-          container={article}
-          contentKey={page.hast}
-          threads={threads}
-          active={active}
-          onActivate={setActive}
-          onAnchors={onAnchors}
-        />
-        <PageFoot wikiId={wiki.id} page={page} index={index} />
       </main>
       <ScrollArea as="aside" className="sh-wiki-rail" data-open={railOpen || undefined}>
         <div className="sh-wiki-rail-close">

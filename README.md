@@ -18,9 +18,11 @@ Enter on the centered card. Start typing to search: the deck spins to the best m
 Esc clears. `/dev/ui` shows every UI primitive in the default theme, and opens each special screen (guest
 prompts, errors) with sample data.
 
-On a wiki, the header goes back to the deck, switches between day and night (remembered in this browser), shows
-who else is on the wiki (click an avatar to go to their page) and, while it's shared, a **Live** badge. The
-sidebar's Toolbox lists what pages can use: page kits, elements, page fields and special pages.
+A wiki opens on its home page: a wide portal with the wiki's numbers and its own boxes (recent changes, open
+questions, discussions…). The header goes back to the deck, searches, switches between day and night (remembered
+in this browser), shows who else is on the wiki (click an avatar to go to their page) and, while it's shared, a
+**Live** badge. The sidebar has Home and pinned pages, what you viewed lately, foldable sections, and a Toolbox of
+what pages can use: page kits, elements, page fields and special pages.
 
 ## Wikis
 

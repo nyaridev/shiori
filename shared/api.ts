@@ -41,6 +41,8 @@ export interface PageLink {
 export interface WikiDetail extends WikiCard {
   theme: Theme;
   nav: NavNode[];
+  /** The sidebar's pinned pages under Home (`pinned` in wiki.json), as they resolve. */
+  pinned: PageLink[];
   problems: string[];
 }
 

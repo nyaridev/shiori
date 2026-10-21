@@ -1,7 +1,7 @@
 ---
 title: "Plan"
 summary: "Where we're going, how we'll get there, and what's happening now."
-icon: "🧭"
+icon: "/assets/icons/plan.svg"
 status: active
 order: 1
 type: "Plan"

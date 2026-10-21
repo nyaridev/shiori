@@ -2,6 +2,7 @@ import type { Root } from "hast";
 import { type Components, toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { useMemo } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+import * as home from "../home/blocks.tsx";
 import { CodeBlock } from "./code.tsx";
 import * as el from "./elements.tsx";
 import * as uv from "./universal.tsx";
@@ -49,6 +50,13 @@ const components = {
   "sh-point": uv.PointEl,
   "sh-quote": uv.QuoteEl,
   "sh-embed": uv.EmbedEl,
+  "sh-boxes": home.BoxesEl,
+  "sh-box": home.BoxEl,
+  "sh-recent-changes": home.RecentChangesEl,
+  "sh-open-questions": home.OpenQuestionsEl,
+  "sh-open-tasks": home.OpenTasksEl,
+  "sh-discussions": home.DiscussionsEl,
+  "sh-directory": home.DirectoryEl,
   "sh-unknown": el.UnknownEl,
 } as unknown as Components;
 

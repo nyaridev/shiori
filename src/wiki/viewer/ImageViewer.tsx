@@ -12,6 +12,7 @@ import { useResource } from "../../lib/useResource.ts";
 import { Dialog, DialogContent, IconButton } from "../../ui/index.ts";
 import { pageHref } from "../PageHead.tsx";
 import "./viewer.css";
+import { PageIcon } from "../PageIcon.tsx";
 
 interface Shown extends PageImage {
   /** Index of its group (page) in the strip. */
@@ -116,7 +117,7 @@ export function ImageViewer({
             <p className="sh-viewer-info">
               {group && (
                 <Link to={pageHref(wikiId, group.page.path)} onClick={onClose}>
-                  {group.page.icon && <span aria-hidden="true">{group.page.icon} </span>}
+                  <PageIcon icon={group.page.icon} className="sh-icon-gap" />
                   {[...group.trail, group.page.title].join(" › ")}
                 </Link>
               )}

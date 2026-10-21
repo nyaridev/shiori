@@ -171,3 +171,19 @@ an infobox label costs nothing worse than an odd label. Option C remains open as
 19. [x] `pnpm wiki rename`: moves a page or a section, rewrites links that the move breaks or that named the old
     path (title wikilinks stay as written, code is left alone), and moves its comments and answers
 18. [x] Wide article column; the image viewer with the wiki's pictures in reading order
+
+**The home page and the sidebar** (2026-10-21)
+
+20. [x] Home mode: the home page shows wide, with no sidebars (they open as drawers from the header): a hero with
+    the page's title, summary, status and updated time over its `banner` (else the cover), the wiki's numbers
+    (pages, open questions, tasks done, each linking its special page) and its pinned pages as buttons. The body is
+    built as a portal from `::::boxes` of titled `:::box`es (`columns`, `span`, an `icon`) and live blocks that read
+    the wiki's index: `::recent-changes`, `::open-questions`, `::discussions` (the latest open threads, kept live),
+    `::open-tasks` and `::directory`, each with a `count`. Every wiki places its own, so each front page differs
+21. [x] Search sits in the middle of the header on every page; the sidebar's search stays too
+22. [x] Sidebar: Home, then the pages `wiki.json` pins (`pinned`, by wikilink name, `["Roadmap"]` by default),
+    Recently viewed (per viewer, in the browser), the page tree, Tools and the Toolbox. Every section folds; one with
+    more than eight pages starts folded unless it holds the open page; the viewer's choices are kept per wiki. The
+    wiki's cover, name and tagline moved into the header
+23. [x] Page icons may be pictures drawn for the project (`icon: /assets/icons/sword.svg`), resolved like images
+    and checked; emoji still work. The template ships its own drawn SVG icons

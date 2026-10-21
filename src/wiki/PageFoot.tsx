@@ -7,6 +7,7 @@ import { ago } from "../lib/time.ts";
 import { Icon } from "../ui/index.ts";
 import { usePage } from "./PageContext.ts";
 import { pageHref, specialHref } from "./PageHead.tsx";
+import { PageIcon } from "./PageIcon.tsx";
 import { QuestionCard } from "./questions/QuestionCard.tsx";
 import { Related } from "./Related.tsx";
 import { StatusBadge } from "./StatusBadge.tsx";
@@ -18,9 +19,7 @@ export function PageCard({ wikiId, page }: { wikiId: string; page: PageLink }) {
   const body = (
     <>
       <span className="sh-section-top">
-        <span className="sh-section-icon" aria-hidden="true">
-          {page.icon ?? (page.isPage ? "📄" : "📁")}
-        </span>
+        <PageIcon icon={page.icon} fallback={page.isPage ? "📄" : "📁"} className="sh-section-icon" />
         {page.status && <StatusBadge status={page.status} />}
       </span>
       <span className="sh-section-name">{page.title}</span>
@@ -47,7 +46,7 @@ function Neighbour({ wikiId, page, dir }: { wikiId: string; page: PageLink; dir:
         {dir === "next" && <Icon name="arrowRight" size={12} />}
       </span>
       <span className="sh-pager-title">
-        {page.icon && <span aria-hidden="true">{page.icon} </span>}
+        <PageIcon icon={page.icon} className="sh-icon-gap" />
         {page.title}
       </span>
     </Link>
@@ -63,7 +62,7 @@ export function PageChip({ wikiId, page }: { wikiId: string; page: PageLink }) {
       data-missing={page.isPage ? undefined : ""}
       title={page.isPage ? undefined : "This page hasn't been written yet"}
     >
-      <span aria-hidden="true">{page.isPage ? (page.icon ?? "📄") : "🧩"}</span>
+      <PageIcon icon={page.isPage ? page.icon : "🧩"} fallback="📄" />
       {page.title}
     </Link>
   );
@@ -87,7 +86,7 @@ function RecentlyUpdated({ wikiId, index }: { wikiId: string; index: PageEntry[]
         {recent.map((p) => (
           <li key={p.path}>
             <Link to={pageHref(wikiId, p.path)}>
-              <span aria-hidden="true">{p.icon ?? "📄"}</span>
+              <PageIcon icon={p.icon} fallback="📄" />
               <span className="sh-recent-title">{p.title}</span>
               {p.summary && <span className="sh-recent-summary">{p.summary}</span>}
             </Link>

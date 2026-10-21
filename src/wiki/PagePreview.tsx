@@ -3,6 +3,7 @@ import type { PageEntry } from "../../shared/api.ts";
 import { StatusBadge } from "./StatusBadge.tsx";
 import "./preview.css";
 import { picture } from "../lib/base.ts";
+import { PageIcon } from "./PageIcon.tsx";
 
 export function PagePreview({ page }: { page: PageEntry }) {
   return (
@@ -10,7 +11,7 @@ export function PagePreview({ page }: { page: PageEntry }) {
       {page.image && <img className="sh-preview-image" src={picture(page.image, 480)} alt="" />}
       <div className="sh-preview-body">
         <p className="sh-preview-title">
-          {page.icon && <span aria-hidden="true">{page.icon} </span>}
+          <PageIcon icon={page.icon} className="sh-icon-gap" />
           {page.title}
         </p>
         {(page.type || page.status) && (

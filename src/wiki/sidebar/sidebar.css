@@ -1,0 +1,132 @@
+/* The wiki's sidebar (Sidebar.tsx). */
+.sh-sidebar {
+  padding: var(--s-3);
+}
+.sh-nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sh-nav .sh-nav {
+  margin: 2px 0 var(--s-2) var(--s-3);
+  padding-left: var(--s-2);
+  border-left: var(--bw) solid var(--border);
+}
+.sh-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 5px var(--s-2);
+  border-radius: var(--r-sm);
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+  text-decoration: none;
+  line-height: 1.35;
+}
+.sh-nav-icon {
+  flex: none;
+  font-size: 0.95em;
+}
+.sh-nav-link > svg {
+  flex: none;
+  color: var(--muted);
+}
+a.sh-nav-link:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+a.sh-nav-link.active {
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 560;
+}
+a.sh-nav-link.active > svg {
+  color: var(--accent);
+}
+.sh-nav-heading,
+.sh-nav-link[data-group] {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.sh-nav-tree > li + li,
+.sh-nav-group {
+  margin-top: var(--s-1);
+}
+
+/* Home and the wiki's pinned pages, above everything else. */
+.sh-nav-pinned {
+  margin-bottom: var(--s-3);
+}
+
+/* A group in the tree: its link, and the chevron that folds it. */
+.sh-nav-row {
+  display: flex;
+  align-items: center;
+}
+.sh-nav-row > .sh-nav-link {
+  flex: 1;
+}
+.sh-fold {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: rotate var(--fast) var(--ease);
+}
+.sh-fold:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.sh-fold:focus-visible,
+.sh-side-title:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-fold[data-folded] {
+  rotate: -90deg;
+}
+
+/* Recently viewed, Tools, Toolbox: a heading that folds its list. */
+.sh-side-section {
+  margin-top: var(--s-4);
+}
+.sh-side-section:first-of-type {
+  margin-top: 0;
+}
+.sh-side-heading {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--s-1);
+}
+.sh-side-title {
+  flex: 1;
+  padding: 2px var(--s-2);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.sh-side-title:hover {
+  color: var(--text);
+}
+.sh-nav-tree {
+  margin-top: var(--s-4);
+}

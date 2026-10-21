@@ -1,7 +1,7 @@
 ---
 title: "Notes"
 summary: "Decisions, ideas, and everything in between."
-icon: "📒"
+icon: "/assets/icons/notes.svg"
 order: 3
 tags: [notes]
 toc: false

@@ -1,13 +1,18 @@
-// The open wiki's page index, for anything deep in a page that needs to know about other pages (link previews).
+// The open wiki's page index, for anything deep in a page that needs to know about other pages (link previews, the
+// home page's blocks).
 import { createContext, useContext } from "react";
-import type { PageEntry } from "../../shared/api.ts";
+import type { PageEntry, WikiIndex } from "../../shared/api.ts";
 
 export interface WikiPages {
   wikiId: string;
   byPath: Map<string, PageEntry>;
+  /** Everything the index knows: pages, wanted pages, questions, tasks. */
+  index: WikiIndex;
 }
 
 export const WikiIndexContext = createContext<WikiPages | null>(null);
+
+export const useWikiIndex = () => useContext(WikiIndexContext);
 
 /** The page an app link (`/w/<wiki>/<path>#…`) points to, if it's in the open wiki's index. */
 export function usePageAt(href: string | undefined): PageEntry | undefined {

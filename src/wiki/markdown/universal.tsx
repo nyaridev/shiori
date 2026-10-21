@@ -12,6 +12,7 @@ import { QuestionCard } from "../questions/QuestionCard.tsx";
 import { Related } from "../Related.tsx";
 import { StatusBadge } from "../StatusBadge.tsx";
 import "./universal.css";
+import { PageIcon } from "../PageIcon.tsx";
 
 type Props<T = object> = T & { children?: ReactNode };
 
@@ -42,7 +43,7 @@ export function ChildrenEl({ layout = "cards" }: Props<{ layout?: string }>) {
         {page.children.map((c) => (
           <li key={c.path}>
             <Link to={pageHref(wikiId, c.path)} className="sh-link">
-              {c.icon && <span aria-hidden="true">{c.icon} </span>}
+              <PageIcon icon={c.icon} className="sh-icon-gap" />
               {c.title}
             </Link>
             {c.summary && <span className="sh-children-summary"> — {c.summary}</span>}

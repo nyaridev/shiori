@@ -11,11 +11,11 @@ their content with the project's own, rename or delete what doesn't fit, and add
 
 | Path | What |
 |---|---|
-| `wiki.json` | `id` (kebab-case, unique), `title`, `tagline`, `cover`, `order` (position in the deck) |
+| `wiki.json` | `id` (kebab-case, unique), `title`, `tagline`, `cover`, `order` (position in the deck), `pinned` (pages pinned at the top of the sidebar under Home, by wikilink name: `["Roadmap"]`) |
 | `theme.json` | Small style overrides on the app's defaults. See Theme below |
 | `cover.svg` | The deck card art, 2:3 (portrait), with the subject in the middle (card styles crop the edges). Art only, no title text: the app draws the title |
 | `pages/**/*.md` | The pages. `pages/index.md` is the home page; a folder is a sidebar section and its `index.md` is the section page |
-| `assets/` | Pictures used by pages |
+| `assets/` | Pictures used by pages; `assets/icons/` holds the pages' drawn icons |
 | `sync/` | Comments and answers from each PC that has this wiki, one file per PC (`pnpm wiki sync`). Commit them; never edit them |
 | `kits/` | Starting points for kinds of pages (`pnpm wiki kits`). Add your own `<name>.md` for kinds this project repeats; `{{page.title}}` and `{{page.date}}` are filled in |
 | `data/` | Written by the app: the comments database and smaller copies of pictures. Never edit or commit it |
@@ -23,7 +23,8 @@ their content with the project's own, rename or delete what doesn't fit, and add
 ## Writing pages
 
 - Frontmatter: `title`, `summary` (shown under the title and on section cards), `order` (sidebar position, lower
-  first), `hidden: true` (keeps the page out of the sidebar), `icon` (one emoji, quoted: `icon: "🎯"`), `status`
+  first), `hidden: true` (keeps the page out of the sidebar), `icon` (a picture drawn for the project, best an SVG in
+  `assets/icons/`: `icon: "/assets/icons/sword.svg"`; or one emoji, quoted: `icon: "🎯"`), `status`
   (`idea`, `planned`, `active`, `paused`, `done`, `archived`), `tags` (`tags: [research, audience]`; each tag is a
   category with its own page) and `type` (what kind of page it is, in the project's words: `"Feature"`, `"Product"`,
   `"Video"`). Quote values that contain `:`.
@@ -54,6 +55,11 @@ their content with the project's own, rename or delete what doesn't fit, and add
   of page, with its sections and the command that makes one), Elements (the element reference in this wiki's theme),
   Page fields (every frontmatter field, with an example) and Special pages. Open it at `/w/{{id}}/_/kits` when
   you're unsure what fits.
+- **The home page** (`pages/index.md`) is the wiki's front door and shows wide, without the sidebars: a hero with
+  its `title`, `summary`, `status`, a picture (`banner`, else the cover), the wiki's numbers and its pinned pages,
+  then the body. Build the body as a portal, like a wiki's main page: `::::boxes` of titled `:::box`es, with the
+  live blocks (`::recent-changes`, `::open-questions`, `::discussions`, `::open-tasks`, `::directory`) and the
+  project's own links and text. Pick what fits this project, so its home is its own.
 - Don't repeat the title as a `#` heading; start the body with text or `##` sections. `##` and `###` build the
   table of contents.
 - Links: write wikilinks. `[[Goals]]` finds a page by path, file name or title, from anywhere; `[[plan/goals|our
@@ -100,6 +106,12 @@ Toolbox → Elements (`/w/{{id}}/_/elements`), and at `/dev/ui`.
 | Compare | `:::compare{pick="Option"}` with a `### Option` heading each and `- Pro:` / `- Con:` / `- Label:` lines |
 | Quote | `:::quote{by="Sam" role="…" source="…" url="…"}` around what they said |
 | Embed | `::embed[Caption]{url="https://www.youtube.com/watch?v=…"}`: YouTube, Vimeo or Figma only; quote the URL |
+| Boxes | `::::boxes` (`{columns="2\|3\|4"}`) around `:::box[Title]{icon="/assets/icons/x.svg" span="2"}` blocks: a portal grid of titled boxes |
+| Recent changes | `::recent-changes{count="6"}`: the pages edited last |
+| Open questions | `::open-questions{count="5"}`: open decisions across the wiki |
+| Discussions | `::discussions{count="5"}`: the latest open comment threads |
+| Open tasks | `::open-tasks{count="6"}`: checkboxes still open across the wiki |
+| Directory | `::directory`: every section with its pages |
 
 ## Theme
 

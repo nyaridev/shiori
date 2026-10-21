@@ -1,11 +1,11 @@
 // What the owner's app and the guest server (ADR-0003) both read about a wiki: its pages, its rendered corpus, its
 // detail and index. Cached in memory and dropped when files change; every change also bumps a version, which guests
 // poll instead of server-sent events.
-import type { PageData, WikiDetail, WikiIndex } from "../shared/api.ts";
+import type { PageData, PageLink, WikiDetail, WikiIndex } from "../shared/api.ts";
 import { answerCounts } from "./answers.ts";
 import { buildCorpus, type Corpus } from "./corpus.ts";
 import type { Live } from "./live.ts";
-import { buildNav, listPages, type PageFile } from "./pages.ts";
+import { buildNav, listPages, type PageFile, pageFinder } from "./pages.ts";
 import { toCard, type Wiki } from "./registry.ts";
 import { renderElements } from "./toolbox.ts";
 
@@ -59,12 +59,16 @@ export function createWikiData(live: Live) {
       }
       return page;
     },
-    detail: (w: Wiki): WikiDetail => ({
-      ...toCard(w, pagesOf(w).length),
-      theme: w.theme,
-      nav: buildNav(pagesOf(w)),
-      problems: w.problems,
-    }),
+    detail: (w: Wiki): WikiDetail => {
+      const pages = pagesOf(w);
+      const find = pageFinder(pages, "");
+      const byPath = new Map(pages.map((p) => [p.path, p]));
+      const pinned = w.manifest.pinned.flatMap((name): PageLink[] => {
+        const p = byPath.get(find(name).page?.path ?? "\0");
+        return p?.path ? [{ path: p.path, title: p.title, icon: p.icon, summary: p.summary, isPage: true }] : [];
+      });
+      return { ...toCard(w, pages.length), theme: w.theme, nav: buildNav(pages), pinned, problems: w.problems };
+    },
     index: (w: Wiki): WikiIndex => {
       const corpus = corpusOf(w);
       const counts = answerCounts(w.root);

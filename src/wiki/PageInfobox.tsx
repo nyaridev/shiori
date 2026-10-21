@@ -3,6 +3,7 @@
 import type { PageData } from "../../shared/api.ts";
 import { picture } from "../lib/base.ts";
 import { Markdown } from "./markdown/Markdown.tsx";
+import { PageIcon } from "./PageIcon.tsx";
 import { StatusBadge } from "./StatusBadge.tsx";
 import { Zoom } from "./viewer/Zoom.tsx";
 
@@ -13,7 +14,7 @@ export function PageInfobox({ page }: { page: PageData }) {
     <aside className="sh-page-infobox" aria-label={`About ${page.title}`}>
       <header className="sh-page-infobox-head">
         <span className="sh-page-infobox-title">
-          {page.icon && <span aria-hidden="true">{page.icon} </span>}
+          <PageIcon icon={page.icon} className="sh-icon-gap" />
           {page.title}
         </span>
         {page.type && <span className="sh-page-infobox-type">{page.type}</span>}

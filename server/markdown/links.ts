@@ -18,6 +18,7 @@ export interface LinkContext {
 }
 
 const EXTERNAL = /^([a-z][a-z0-9+.-]*:|\/\/)/i;
+const PICTURE = /\.(svg|png|webp|gif|avif|jpe?g)$/i;
 
 /** A page link as written → the page path (`systems/combat`), or null when it leaves `pages/`. */
 export function resolvePageLink(pageDir: string, target: string): string | null {
@@ -71,6 +72,9 @@ export function rehypeLinks(ctx: LinkContext, problems: string[], lineOffset = 0
       }
       if (node.tagName === "img") props.src = file(node, props.src);
       if (node.tagName === "sh-infobox" && props.image) props.image = file(node, props.image);
+      // A box's icon is an emoji, or a picture drawn for the wiki.
+      if (node.tagName === "sh-box" && typeof props.icon === "string" && PICTURE.test(props.icon))
+        props.icon = file(node, props.icon);
     });
   };
 }

@@ -5,11 +5,12 @@
   z-index: 12;
   grid-row: 1;
   grid-column: 1 / -1;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 440px) minmax(0, 1fr);
   align-items: center;
-  gap: var(--s-2);
+  gap: var(--s-3);
   height: var(--head);
-  padding: 0 var(--s-4);
+  padding: 0 var(--s-3);
   border-bottom: var(--bw) solid var(--border);
   background: color-mix(in oklab, var(--bg) 86%, transparent);
   backdrop-filter: blur(12px);
@@ -18,43 +19,137 @@
 html:has(.sh-wiki-head) {
   scroll-padding-top: 56px;
 }
+.sh-head-start,
+.sh-head-end {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-width: 0;
+}
+.sh-head-end {
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
 
-.sh-head-space {
-  flex: 1;
+/* The project: cover, name and tagline, linking home. */
+.sh-head-project {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+  padding: 3px var(--s-2) 3px 3px;
+  border-radius: var(--r-md);
+  color: var(--text);
+  text-decoration: none;
+}
+.sh-head-project:hover {
+  background: var(--hover);
+}
+.sh-head-project:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-head-cover {
+  flex: none;
+  width: 26px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: calc(var(--r-sm) - 1px);
+  box-shadow: var(--shadow-1);
+}
+.sh-head-names {
+  display: grid;
+  min-width: 0;
+  line-height: 1.2;
 }
 .sh-head-title {
   overflow: hidden;
-  font-size: var(--t-sm);
-  font-weight: 600;
+  font-family: var(--font-heading);
+  font-size: var(--t-md);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sh-head-tagline {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--t-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Buttons for what the sidebar (narrow) and the rail (medium) hold on wide screens. */
+/* Search, in the middle: looks like a field, opens the search palette. */
+.sh-head-search {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  height: 34px;
+  padding: 0 var(--s-2) 0 var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-sm);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease);
+}
+.sh-head-search:hover {
+  border-color: var(--border-strong);
+  color: var(--text-soft);
+}
+.sh-head-search:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-head-search-text {
+  flex: 1;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Buttons for drawers: the page list (home page, narrow screens), comments (home page, medium screens), search. */
+.sh-wiki-head .sh-head-menu,
 .sh-wiki-head .sh-head-narrow,
 .sh-wiki-head .sh-head-rail {
   display: none;
+}
+.sh-wiki-head[data-home] .sh-head-menu,
+.sh-wiki-head[data-home] .sh-head-rail {
+  display: inline-flex;
 }
 @media (max-width: 1180px) {
   .sh-wiki-head .sh-head-rail {
     display: inline-flex;
   }
 }
+@media (max-width: 1040px) {
+  .sh-head-tagline {
+    display: none;
+  }
+}
 @media (max-width: 860px) {
   .sh-wiki-head {
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: var(--s-1);
     padding: 0 var(--s-2);
   }
+  .sh-wiki-head .sh-head-menu,
   .sh-wiki-head .sh-head-narrow {
     display: inline-flex;
   }
-  .sh-wiki-head .sh-head-title {
-    display: block;
-    flex: 1;
-    min-width: 0;
+  .sh-head-search {
+    display: none;
   }
-  .sh-head-space,
-  .sh-head-wide {
+  .sh-head-end {
+    gap: 2px;
+  }
+}
+@media (max-width: 520px) {
+  .sh-head-cover {
     display: none;
   }
 }

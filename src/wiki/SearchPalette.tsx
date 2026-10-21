@@ -7,6 +7,7 @@ import { api } from "../lib/api.ts";
 import { cx, Dialog, DialogContent, Icon, Kbd, ScrollArea } from "../ui/index.ts";
 import { pageHref } from "./PageHead.tsx";
 import "./search.css";
+import { PageIcon } from "./PageIcon.tsx";
 
 /** Wait before asking the server, so a fast typist sends one request, not one per key. */
 const DEBOUNCE = 90;
@@ -150,9 +151,7 @@ export function SearchPalette({
                   onMouseMove={() => setActive(i)}
                   onClick={() => go(hit)}
                 >
-                  <span className="sh-search-icon" aria-hidden="true">
-                    {hit.icon ?? "📄"}
-                  </span>
+                  <PageIcon icon={hit.icon} fallback="📄" className="sh-search-icon" />
                   <span className="sh-search-body">
                     <span className="sh-search-title">
                       <Marked text={hit.title} marks={hit.titleMarks} />

@@ -4,5 +4,6 @@
   "title": "{{title}}",
   "tagline": "{{tagline}}",
   "cover": "cover.svg",
-  "order": 0
+  "order": 0,
+  "pinned": ["Roadmap"]
 }

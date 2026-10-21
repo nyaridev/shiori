@@ -79,6 +79,8 @@ export function sharingFixture(): Sharing {
       guestApp: buildGuestApp({ registry, data, shares, presence, staticDir: dist, secret: "test-secret" }),
       ownerApp: buildApp({ registry, live, data, shares, presence }),
       emit: (e: LiveEvent) => {
+        // As the file watcher does: anything but comments reloads the wikis' manifests too.
+        if (e.type !== "threads" && e.type !== "presence") registry.invalidate();
         for (const l of listeners) l(e);
       },
       browser: (share: Share, ip?: string) => browser(s, share, ip),

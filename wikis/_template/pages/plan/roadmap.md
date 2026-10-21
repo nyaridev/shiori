@@ -1,7 +1,7 @@
 ---
 title: "Roadmap"
 summary: "The milestones from idea to launch, and what each one needs."
-icon: "🗺️"
+icon: "/assets/icons/roadmap.svg"
 status: active
 order: 2
 type: "Plan"

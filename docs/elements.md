@@ -393,3 +393,63 @@ in tables too:
 :progress[Launch]{value="60"}
 :progress[Episodes]{value="3" max="8"}
 ```
+
+## Home page
+
+A wiki's home page (`pages/index.md`) shows wide, as a portal. Build it from titled boxes in a grid, and fill them
+with the project's own links and text and with blocks that show the whole wiki live. Each wiki picks its own, so
+every front page is different.
+
+::::boxes
+:::box[Start here]{icon="🧭"}
+- :page[Plan]: goals and the roadmap
+- :page[Ideas]: everything worth trying
+:::
+
+:::box[Recent changes]{icon="🕘"}
+::recent-changes{count="4"}
+:::
+
+:::box[Open questions]{icon="❓"}
+::open-questions{count="3"}
+:::
+
+:::box[Latest discussions]{icon="💬" span="2"}
+::discussions{count="3"}
+:::
+
+:::box[To do]{icon="✅"}
+::open-tasks{count="4"}
+:::
+
+:::box[Everything in this wiki]{icon="📚" span="3"}
+::directory
+:::
+::::
+
+`::::boxes` takes `columns` (2, 3 or 4; 3 by default) and holds only `:::box`es. A box has a title, an `icon` (an
+emoji, or a picture such as `/assets/icons/map.svg`) and can `span` 2 or 3 columns. The blocks take a `count` (1 to
+50) and link to the special page with the whole list.
+
+```md
+::::boxes
+:::box[Start here]{icon="/assets/icons/plan.svg"}
+- :page[Plan]: goals and the roadmap
+:::
+:::box[Recent changes]{icon="🕘"}
+::recent-changes{count="6"}
+:::
+:::box[Open questions]
+::open-questions{count="5"}
+:::
+:::box[Latest discussions]{span="2"}
+::discussions{count="5"}
+:::
+:::box[To do]
+::open-tasks{count="6"}
+:::
+:::box[Everything in this wiki]{span="3"}
+::directory
+:::
+::::
+```

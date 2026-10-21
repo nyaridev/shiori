@@ -1,24 +1,31 @@
-// The bar above every wiki page. Left: back to the deck (the owner) or what the link allows (a guest). Right: whether
-// the wiki is live and who is on it (ADR-0005), share, and day or night at the far right. On narrow screens it also
-// holds the buttons for the page list, search and comments, which live in the sidebar and the rail on wide ones.
-import { useNavigate } from "react-router";
+// The bar above every wiki page, across the whole window. Left: back to the deck (the owner only) and the project:
+// its cover, name and tagline, linking home. Middle: search. Right: whether the wiki is live and who is on it
+// (ADR-0005), share, the UI primitives (the owner only), and day or night at the far right. The page list and the
+// comments open from here wherever they're drawers: on the home page and on narrow screens.
+import { Link, useNavigate } from "react-router";
 import type { Person, WikiDetail } from "../../shared/api.ts";
 import { useGuest } from "../guest/GuestContext.ts";
+import { picture } from "../lib/base.ts";
 import { setViewerMode, useViewerMode } from "../lib/viewerMode.ts";
 import { PresenceBar } from "../presence/PresenceBar.tsx";
 import { LiveBadge } from "../sharing/LiveBadge.tsx";
 import { ShareDialog } from "../sharing/ShareDialog.tsx";
-import { Icon, IconButton, Tooltip } from "../ui/index.ts";
+import { Icon, IconButton, Kbd, Tooltip } from "../ui/index.ts";
+import { pageHref } from "./PageHead.tsx";
+import { shortcutLabel } from "./SearchPalette.tsx";
 import "./header.css";
 
 export function WikiHeader({
   wiki,
+  home,
   people,
   onPages,
   onSearch,
   onComments,
 }: {
   wiki: WikiDetail;
+  /** The home page: the sidebar and the rail are drawers. */
+  home: boolean;
   people: Person[];
   onPages: () => void;
   onSearch: () => void;
@@ -29,40 +36,60 @@ export function WikiHeader({
   const guest = useGuest();
   const guestsHere = people.filter((p) => p.role === "guest").length;
   return (
-    <header className="sh-wiki-head">
-      <IconButton icon="menu" label="Pages" className="sh-head-narrow" onClick={onPages} />
-      {guest ? (
-        // A guest has no deck to go back to (ADR-0003).
-        <span className="sh-guest-badge">
-          <Icon name="comment" size={14} />
-          <span className="sh-head-wide">
-            {guest.kind === "comment" ? "Shared with you" : "Shared with you to read"} ·{" "}
+    <header className="sh-wiki-head" data-home={home || undefined}>
+      <div className="sh-head-start">
+        <IconButton icon="menu" label="Pages" className="sh-head-menu" onClick={onPages} />
+        {!guest && (
+          // A guest has no deck to go back to (ADR-0003).
+          <Tooltip content="Back to the deck" side="bottom">
+            <IconButton
+              icon="deck"
+              label="Back to the deck"
+              onClick={() => navigate("/", { state: { from: wiki.id } })}
+            />
+          </Tooltip>
+        )}
+        <Link to={pageHref(wiki.id, "")} className="sh-head-project">
+          <img src={picture(wiki.coverUrl, 160)} alt="" className="sh-head-cover" />
+          <span className="sh-head-names">
+            <span className="sh-head-title">{wiki.title}</span>
+            {wiki.tagline && <span className="sh-head-tagline">{wiki.tagline}</span>}
           </span>
-          {guest.guest?.name}
-        </span>
-      ) : (
-        <Tooltip content="Back to the deck" side="bottom">
-          <IconButton
-            icon="deck"
-            label="Back to the deck"
-            onClick={() => navigate("/", { state: { from: wiki.id } })}
+        </Link>
+      </div>
+      <button type="button" className="sh-head-search" onClick={onSearch}>
+        <Icon name="search" size={15} />
+        <span className="sh-head-search-text">Search {wiki.title}</span>
+        <Kbd>{shortcutLabel()}</Kbd>
+      </button>
+      <div className="sh-head-end">
+        {guest && (
+          <span
+            className="sh-guest-badge"
+            title={guest.kind === "comment" ? "Shared with you" : "Shared with you to read"}
+          >
+            <Icon name={guest.kind === "comment" ? "comment" : "eye"} size={14} />
+            {guest.guest?.name}
+          </span>
+        )}
+        {!guest && <LiveBadge wikiId={wiki.id} title={wiki.title} here={guestsHere} />}
+        <PresenceBar wikiId={wiki.id} people={people} />
+        {!guest && (
+          <ShareDialog
+            wikiId={wiki.id}
+            title={wiki.title}
+            trigger={<IconButton icon="share" label="Share this wiki" />}
           />
-        </Tooltip>
-      )}
-      <span className="sh-head-title sh-head-narrow">{wiki.title}</span>
-      <span className="sh-head-space" />
-      {!guest && <LiveBadge wikiId={wiki.id} title={wiki.title} here={guestsHere} />}
-      <PresenceBar wikiId={wiki.id} people={people} />
-      {!guest && (
-        <ShareDialog
-          wikiId={wiki.id}
-          title={wiki.title}
-          trigger={<IconButton icon="share" label="Share this wiki" />}
-        />
-      )}
-      <IconButton icon="search" label="Search" className="sh-head-narrow" onClick={onSearch} />
-      {onComments && <IconButton icon="comment" label="Comments" className="sh-head-rail" onClick={onComments} />}
-      <ModeSwitch own={wiki.theme.mode} />
+        )}
+        {!guest && (
+          <Tooltip content="UI primitives" side="bottom">
+            <IconButton icon="primitives" label="UI primitives" onClick={() => navigate("/dev/ui")} />
+          </Tooltip>
+        )}
+        <IconButton icon="search" label="Search" className="sh-head-narrow" onClick={onSearch} />
+        {onComments && <IconButton icon="comment" label="Comments" className="sh-head-rail" onClick={onComments} />}
+        <ModeSwitch own={wiki.theme.mode} />
+      </div>
     </header>
   );
 }

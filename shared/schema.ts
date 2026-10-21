@@ -17,6 +17,8 @@ export const manifestSchema = z.strictObject({
   cover: z.string().default("cover.svg"),
   /** Position in the deck; lower comes first, then by title. */
   order: z.number().default(0),
+  /** Pages pinned at the top of the sidebar under Home, by wikilink name. Ones that don't exist are skipped. */
+  pinned: z.array(z.string().min(1)).max(8).default(["Roadmap"]),
 });
 export type Manifest = z.infer<typeof manifestSchema>;
 
@@ -32,8 +34,16 @@ export const frontmatterSchema = z.looseObject({
   order: z.number().optional(),
   /** Hidden pages render but stay out of the sidebar. */
   hidden: z.boolean().optional(),
-  /** One emoji, shown before the title in the page head, the sidebar and section cards. */
-  icon: z.string().min(1).max(16).optional(),
+  /**
+   * Shown before the title in the page head, the sidebar and on cards: one emoji, or a picture in the wiki
+   * (`/assets/icons/sword.svg`), drawn for the project.
+   */
+  icon: z
+    .string()
+    .min(1)
+    .max(200)
+    .refine((v) => [...v].length <= 16 || /\.(svg|png|webp|gif|avif|jpe?g)$/i.test(v), "one emoji, or a picture file")
+    .optional(),
   status: z.enum(PAGE_STATUSES).optional(),
   tags: z.array(z.string().min(1)).optional(),
   /** What kind of page this is, in the project's own words: "Feature", "Product", "Video", "Guide". */
@@ -83,7 +93,11 @@ export const FRONTMATTER_FIELDS: { key: keyof Frontmatter; what: string; example
     what: "One line under the title, on section cards and in link previews.",
     example: 'summary: "How fights work"',
   },
-  { key: "icon", what: "One emoji before the title, in the sidebar and on cards. Quote it.", example: 'icon: "⚔️"' },
+  {
+    key: "icon",
+    what: "Before the title, in the sidebar and on cards: one emoji, or a picture drawn for the project (SVG best). Quote it.",
+    example: 'icon: "/assets/icons/sword.svg"',
+  },
   { key: "order", what: "Position in the sidebar among its siblings; lower comes first.", example: "order: 2" },
   { key: "hidden", what: "Renders the page but keeps it out of the sidebar.", example: "hidden: true" },
   {

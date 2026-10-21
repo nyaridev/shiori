@@ -25,6 +25,7 @@ import {
   Kbd,
   Tabs,
 } from "../../ui/index.ts";
+import { PageIcon } from "../PageIcon.tsx";
 import { PagePreview } from "../PagePreview.tsx";
 import { useViewer } from "../viewer/ViewerContext.ts";
 import { Zoom } from "../viewer/Zoom.tsx";
@@ -56,7 +57,7 @@ export function WikiLink({ href, children, "data-missing": missing, "data-chip":
         data-missing={isMissing || undefined}
         title={isMissing ? "This page hasn't been written yet" : undefined}
       >
-        {chip !== undefined && <span aria-hidden="true">{isMissing ? "🧩" : (page?.icon ?? "📄")}</span>}
+        {chip !== undefined && <PageIcon icon={isMissing ? "🧩" : page?.icon} fallback="📄" />}
         {children}
       </Link>
     );

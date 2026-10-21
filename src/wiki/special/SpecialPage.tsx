@@ -11,6 +11,7 @@ import { StatusBadge } from "../StatusBadge.tsx";
 import { SPECIALS } from "./specials.ts";
 import { Elements, Fields, Kits, Specials } from "./Toolbox.tsx";
 import "./special.css";
+import { PageIcon } from "../PageIcon.tsx";
 
 function dayOf(iso: string): string {
   const day = new Date(iso);
@@ -28,7 +29,7 @@ function Row({ wikiId, page, lead }: { wikiId: string; page: PageEntry; lead?: R
     <li className="sh-special-row">
       {lead}
       <Link to={pageHref(wikiId, page.path)} className="sh-special-link">
-        <span aria-hidden="true">{page.icon ?? "📄"}</span>
+        <PageIcon icon={page.icon} fallback="📄" />
         {page.title}
       </Link>
       {page.type && <span className="sh-page-type">{page.type}</span>}
@@ -171,7 +172,7 @@ function Tasks({ wikiId, tasks }: { wikiId: string; tasks: TaskEntry[] }) {
           <section key={path} className="sh-special-group">
             <h2 className="sh-special-heading sh-tasks-heading">
               <Link to={pageHref(wikiId, path)} className="sh-special-link">
-                <span aria-hidden="true">{page.icon ?? "📄"}</span>
+                <PageIcon icon={page.icon} fallback="📄" />
                 {page.title}
               </Link>
               <span
@@ -246,7 +247,8 @@ function Questions({ wikiId, questions }: { wikiId: string; questions: QuestionE
                     </span>
                   )}
                   <span className="sh-special-summary">
-                    {q.page.icon ?? "📄"} {q.page.title}
+                    <PageIcon icon={q.page.icon} fallback="📄" className="sh-icon-gap" />
+                    {q.page.title}
                     {q.options.length > 0 && ` · ${q.options.join(" / ")}`}
                   </span>
                 </li>
@@ -341,9 +343,7 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
         <Crumbs wikiId={wiki.id} trail={trail} />
         <p className="sh-special-kicker">Special page</p>
         <h1 className="sh-page-title">
-          <span className="sh-page-icon" aria-hidden="true">
-            {head.icon}
-          </span>
+          <PageIcon icon={head.icon} className="sh-page-icon" />
           {head.title}
         </h1>
         <p className="sh-page-summary">{head.summary}</p>

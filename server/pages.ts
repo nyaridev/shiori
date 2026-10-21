@@ -36,6 +36,28 @@ function walk(dir: string, base: string, out: string[]) {
   }
 }
 
+/** An icon that names a picture (`/assets/icons/sword.svg`) rather than an emoji. */
+export const isIconFile = (icon: string) => /\.(svg|png|webp|gif|avif|jpe?g)$/i.test(icon);
+
+/**
+ * A page's icon as the app shows it: an emoji as written, a picture as its URL (from the root with a leading `/`, else
+ * from the page's folder, like images). A picture that isn't there is reported and shows no icon.
+ */
+function iconOf(wiki: Wiki, pageDir: string, raw: string | undefined, problems?: string[]): string | undefined {
+  if (!raw || !isIconFile(raw)) return raw;
+  if (/^([a-z][a-z0-9+.-]*:|\/\/)/i.test(raw)) {
+    problems?.push(`frontmatter: icon: "${raw}" must be a picture in the wiki, not a link`);
+    return undefined;
+  }
+  const rel = resolveFile(pageDir, raw);
+  const full = rel === null ? null : inside(wiki.root, rel);
+  if (rel === null || full === null || !existsSync(full)) {
+    problems?.push(`frontmatter: icon: missing file "${raw}"`);
+    return undefined;
+  }
+  return fileUrl(wiki.id, rel);
+}
+
 export const pathOf = (rel: string) => rel.replace(/\.md$/, "").replace(/(^|\/)index$/, "");
 
 const humanize = (s: string) => s.replace(/[-_]+/g, " ").replace(/^\w/, (c) => c.toUpperCase());
@@ -65,7 +87,7 @@ export function listPages(wiki: Wiki): PageFile[] {
       title,
       order: fm.order ?? 0,
       hidden: fm.hidden ?? false,
-      icon: fm.icon,
+      icon: iconOf(wiki, posix.dirname(rel).replace(/^\.$/, ""), fm.icon),
       summary: fm.summary,
       status: fm.status,
     };
@@ -244,7 +266,7 @@ export function renderPage(wiki: Wiki, pages: PageFile[], path: string): PageDat
     path,
     title,
     summary: fm.summary ?? "",
-    icon: fm.icon,
+    icon: iconOf(wiki, pageDir, fm.icon, problems),
     status: fm.status,
     tags: fm.tags ?? [],
     type: fm.type,

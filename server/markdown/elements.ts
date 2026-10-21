@@ -65,6 +65,19 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   compare: { type: "containerDirective", tag: "sh-compare", attrs: { pick: null }, transform: compareOptions },
   quote: { type: "containerDirective", tag: "sh-quote", attrs: { by: null, role: null, source: null, url: null } },
   embed: { type: "leafDirective", tag: "sh-embed", attrs: { url: null }, label: "caption", transform: embedSource },
+  // A wiki's own home (ADR-0002, the home page): titled boxes in a grid, and blocks that show the whole wiki live.
+  boxes: { type: "containerDirective", tag: "sh-boxes", attrs: { columns: ["2", "3", "4"] }, transform: onlyBoxes },
+  box: {
+    type: "containerDirective",
+    tag: "sh-box",
+    attrs: { title: null, icon: null, span: ["2", "3"] },
+    label: "title",
+  },
+  "recent-changes": { type: "leafDirective", tag: "sh-recent-changes", attrs: { count: null }, transform: checkCount },
+  "open-questions": { type: "leafDirective", tag: "sh-open-questions", attrs: { count: null }, transform: checkCount },
+  "open-tasks": { type: "leafDirective", tag: "sh-open-tasks", attrs: { count: null }, transform: checkCount },
+  discussions: { type: "leafDirective", tag: "sh-discussions", attrs: { count: null }, transform: checkCount },
+  directory: { type: "leafDirective", tag: "sh-directory", attrs: {} },
 };
 
 const COLONS: Record<Directive["type"], string> = {
@@ -189,6 +202,18 @@ function onlyTabs(node: Directive, problem: (message: string) => void) {
   const strays = (node.children as RootContent[]).filter((c) => !(c.type === "containerDirective" && c.name === "tab"));
   if (strays.length) problem('tabs: put all content inside ":::tab[Label]" blocks (and use "::::tabs" outside)');
   node.children = node.children.filter((c) => !strays.includes(c as RootContent)) as never;
+}
+
+function onlyBoxes(node: Directive, problem: (message: string) => void) {
+  const strays = (node.children as RootContent[]).filter((c) => !(c.type === "containerDirective" && c.name === "box"));
+  if (strays.length) problem('boxes: put all content inside ":::box[Title]" blocks (and use "::::boxes" outside)');
+  node.children = node.children.filter((c) => !strays.includes(c as RootContent)) as never;
+}
+
+/** How many entries a home block lists: 1 to 50. */
+function checkCount(node: Directive, problem: (message: string) => void) {
+  const count = node.attributes?.count;
+  if (count != null && !/^([1-9]|[1-4]\d|50)$/.test(count)) problem(`${node.name}: count is a number from 1 to 50`);
 }
 
 /** Columns are separated by `---` lines. */

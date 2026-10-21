@@ -32,101 +32,10 @@
   grid-column: 3;
 }
 
-/* Sidebar */
+/* Sidebar: its contents are styled in sidebar/sidebar.css. */
 .sh-wiki-sidebar {
   border-right: var(--bw) solid var(--border);
   background: var(--surface);
-}
-.sh-sidebar {
-  padding: var(--s-3);
-}
-.sh-sidebar-wiki {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  padding: var(--s-2);
-  margin-bottom: var(--s-3);
-  border-radius: var(--r-md);
-  text-decoration: none;
-}
-.sh-sidebar-wiki:hover,
-.sh-sidebar-wiki.active {
-  background: var(--hover);
-}
-.sh-sidebar-cover {
-  width: 40px;
-  height: 60px;
-  flex: none;
-  object-fit: cover;
-  border-radius: calc(var(--r-sm) - 1px);
-  box-shadow: var(--shadow-1);
-}
-.sh-sidebar-title {
-  display: block;
-  color: var(--text);
-  font-family: var(--font-heading);
-  font-weight: 650;
-  font-size: var(--t-lg);
-  line-height: 1.2;
-}
-.sh-sidebar-tagline {
-  display: block;
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: var(--t-xs);
-  line-height: 1.35;
-}
-.sh-sidebar-foot {
-  display: block;
-  margin-top: var(--s-6);
-  padding: var(--s-2);
-  color: var(--muted);
-  font-size: var(--t-xs);
-  text-decoration: none;
-}
-.sh-sidebar-foot:hover {
-  color: var(--text);
-}
-.sh-nav {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.sh-nav .sh-nav {
-  margin: 2px 0 var(--s-2) var(--s-3);
-  padding-left: var(--s-2);
-  border-left: var(--bw) solid var(--border);
-}
-.sh-nav-link {
-  display: block;
-  padding: 5px var(--s-2);
-  border-radius: var(--r-sm);
-  color: var(--text-soft);
-  font-size: var(--t-sm);
-  text-decoration: none;
-  line-height: 1.35;
-}
-.sh-nav-icon {
-  margin-right: 6px;
-  font-size: 0.95em;
-}
-a.sh-nav-link:hover {
-  background: var(--hover);
-  color: var(--text);
-}
-a.sh-nav-link.active {
-  background: var(--accent-soft);
-  color: var(--text);
-  font-weight: 560;
-}
-.sh-nav-heading,
-.sh-nav-link[data-group] {
-  margin-top: var(--s-2);
-  color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 650;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 /* Page */
@@ -280,5 +189,66 @@ a.sh-nav-link.active {
   }
   .sh-wiki-main {
     padding: var(--s-5) var(--s-4) 30vh;
+  }
+}
+
+/* Home mode: the home page is a wide portal. The sidebar and the rail open as drawers from the header. */
+.sh-wiki[data-home] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.sh-wiki[data-home] .sh-wiki-main {
+  grid-column: 1;
+  max-width: none;
+  padding: 0 0 30vh;
+}
+.sh-wiki[data-home] .sh-wiki-sidebar,
+.sh-wiki[data-home] .sh-wiki-rail {
+  position: fixed;
+  top: 0;
+  height: 100vh;
+  z-index: 25;
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+  transition: translate 220ms var(--ease);
+}
+.sh-wiki[data-home] .sh-wiki-sidebar {
+  left: 0;
+  width: min(300px, 86vw);
+  translate: -100% 0;
+}
+.sh-wiki[data-home] .sh-wiki-rail {
+  right: 0;
+  width: min(360px, 100vw);
+  padding-top: var(--s-4);
+  border-left: var(--bw) solid var(--border);
+  translate: 100% 0;
+}
+.sh-wiki[data-home] .sh-wiki-sidebar[data-open],
+.sh-wiki[data-home] .sh-wiki-rail[data-open] {
+  translate: 0 0;
+}
+.sh-wiki[data-home] .sh-wiki-rail-close {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: calc(-1 * var(--s-4));
+}
+.sh-wiki[data-home] .sh-scrim {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  border: 0;
+  background: rgb(0 0 0 / 0.4);
+}
+.sh-wiki-main[data-home] .sh-page-body {
+  /* Over the hero's fading edge. */
+  position: relative;
+  max-width: 1320px;
+  margin: calc(-1 * var(--s-5)) auto 0;
+  padding: 0 var(--s-6);
+}
+@media (max-width: 860px) {
+  .sh-wiki-main[data-home] .sh-page-body {
+    padding: 0 var(--s-4);
   }
 }
