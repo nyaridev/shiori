@@ -1,6 +1,6 @@
 // The bar above every wiki page. Left: back to the deck (the owner) or what the link allows (a guest). Right: whether
-// the wiki is live and who is on it (ADR-0005), day or night, export and share. On narrow screens it also holds the
-// buttons for the page list, search and comments, which live in the sidebar and the rail on wide ones.
+// the wiki is live and who is on it (ADR-0005), share, and day or night at the far right. On narrow screens it also
+// holds the buttons for the page list, search and comments, which live in the sidebar and the rail on wide ones.
 import { useNavigate } from "react-router";
 import type { Person, WikiDetail } from "../../shared/api.ts";
 import { useGuest } from "../guest/GuestContext.ts";
@@ -8,7 +8,7 @@ import { setViewerMode, useViewerMode } from "../lib/viewerMode.ts";
 import { PresenceBar } from "../presence/PresenceBar.tsx";
 import { LiveBadge } from "../sharing/LiveBadge.tsx";
 import { ShareDialog } from "../sharing/ShareDialog.tsx";
-import { Button, Icon, IconButton, Tooltip } from "../ui/index.ts";
+import { Icon, IconButton, Tooltip } from "../ui/index.ts";
 import "./header.css";
 
 export function WikiHeader({
@@ -42,22 +42,17 @@ export function WikiHeader({
         </span>
       ) : (
         <Tooltip content="Back to the deck" side="bottom">
-          <Button
-            variant="ghost"
-            size="sm"
-            icon="arrowLeft"
-            className="sh-head-back"
+          <IconButton
+            icon="deck"
+            label="Back to the deck"
             onClick={() => navigate("/", { state: { from: wiki.id } })}
-          >
-            <span className="sh-head-wide">Deck</span>
-          </Button>
+          />
         </Tooltip>
       )}
       <span className="sh-head-title sh-head-narrow">{wiki.title}</span>
       <span className="sh-head-space" />
       {!guest && <LiveBadge wikiId={wiki.id} title={wiki.title} here={guestsHere} />}
       <PresenceBar wikiId={wiki.id} people={people} />
-      <ModeSwitch own={wiki.theme.mode} />
       {!guest && (
         <ShareDialog
           wikiId={wiki.id}
@@ -67,6 +62,7 @@ export function WikiHeader({
       )}
       <IconButton icon="search" label="Search" className="sh-head-narrow" onClick={onSearch} />
       {onComments && <IconButton icon="comment" label="Comments" className="sh-head-rail" onClick={onComments} />}
+      <ModeSwitch own={wiki.theme.mode} />
     </header>
   );
 }

@@ -58,11 +58,12 @@ other guest route; `PUT` and `DELETE` also check `Origin` and the 16 KB body lim
 a minute per guest with bursts of 10. Going over it answers `429` with `Retry-After` **without a strike**, so a fast
 reader clicking through pages is never blocked for it; the read limit (with strikes) still guards the address.
 
-**The header.** `src/wiki/WikiHeader.tsx`, sticky across the whole window, over the sidebar, the page and the rail: back to the deck (the owner) or what
-the link allows (a guest); the live badge (owner only: "Live · N guests" while a link to this wiki is up on the
-tunnel, "Starting…", "This PC only" when the tunnel isn't up; it opens the Share dialog); the avatars of everyone
-else (`src/presence/`), whose list opens on a click; the day/night switch; Share. On narrow screens it also holds the
-page list, search and comments buttons that the old floating mobile bar had.
+**The header.** `src/wiki/WikiHeader.tsx`, sticky across the whole window, over the sidebar, the page and the
+rail: back to the deck (the owner) or what the link allows (a guest); the live badge (owner only: "Live · N guests"
+while a link to this wiki is up on the tunnel, "Starting…", "This PC only" when the tunnel isn't up; it opens the
+Share dialog); the avatars of everyone else (`src/presence/`), whose list opens on a click; Share; and the day/night
+switch at the far right. On narrow screens it also holds the page list, search and comments buttons that the old
+floating mobile bar had.
 
 **Day or night.** The viewer can flip a wiki between day and night; the choice is remembered in the browser
 (`localStorage`) for every wiki, and going back to a wiki's own mode forgets it. In the other mode a wiki keeps its

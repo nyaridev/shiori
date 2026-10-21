@@ -22,10 +22,6 @@ html:has(.sh-wiki-head) {
 .sh-head-space {
   flex: 1;
 }
-.sh-head-back {
-  margin-left: calc(-1 * var(--s-2));
-  color: var(--text-soft);
-}
 .sh-head-title {
   overflow: hidden;
   font-size: var(--t-sm);
