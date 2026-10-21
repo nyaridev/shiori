@@ -312,3 +312,19 @@ export interface GuestSession {
   /** How the owner's messages are signed for guests. */
   host: string;
 }
+
+/** A page kit (`pnpm wiki page --kit`), as the toolbox lists it. */
+export interface KitInfo {
+  name: string;
+  /** The kit's `kit:` line. */
+  description: string;
+  /** The wiki's own `kits/`, or the template's. */
+  source: "wiki" | "template";
+  icon?: string;
+  /** The `type:` its pages get. */
+  type?: string;
+  /** Its `##` sections, in order. */
+  sections: string[];
+  /** The frontmatter fields it fills in. */
+  fields: string[];
+}

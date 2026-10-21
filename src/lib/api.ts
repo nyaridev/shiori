@@ -2,6 +2,7 @@ import type {
   Answer,
   GuestSession,
   ImageGroup,
+  KitInfo,
   PageData,
   SearchHit,
   ShareDuration,
@@ -56,6 +57,9 @@ export const api = {
       body: JSON.stringify({ page, question, choice, body }),
     }),
   elements: () => request<PageData>("/api/dev/elements"),
+  /** The toolbox: the kits a wiki can use, and the element reference linked to its pages. */
+  kits: (id: string) => request<{ kits: KitInfo[] }>(`/api/wikis/${enc(id)}/kits`).then((r) => r.kits),
+  wikiElements: (id: string) => request<PageData>(`/api/wikis/${enc(id)}/elements`),
   threads: (id: string, page?: string) =>
     request<{ threads: Thread[] }>(
       `/api/wikis/${enc(id)}/threads${page === undefined ? "" : `?page=${enc(page)}`}`,

@@ -7,10 +7,12 @@ import { buildCorpus, type Corpus } from "./corpus.ts";
 import type { Live } from "./live.ts";
 import { buildNav, listPages, type PageFile } from "./pages.ts";
 import { toCard, type Wiki } from "./registry.ts";
+import { renderElements } from "./toolbox.ts";
 
 export function createWikiData(live: Live) {
   const pageCache = new Map<string, PageFile[]>();
   const corpusCache = new Map<string, Corpus>();
+  const elementsCache = new Map<string, PageData>();
   let pagesVersion = 0;
   const threadsVersion = new Map<string, number>();
   /** Guests' requests waiting for their wiki to change (long polling). */
@@ -22,6 +24,7 @@ export function createWikiData(live: Live) {
       pagesVersion++;
       pageCache.clear();
       corpusCache.clear();
+      elementsCache.clear();
     }
     for (const w of waiting) if (e.type !== "threads" || w.wiki === e.wiki) w.done();
   });
@@ -47,6 +50,15 @@ export function createWikiData(live: Live) {
   return {
     pagesOf,
     corpusOf,
+    /** The element reference, linked to this wiki's pages (the toolbox). */
+    elementsOf: (w: Wiki, appRoot: string) => {
+      let page = elementsCache.get(w.id);
+      if (!page) {
+        page = renderElements(appRoot, { id: w.id, pages: pagesOf(w) });
+        elementsCache.set(w.id, page);
+      }
+      return page;
+    },
     detail: (w: Wiki): WikiDetail => ({
       ...toCard(w, pagesOf(w).length),
       theme: w.theme,

@@ -8,27 +8,9 @@ import { Icon, Segmented } from "../../ui/index.ts";
 import { PageCard, PageChip } from "../PageFoot.tsx";
 import { Crumbs, pageHref, specialHref } from "../PageHead.tsx";
 import { StatusBadge } from "../StatusBadge.tsx";
+import { SPECIALS } from "./specials.ts";
+import { Elements, Fields, Kits, Specials } from "./Toolbox.tsx";
 import "./special.css";
-
-/** The special pages the sidebar's Tools list links to. */
-export const SPECIALS = [
-  { route: "recent", icon: "🕘", title: "Recent changes", summary: "Every page, most recently edited first." },
-  { route: "tasks", icon: "✅", title: "Tasks", summary: "Every checkbox in the wiki, page by page." },
-  { route: "pages", icon: "📚", title: "All pages", summary: "Every page in the wiki, from A to Z." },
-  { route: "categories", icon: "🏷️", title: "Categories", summary: "Pages grouped by their tags." },
-  {
-    route: "questions",
-    icon: "❓",
-    title: "Questions",
-    summary: "Every decision the pages ask for, open ones first, with how many answers each has.",
-  },
-  {
-    route: "wanted",
-    icon: "🧩",
-    title: "Wanted pages",
-    summary: "Pages that links point to but nobody has written yet, most wanted first.",
-  },
-] as const;
 
 function dayOf(iso: string): string {
   const day = new Date(iso);
@@ -326,25 +308,23 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
         <Wanted wikiId={wiki.id} wanted={index?.wanted ?? []} />
       ) : name === "pages" ? (
         <AllPages wikiId={wiki.id} pages={pages} />
+      ) : name === "kits" ? (
+        <Kits wiki={wiki} />
+      ) : name === "elements" ? (
+        <Elements wiki={wiki} />
+      ) : name === "fields" ? (
+        <Fields />
+      ) : name === "special" ? (
+        <Specials wikiId={wiki.id} />
       ) : (
         <Categories wikiId={wiki.id} pages={pages} />
       );
   } else {
     head = { icon: "❓", title: "No such special page", summary: `There's no special page called “${route}”.` };
-    body = (
-      <ul className="sh-special-list">
-        {SPECIALS.map((s) => (
-          <li key={s.route} className="sh-special-row">
-            <Link to={specialHref(wiki.id, s.route)} className="sh-special-link">
-              <span aria-hidden="true">{s.icon}</span>
-              {s.title}
-            </Link>
-            <span className="sh-special-summary">{s.summary}</span>
-          </li>
-        ))}
-      </ul>
-    );
+    body = <Specials wikiId={wiki.id} />;
   }
+  // The toolbox reads its own data, not the page index.
+  const ready = !!index || known?.group === "toolbox" || !known;
 
   useEffect(() => {
     document.title = `${head.title} · ${wiki.title}`;
@@ -368,7 +348,7 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
         </h1>
         <p className="sh-page-summary">{head.summary}</p>
       </header>
-      {index ? body : <p className="sh-special-empty">Loading…</p>}
+      {ready ? body : <p className="sh-special-empty">Loading…</p>}
     </main>
   );
 }

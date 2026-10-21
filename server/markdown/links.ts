@@ -13,6 +13,8 @@ export interface LinkContext {
   fileExists: (rel: string) => boolean;
   /** What a `[[wikilink]]` names (a path, file name or title) → the page; none when it isn't written yet. */
   findPage?: (name: string) => Found;
+  /** The URL of a file from the wiki root; `fileUrl` by default. The element reference serves the app's docs. */
+  files?: (rel: string) => string;
 }
 
 const EXTERNAL = /^([a-z][a-z0-9+.-]*:|\/\/)/i;
@@ -45,7 +47,7 @@ export function rehypeLinks(ctx: LinkContext, problems: string[], lineOffset = 0
     if (typeof value !== "string" || !value || EXTERNAL.test(value)) return value as string | undefined;
     const rel = resolveFile(ctx.pageDir, decodeURI(value));
     if (rel === null || !ctx.fileExists(rel)) problems.push(`${where(node)}missing file "${value}"`);
-    return rel === null ? value : fileUrl(ctx.wikiId, rel);
+    return rel === null ? value : (ctx.files?.(rel) ?? fileUrl(ctx.wikiId, rel));
   };
 
   return (tree: Root) => {

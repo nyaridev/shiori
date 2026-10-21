@@ -48,8 +48,12 @@ their content with the project's own, rename or delete what doesn't fit, and add
 - The app adds the rest around the body: breadcrumbs, the last-updated time and reading time, cards for the pages
   under a page ("In this section"), "What links here", the categories bar, previous/next links in sidebar order and
   the last-edited line. The sidebar's Tools link to Recent changes, Tasks (every `- [ ]` in the wiki), All pages,
-  Categories, Questions and Wanted pages. Don't write those by
-  hand; give pages a good `summary`, `icon` and `tags` so they read well.
+  Categories, Questions and Wanted pages. Don't write those by hand; give pages a good `summary`, `icon` and `tags`
+  so they read well.
+- **The toolbox.** The sidebar's Toolbox lists everything a page can use, from the app itself: Page kits (every kind
+  of page, with its sections and the command that makes one), Elements (the element reference in this wiki's theme),
+  Page fields (every frontmatter field, with an example) and Special pages. Open it at `/w/{{id}}/_/kits` when
+  you're unsure what fits.
 - Don't repeat the title as a `#` heading; start the body with text or `##` sections. `##` and `###` build the
   table of contents.
 - Links: write wikilinks. `[[Goals]]` finds a page by path, file name or title, from anywhere; `[[plan/goals|our
@@ -69,7 +73,8 @@ their content with the project's own, rename or delete what doesn't fit, and add
 
 ## Elements
 
-The full reference with examples is `{{shiori}}/docs/elements.md`, and the app shows it at `/dev/ui`.
+The full reference with examples is `{{shiori}}/docs/elements.md`. The app shows it in this wiki's theme under
+Toolbox → Elements (`/w/{{id}}/_/elements`), and at `/dev/ui`.
 
 | Element | Syntax |
 |---|---|

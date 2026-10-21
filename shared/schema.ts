@@ -74,3 +74,42 @@ export type Frontmatter = z.infer<typeof frontmatterSchema>;
 export function issues(error: z.ZodError): string[] {
   return error.issues.map((i) => (i.path.length ? `${i.path.join(".")}: ${i.message}` : i.message));
 }
+
+/** Every frontmatter field a page can set, as the toolbox's Page fields lists them. */
+export const FRONTMATTER_FIELDS: { key: keyof Frontmatter; what: string; example: string }[] = [
+  { key: "title", what: "The page's name; the file name when it's missing.", example: 'title: "Combat"' },
+  {
+    key: "summary",
+    what: "One line under the title, on section cards and in link previews.",
+    example: 'summary: "How fights work"',
+  },
+  { key: "icon", what: "One emoji before the title, in the sidebar and on cards. Quote it.", example: 'icon: "⚔️"' },
+  { key: "order", what: "Position in the sidebar among its siblings; lower comes first.", example: "order: 2" },
+  { key: "hidden", what: "Renders the page but keeps it out of the sidebar.", example: "hidden: true" },
+  {
+    key: "status",
+    what: "Where its subject stands: idea, planned, active, paused, done or archived.",
+    example: "status: active",
+  },
+  { key: "tags", what: "Categories; each tag gets its own page under Categories.", example: "tags: [combat, systems]" },
+  { key: "type", what: "What kind of page it is, in the project's own words.", example: 'type: "Feature"' },
+  { key: "image", what: "The infobox picture, from assets/.", example: 'image: "/assets/rat.png"' },
+  { key: "caption", what: "The caption under the infobox picture.", example: 'caption: "The first sketch"' },
+  {
+    key: "infobox",
+    what: "Rows of label → value in a fact box beside the article. Values are inline Markdown.",
+    example: 'infobox:\n  Owner: "Sam"\n  Stock: \':progress{value="12" max="50"}\'',
+  },
+  { key: "banner", what: "A wide picture from assets/ behind the page head.", example: 'banner: "/assets/wide.png"' },
+  { key: "toc", what: "false hides “On this page” (for short pages).", example: "toc: false" },
+  {
+    key: "questions",
+    what: "Open decisions. People answer them on the page; the agent writes back status: resolved and answer.",
+    example: 'questions:\n  - id: q1\n    text: "Steam or itch.io first?"\n    options: [Steam, itch.io]',
+  },
+  {
+    key: "related",
+    what: "Pages this one relates to, by wikilink name, with an optional kind.",
+    example: 'related:\n  - Goals\n  - to: Audience & market\n    kind: "Competitor of"',
+  },
+];

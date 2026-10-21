@@ -1,6 +1,6 @@
 // The owner's HTTP API, on loopback only. Read-only for pages and files; the only writes are comments and answers in
 // the wiki's own database. Share links (ADR-0003) are made here and served by the separate guest server.
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
@@ -10,14 +10,13 @@ import type { LiveEvent, SharesState } from "../shared/api.ts";
 import { addAnswer, listAnswers, setAnswerHidden } from "./answers.ts";
 import { serveFile } from "./files.ts";
 import type { Live } from "./live.ts";
-import { splitFrontmatter } from "./markdown/frontmatter.ts";
-import { renderMarkdown } from "./markdown/render.ts";
 import { type Registry, toCard, type Wiki } from "./registry.ts";
 import { search } from "./search.ts";
 import { cleanName } from "./sharing/guest.ts";
 import type { Shares } from "./sharing/shares.ts";
 import type { Tunnel } from "./sharing/tunnel.ts";
 import { addMessage, createThread, getThread, listThreads, setHidden, setStatus } from "./threads.ts";
+import { isToolboxFile, kitsOf, renderElements } from "./toolbox.ts";
 import { answerProblem, createWikiData, type WikiData } from "./wikiData.ts";
 
 // An empty `exact` is a comment on the whole page.
@@ -195,29 +194,27 @@ export function buildApp({ registry, live, data = createWikiData(live), shares, 
   app.patch("/api/wikis/:id/answers/:mid", (c) => hide(c, setAnswerHidden));
 
   /** The element reference (docs/elements.md), rendered for the /dev/ui page. */
-  app.get("/api/dev/elements", (c) => {
-    const split = splitFrontmatter(readFileSync(join(registry.appRoot, "docs", "elements.md"), "utf8"));
-    const r = renderMarkdown(split.body, {
-      wikiId: "_dev",
-      pageDir: "",
-      pageExists: () => true,
-      fileExists: (rel) => existsSync(join(registry.appRoot, "docs", rel)),
-    });
-    return c.json({
-      path: "",
-      title: "Elements",
-      summary: "",
-      tags: [],
-      backlinks: [],
-      related: [],
-      questions: [],
-      placed: { related: false, children: false, questions: [] },
-      trail: [],
-      children: [],
-      prev: null,
-      next: null,
-      ...r,
-    });
+  app.get("/api/dev/elements", (c) => c.json(renderElements(registry.appRoot)));
+
+  // The toolbox (Special:Page kits, Special:Elements): what pages of this wiki can use.
+  app.get("/api/wikis/:id/kits", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    return c.json({ kits: kitsOf(w, registry.appRoot) });
+  });
+
+  app.get("/api/wikis/:id/elements", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    return c.json(data.elementsOf(w, registry.appRoot));
+  });
+
+  app.get("/api/wikis/:id/toolbox/*", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const rel = c.req.path.slice(`/api/wikis/${w.id}/toolbox/`.length);
+    if (!isToolboxFile(rel)) return c.json({ error: "not found" }, 404);
+    return serveFile(c, join(registry.appRoot, "docs"), rel, { cache: false });
   });
 
   app.get("/api/events", (c) =>

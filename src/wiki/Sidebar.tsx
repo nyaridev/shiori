@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
 import type { NavNode, WikiDetail } from "../../shared/api.ts";
 import { useGuest } from "../guest/GuestContext.ts";
@@ -5,7 +6,13 @@ import { picture } from "../lib/base.ts";
 import { ShareDialog } from "../sharing/ShareDialog.tsx";
 import { Icon, IconButton, Kbd, Tooltip } from "../ui/index.ts";
 import { shortcutLabel } from "./SearchPalette.tsx";
-import { SPECIALS } from "./special/SpecialPage.tsx";
+import { SPECIALS } from "./special/specials.ts";
+
+/** The sidebar's lists of special pages: the wiki's own, then what pages can use. */
+const GROUPS = [
+  ["tools", "Tools"],
+  ["toolbox", "Toolbox"],
+] as const;
 
 export function Sidebar({
   wiki,
@@ -61,19 +68,23 @@ export function Sidebar({
           <NavItem key={n.path} node={n} wikiId={wiki.id} onNavigate={onNavigate} />
         ))}
       </ul>
-      <p className="sh-nav-heading sh-sidebar-tools-title">Tools</p>
-      <ul className="sh-nav">
-        {SPECIALS.map((s) => (
-          <li key={s.route}>
-            <NavLink to={`/w/${wiki.id}/_/${s.route}`} className="sh-nav-link" onClick={onNavigate}>
-              <span className="sh-nav-icon" aria-hidden="true">
-                {s.icon}
-              </span>
-              {s.title}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
+      {GROUPS.map(([group, heading]) => (
+        <Fragment key={group}>
+          <p className="sh-nav-heading sh-sidebar-tools-title">{heading}</p>
+          <ul className="sh-nav">
+            {SPECIALS.filter((s) => s.group === group).map((s) => (
+              <li key={s.route}>
+                <NavLink to={`/w/${wiki.id}/_/${s.route}`} className="sh-nav-link" onClick={onNavigate}>
+                  <span className="sh-nav-icon" aria-hidden="true">
+                    {s.icon}
+                  </span>
+                  {s.title}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </Fragment>
+      ))}
       {!guest && (
         <Link to="/dev/ui" className="sh-sidebar-foot">
           UI primitives

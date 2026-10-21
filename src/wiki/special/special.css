@@ -165,3 +165,101 @@
 .sh-missing-links a {
   color: var(--accent);
 }
+
+/* The toolbox (Toolbox.tsx): page kits, page fields. */
+.sh-toolbox-intro {
+  max-width: 70ch;
+  margin: 0 0 var(--s-5);
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+}
+.sh-kits {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+  gap: var(--s-4);
+}
+.sh-kit {
+  display: grid;
+  align-content: start;
+  gap: var(--s-2);
+  min-width: 0;
+  padding: var(--s-4);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+.sh-kit-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+.sh-kit-icon {
+  font-size: 1.25rem;
+}
+.sh-kit-name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--t-lg);
+}
+.sh-kit-text {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+.sh-kit-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-2);
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--t-xs);
+}
+.sh-kit-label {
+  color: var(--muted);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.sh-kit-line code,
+.sh-field-key,
+.sh-toolbox-intro code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+.sh-snippet .sh-code-block {
+  margin: var(--s-1) 0 0;
+}
+.sh-snippet pre.sh-code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sh-fields {
+  display: grid;
+  margin: 0;
+}
+.sh-field {
+  display: grid;
+  grid-template-columns: minmax(110px, 160px) minmax(0, 1fr);
+  gap: var(--s-1) var(--s-4);
+  padding: var(--s-3) 0;
+  border-top: var(--bw) solid var(--border);
+}
+.sh-field dt {
+  padding-top: 2px;
+  font-weight: 650;
+}
+.sh-field dd {
+  display: grid;
+  gap: var(--s-1);
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .sh-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -24,6 +24,7 @@ import {
   visible,
   visibleThreads,
 } from "../threads.ts";
+import { isToolboxFile, kitsOf } from "../toolbox.ts";
 import { answerProblem, type WikiData } from "../wikiData.ts";
 import { LIMITS } from "./limits.ts";
 import { type Guest, newGuestId, type Share, type Shares, TOKEN } from "./shares.ts";
@@ -310,7 +311,22 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
     return res;
   });
 
-  /** Guests poll this instead of server-sent events; an unchanged wiki costs one small 304. */
+  // The toolbox, read-only: the wiki's kits (never their files) and the element reference with its pictures.
+  api.get("/wikis/:id/kits", (c) => c.json({ kits: kitsOf(c.get("wiki"), registry.appRoot) }));
+
+  api.get("/wikis/:id/elements", (c) => c.json(data.elementsOf(c.get("wiki"), registry.appRoot)));
+
+  api.get("/wikis/:id/toolbox/*", async (c) => {
+    const rel = c.req.path.slice(c.req.path.indexOf("/toolbox/") + "/toolbox/".length);
+    if (!isToolboxFile(rel)) return c.json({ error: "not found" }, 404);
+    const res = await serveFile(c, join(registry.appRoot, "docs"), rel, { cache: false });
+    if (res.status === 200 || res.status === 304) res.headers.set("cache-control", "private, no-cache");
+    return res;
+  });
+
+  // Live updates for guests: the tunnel can't carry server-sent events, so the request itself waits (long polling).
+  // With `wait` (seconds, at most 25) and the ETag the guest has, the answer comes when the wiki changes, or as an
+  // empty 304 when the time is up. Either way the guest asks again at once.
   // Live updates for guests: the tunnel can't carry server-sent events, so the request itself waits (long polling).
   // With `wait` (seconds, at most 25) and the ETag the guest has, the answer comes when the wiki changes, or as an
   // empty 304 when the time is up. Either way the guest asks again at once.
