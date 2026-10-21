@@ -60,8 +60,14 @@ export function createShares({
   let host = DEFAULT_HOST;
   const ended = new Set<string>();
   const listeners = new Set<() => void>();
+  /** Anything the Share dialog shows changed: links, guests, activity, the host's name. */
+  const updates = new Set<() => void>();
+  const updated = () => {
+    for (const l of updates) l();
+  };
   const changed = () => {
     for (const l of listeners) l();
+    updated();
   };
 
   const end = (share: Share) => {
@@ -89,6 +95,7 @@ export function createShares({
   const log = (share: Share, who: string, what: string) => {
     share.activity.push({ at: iso(now()), who, what });
     if (share.activity.length > ACTIVITY) share.activity.splice(0, share.activity.length - ACTIVITY);
+    updated();
   };
 
   return {
@@ -164,6 +171,12 @@ export function createShares({
       return () => listeners.delete(l);
     },
 
+    /** Called whenever anything the Share dialog shows changes, so it updates live. */
+    onUpdate(l: () => void) {
+      updates.add(l);
+      return () => updates.delete(l);
+    },
+
     /** Blocks a guest and the address they joined from, or lets them back in. False when there's no such guest. */
     block(shareId: string, guestId: string, blocked: boolean): boolean {
       const share = [...active.values()].find((s) => s.id === shareId);
@@ -180,6 +193,7 @@ export function createShares({
     host: () => host,
     setHost(name: string) {
       host = name;
+      updated();
     },
 
     log,

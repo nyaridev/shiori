@@ -17,6 +17,8 @@ export const LIMITS = {
   /** This many 429s within `strikeWindow` blocks the guest and their address for the rest of the link's life. */
   strikes: 5,
   strikeWindow: 10 * 60_000,
+  /** Seconds a guest's request for changes may wait for one (long polling). */
+  longPoll: 25,
   /** Bytes of a comment, reply or answer; bytes of a request; characters of a quote and of its context. */
   comment: 4096,
   request: 16_384,

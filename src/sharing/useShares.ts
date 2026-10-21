@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import type { SharesState } from "../../shared/api.ts";
 import { ApiError, api } from "../lib/api.ts";
+import { useLive } from "../lib/live.ts";
 
 const message = (e: unknown) => (e instanceof ApiError ? e.detail : (e as Error).message);
 
 /**
- * The owner's share links and tunnel, refreshed while the Share dialog is open: every second while the tunnel
- * starts, so its public address shows as soon as it answers.
+ * The owner's share links and tunnel while the Share dialog is open, kept live: the server sends a `shares` event
+ * whenever links, guests, activity or the tunnel change. A slow timer covers a dropped connection.
  */
 export function useShares() {
   const [state, setState] = useState<SharesState | null>(null);
@@ -24,12 +25,14 @@ export function useShares() {
     }
   }, []);
 
-  const starting = state?.tunnel.state === "starting";
+  useLive((e) => {
+    if (e.type === "shares") void refresh();
+  });
   useEffect(() => {
     void refresh();
-    const timer = setInterval(() => void refresh(), starting ? 1000 : 4000);
+    const timer = setInterval(() => void refresh(), 30_000);
     return () => clearInterval(timer);
-  }, [refresh, starting]);
+  }, [refresh]);
 
   /** Runs an owner action, then shows the new state (the action's own, when it returns one). */
   const act = useCallback(

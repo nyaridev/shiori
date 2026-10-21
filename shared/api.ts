@@ -223,7 +223,12 @@ export interface Thread {
 
 /** Server-sent events on /api/events. */
 /** `threads` means the wiki's data (comments and answers) changed. */
-export type LiveEvent = { type: "wikis" } | { type: "pages"; wiki: string } | { type: "threads"; wiki: string };
+/** `shares` means share links, their guests or their activity changed (the Share dialog, ADR-0003). */
+export type LiveEvent =
+  | { type: "wikis" }
+  | { type: "pages"; wiki: string }
+  | { type: "threads"; wiki: string }
+  | { type: "shares" };
 
 /** What a share link lets a guest do (ADR-0003). */
 export type ShareKind = "view" | "comment";

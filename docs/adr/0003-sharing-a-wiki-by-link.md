@@ -133,8 +133,9 @@ Guest activity is kept in memory (the last 500 actions) for the dialog; nothing 
 ### What guests run
 
 The same React app in **guest mode**: it learns its link and wiki from `/s/<token>/api/session`, uses
-`/s/<token>/` as its base path, hides the deck, the CLI and dev links, and **polls** for new comments and answers
-every 10 seconds (with ETags, so an unchanged page costs one small `304`) instead of using SSE.
+`/s/<token>/` as its base path, hides the deck, the CLI and dev links, and gets **live updates by long polling**
+instead of SSE: each request for changes waits on the server until the wiki changes (or 25 seconds pass), so new
+comments and edits show within about a second, and an idle wiki costs one small `304` every 25 seconds.
 
 ### Phase 1 as built
 
@@ -149,7 +150,7 @@ Details settled while building the guest server (2026-10-21):
 | Names first | Every guest, on view links too, picks a name before reading; data routes answer `401` without one. Names the owner or an agent sign with (Host, Owner, Agent, You…) and names already used on the link are refused |
 | Owner's name | Guests see the owner's messages signed **Host** until item 12 lets the owner pick a name |
 | Guests' writes | Comments only on pages that exist; replies only to open threads; status only `open` or `resolved` (won't fix stays the owner's) |
-| Polling | `GET /s/<token>/api/wikis/<id>/changes` returns the wiki's page and comment versions with an ETag (`304` when unchanged, a weakened `W/` ETag included). The client turns a change into the same live events SSE gives the owner. Three polls in a row with no answer (the last link ended, so the server stopped) show "Couldn't reach the wiki" |
+| Live updates | `GET /s/<token>/api/wikis/<id>/changes?wait=25` with the guest's ETag waits until the wiki changes and then returns its page and comment versions, or answers `304` after 25 seconds (a weakened `W/` ETag counts). The client asks again at once and turns a change into the same live events SSE gives the owner; a `429` waits for `Retry-After`. Three requests in a row with no answer (the last link ended, so the server stopped) show "Couldn't reach the wiki". Each waiting guest holds one of the tunnel's 200 requests in flight, far more than a friends-sized link needs |
 | Caching | `private, no-store` on everything behind a link, `private, max-age=300` on its media, so Cloudflare's edge caches nothing |
 | Embeds | The iframe keeps `strict-origin-when-cross-origin`: YouTube gets the tunnel's host name, never the path with the token |
 | Owner's server | Now answers only to loopback host names (no DNS rebinding) and refuses writes whose `Origin` isn't the app, so another site can't make a share link |
@@ -171,7 +172,7 @@ Details settled while building the tunnel and the owner's controls (2026-10-21):
 | Owner's name | Held in memory (`PUT /api/shares/host`, 2–32 characters); the dialog remembers it in the browser and sends it with each new link, so it survives restarts. A guest can't join with it, and the owner can't take a name a guest on an active link uses |
 | Blocking | `PATCH /api/shares/:id/guests/:guest { blocked }` blocks the guest and the address they joined from (a fresh cookie doesn't get around it); letting them back in clears both. Opening or reloading a link the guest server refuses (blocked `403`, ended `410`, unknown `404`) gets the bare app with that status, so the gate says why; the API under it answers JSON and nothing from the wiki |
 | Hiding | Migration 4 adds `hidden` to `messages` and `answers`. `PATCH /api/wikis/:id/messages/:mid` and `/answers/:aid { hidden }`, for guests' text only. Guests never receive hidden text; a hidden first message hides the whole thread from them (replying to it or resolving it answers `404`). `pnpm wiki inbox` and the question counts leave it out; `pnpm wiki threads` lists it marked "hidden by the owner"; backups keep the flag |
-| Dialog | A Share button in the sidebar head. Never rendered for guests. In dev it shows the server's `409` message |
+| Dialog | A Share button in the sidebar head. Never rendered for guests. In dev it shows the server's `409` message. It updates live: the owner's SSE stream sends a `shares` event (at most every 250 ms) when links, guests, activity, the host's name or the tunnel change |
 
 ### Two PCs with the same wiki (phase 3)
 
@@ -237,8 +238,9 @@ Anything not written into it can't be reached, so new owner features stay privat
 - **Harder:** Shiori now has a public surface. Every guest route needs tests for the link check, the other-wiki
   block, expiry, limits and `Origin` checks, and a security review whenever it changes.
 - **Harder:** comments gain authors. The comment UI, the inbox and backups all carry names.
-- **Revisit:** named tunnels for a stable address, and SSE for guests; Tailscale Funnel as the private provider;
-  multi-PC sync (phase 2); accounts if wikis ever become public for strangers rather than friends.
+- **Revisit:** named tunnels for a stable address; Tailscale Funnel as the private provider; accounts if wikis
+  ever become public for strangers rather than friends. (Live updates for guests came with long polling, and two-PC
+  sync with phase 3.)
 
 ## Action Items
 

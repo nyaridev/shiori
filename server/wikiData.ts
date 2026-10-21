@@ -13,14 +13,17 @@ export function createWikiData(live: Live) {
   const corpusCache = new Map<string, Corpus>();
   let pagesVersion = 0;
   const threadsVersion = new Map<string, number>();
+  /** Guests' requests waiting for their wiki to change (long polling). */
+  const waiting = new Set<{ wiki: string; done: () => void }>();
   live.subscribe((e) => {
-    if (e.type === "threads") {
-      threadsVersion.set(e.wiki, (threadsVersion.get(e.wiki) ?? 0) + 1);
-      return;
+    if (e.type === "shares") return;
+    if (e.type === "threads") threadsVersion.set(e.wiki, (threadsVersion.get(e.wiki) ?? 0) + 1);
+    else {
+      pagesVersion++;
+      pageCache.clear();
+      corpusCache.clear();
     }
-    pagesVersion++;
-    pageCache.clear();
-    corpusCache.clear();
+    for (const w of waiting) if (e.type !== "threads" || w.wiki === e.wiki) w.done();
   });
 
   const pagesOf = (w: Wiki) => {
@@ -64,6 +67,22 @@ export function createWikiData(live: Live) {
     },
     /** Changes since the server started: `pages` for any page or wiki file, `threads` for one wiki's comments. */
     version: (w: Wiki) => ({ pages: pagesVersion, threads: threadsVersion.get(w.id) ?? 0 }),
+    /** Resolves when the wiki changes, after `ms`, or when `signal` aborts, whichever comes first. */
+    waitForChange: (w: Wiki, ms: number, signal?: AbortSignal) =>
+      new Promise<void>((resolve) => {
+        const entry = {
+          wiki: w.id,
+          done: () => {
+            waiting.delete(entry);
+            clearTimeout(timer);
+            signal?.removeEventListener("abort", entry.done);
+            resolve();
+          },
+        };
+        const timer = setTimeout(entry.done, ms);
+        signal?.addEventListener("abort", entry.done);
+        waiting.add(entry);
+      }),
   };
 }
 export type WikiData = ReturnType<typeof createWikiData>;

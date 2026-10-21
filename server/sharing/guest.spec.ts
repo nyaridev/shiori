@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { Answer, GuestSession, SharesState, Thread, TunnelStatus } from "../../shared/api.ts";
+import type { Answer, GuestSession, LiveEvent, SharesState, Thread, TunnelStatus } from "../../shared/api.ts";
 import { buildApp } from "../app.ts";
 import { createLive } from "../live.ts";
 import { createRegistry } from "../registry.ts";
@@ -21,7 +21,15 @@ let shares: Shares;
 let guestApp: ReturnType<typeof buildGuestApp>;
 let ownerApp: ReturnType<typeof buildApp>;
 /** The tunnel the owner's app reports; tests set its status. */
-let tunnel: { now: TunnelStatus; starts: number; status: () => TunnelStatus; start: () => void };
+let tunnel: {
+  now: TunnelStatus;
+  starts: number;
+  status: () => TunnelStatus;
+  start: () => void;
+  onChange: () => () => boolean;
+};
+/** Tells the servers a file changed, as the file watcher would. */
+let emit: (e: LiveEvent) => void;
 
 function wiki(id: string) {
   const root = join(app, "wikis", id);
@@ -45,7 +53,17 @@ beforeEach(() => {
   wiki("beta");
   clock = Date.parse("2026-10-21T12:00:00Z");
   const registry = createRegistry(app);
-  const live = createLive(registry);
+  const listeners = new Set<(e: LiveEvent) => void>();
+  emit = (e) => {
+    for (const l of listeners) l(e);
+  };
+  const live = {
+    ...createLive(registry),
+    subscribe: (l: (e: LiveEvent) => void) => {
+      listeners.add(l);
+      return () => listeners.delete(l);
+    },
+  };
   const data = createWikiData(live);
   shares = createShares({ now: () => clock, origin: () => HOST });
   const dist = join(app, "dist");
@@ -59,6 +77,7 @@ beforeEach(() => {
     start: () => {
       tunnel.starts++;
     },
+    onChange: () => () => true,
   };
   ownerApp = buildApp({ registry, live, data, shares, tunnel });
 });
@@ -379,6 +398,26 @@ describe("polling", () => {
     expect(etag).toMatch(/^"\d+\.\d+"$/);
     expect((await b.get("/api/wikis/alpha/changes", { "if-none-match": etag })).status).toBe(304);
     expect((await b.get("/api/wikis/alpha/changes", { "if-none-match": `W/${etag}` })).status).toBe(304);
+  });
+
+  it("hold the request until the wiki changes (long polling)", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "view" });
+    const b = browser(share);
+    await b.join("Ana");
+    const etag = (await b.get("/api/wikis/alpha/changes")).headers.get("etag") ?? "";
+    // Nothing changes: an empty 304 once the wait is up.
+    const started = Date.now();
+    expect((await b.get("/api/wikis/alpha/changes?wait=0.2", { "if-none-match": etag })).status).toBe(304);
+    expect(Date.now() - started).toBeGreaterThanOrEqual(150);
+    // Another wiki's comments don't wake it; this wiki's do, with the new versions.
+    const waiting = b.get("/api/wikis/alpha/changes?wait=5", { "if-none-match": etag });
+    await new Promise((r) => setTimeout(r, 50));
+    emit({ type: "threads", wiki: "beta" });
+    emit({ type: "threads", wiki: "alpha" });
+    const res = await waiting;
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ threads: 1 });
+    expect(res.headers.get("etag")).not.toBe(etag);
   });
 });
 

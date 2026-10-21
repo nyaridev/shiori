@@ -311,13 +311,23 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
   });
 
   /** Guests poll this instead of server-sent events; an unchanged wiki costs one small 304. */
-  api.get("/wikis/:id/changes", (c) => {
-    const v = data.version(c.get("wiki"));
-    const etag = `"${v.pages}.${v.threads}"`;
+  // Live updates for guests: the tunnel can't carry server-sent events, so the request itself waits (long polling).
+  // With `wait` (seconds, at most 25) and the ETag the guest has, the answer comes when the wiki changes, or as an
+  // empty 304 when the time is up. Either way the guest asks again at once.
+  api.get("/wikis/:id/changes", async (c) => {
+    const w = c.get("wiki");
+    const tag = () => {
+      const v = data.version(w);
+      return `"${v.pages}.${v.threads}"`;
+    };
     // Cloudflare may weaken the ETag on the way.
-    if (c.req.header("if-none-match")?.replace(/^W\//, "") === etag) return c.body(null, 304, { etag });
+    const known = c.req.header("if-none-match")?.replace(/^W\//, "");
+    const wait = Math.min(Math.max(Number(c.req.query("wait")) || 0, 0), LIMITS.longPoll);
+    if (known === tag() && wait > 0) await data.waitForChange(w, wait * 1000, c.req.raw.signal);
+    const etag = tag();
+    if (known === etag) return c.body(null, 304, { etag });
     c.header("etag", etag);
-    return c.json(v);
+    return c.json(data.version(w));
   });
 
   api.get("/wikis/:id/threads", (c) => {

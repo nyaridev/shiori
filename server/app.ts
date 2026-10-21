@@ -6,7 +6,7 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
-import type { SharesState } from "../shared/api.ts";
+import type { LiveEvent, SharesState } from "../shared/api.ts";
 import { addAnswer, listAnswers, setAnswerHidden } from "./answers.ts";
 import { serveFile } from "./files.ts";
 import type { Live } from "./live.ts";
@@ -74,7 +74,7 @@ export interface AppOptions {
   /** Share links. Only the built app shares (ADR-0003); without them `/api/shares` says so. */
   shares?: Shares;
   /** The tunnel that gives links a public address. */
-  tunnel?: Pick<Tunnel, "status" | "start">;
+  tunnel?: Pick<Tunnel, "status" | "start" | "onChange">;
   /** Serve the built UI from this folder (start-web). */
   staticDir?: string;
 }
@@ -220,10 +220,21 @@ export function buildApp({ registry, live, data = createWikiData(live), shares, 
 
   app.get("/api/events", (c) =>
     streamSSE(c, async (stream) => {
-      const off = live.subscribe((e) => void stream.writeSSE({ data: JSON.stringify(e) }));
-      stream.onAbort(() => {
-        off();
-      });
+      const send = (e: LiveEvent) => void stream.writeSSE({ data: JSON.stringify(e) });
+      // Share links, their guests and activity, for the Share dialog: one event per quarter second at most.
+      let pending: NodeJS.Timeout | null = null;
+      const shared = () => {
+        pending ??= setTimeout(() => {
+          pending = null;
+          send({ type: "shares" });
+        }, 250);
+      };
+      const offs = [live.subscribe(send), shares?.onUpdate(shared), tunnel?.onChange(shared)];
+      const off = () => {
+        for (const o of offs) o?.();
+        if (pending) clearTimeout(pending);
+      };
+      stream.onAbort(off);
       while (!stream.aborted) {
         await stream.writeSSE({ event: "ping", data: "" });
         await stream.sleep(25_000);
