@@ -7,6 +7,7 @@
 import { themeVars } from "../../../shared/theme.ts";
 import { api } from "../../lib/api.ts";
 import { prime } from "../../lib/cache.ts";
+import { viewerMode } from "../../lib/viewerMode.ts";
 import { PAD, paintCard, rgbOf } from "./paintCard.ts";
 import { type WarpFrame, warp } from "./warp.ts";
 import "./opening.css";
@@ -45,7 +46,7 @@ async function prefetch(id: string): Promise<string> {
   const [wiki, page] = await Promise.all([api.wiki(id), api.page(id, "")]);
   prime(`wiki:${id}`, wiki);
   prime(`page:${id}:`, page);
-  return themeVars(wiki.theme)["--bg"] ?? FALLBACK_BG;
+  return themeVars(wiki.theme, viewerMode() ?? wiki.theme.mode)["--bg"] ?? FALLBACK_BG;
 }
 
 function within<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_THEME, PALETTES, themeSchema, themeVars } from "./theme.ts";
+import { contrast, DEFAULT_THEME, PALETTES, themeColors, themeSchema, themeVars } from "./theme.ts";
 
 describe("themes", () => {
   it("fills every token from the palette and presets", () => {
@@ -27,5 +27,40 @@ describe("themes", () => {
     expect(themeSchema.safeParse({ colors: { accent: "red; background: url(x)" } }).success).toBe(false);
     expect(themeSchema.safeParse({ radius: "huge" }).success).toBe(false);
     expect(themeSchema.safeParse({ layout: "wide" }).success).toBe(false);
+  });
+});
+
+describe("the viewer's day/night switch", () => {
+  const night = themeSchema.parse({
+    mode: "dark",
+    colors: { bg: "#000814", text: "#f0f0ff", accent: "#ffd166", accentText: "#201000" },
+    radius: "large",
+    font: { body: "serif" },
+  });
+
+  it("changes nothing in the theme's own mode", () => {
+    expect(themeVars(night, "dark")).toEqual(themeVars(night));
+  });
+
+  it("swaps in the other palette but keeps the accent, shapes and fonts", () => {
+    const vars = themeVars(night, "light");
+    expect(vars["color-scheme"]).toBe("light");
+    expect(vars["--bg"]).toBe(PALETTES.light.bg);
+    expect(vars["--text"]).toBe(PALETTES.light.text);
+    expect(vars["--r-lg"]).toBe("24px");
+    expect(vars["--font-body"]).toContain("Fraunces");
+  });
+
+  it("darkens a pale accent until it reads on a light page, with text that reads on it", () => {
+    const { accent, accentText } = themeColors(night, "light");
+    expect(accent).not.toBe("#ffd166");
+    expect(contrast(accent, PALETTES.light.bg)).toBeGreaterThanOrEqual(3);
+    expect(contrast(accentText, accent)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("keeps an accent that already reads, and the palette's accent when the theme has none", () => {
+    const blue = themeSchema.parse({ colors: { accent: "#1d4ed8" } });
+    expect(themeColors(blue, "light").accent).toBe("#1d4ed8");
+    expect(themeColors(DEFAULT_THEME, "light")).toEqual(PALETTES.light);
   });
 });
