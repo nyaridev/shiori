@@ -20,7 +20,7 @@ export function createLive(registry: Registry) {
       timer = null;
       const events = [...pending.values()];
       pending.clear();
-      if (events.some((e) => e.type !== "threads")) registry.invalidate();
+      if (events.some((e) => e.type !== "threads" && e.type !== "designs")) registry.invalidate();
       for (const e of events) for (const l of listeners) l(e);
     }, 120);
   };
@@ -30,6 +30,11 @@ export function createLive(registry: Registry) {
     if (area === "ignore") return;
     if (area === "data") {
       if (wiki) emit({ type: "threads", wiki });
+      return;
+    }
+    // What people make in the app (ADR-0006): its own event, so pages aren't rendered again for each stroke.
+    if (area === "designs") {
+      if (wiki) emit({ type: "designs", wiki });
       return;
     }
     if (area === "meta" || !wiki) emit({ type: "wikis" });

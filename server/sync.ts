@@ -246,10 +246,12 @@ export function syncWiki(root: string, { push = true } = {}): WikiSynced {
   const files = syncFiles(root);
   if (!repo) return { ...files, steps };
 
-  git(root, "add", "--", files.file);
-  if (!gitOk(root, "diff", "--cached", "--quiet", "--", files.file)) {
-    git(root, "commit", "-m", `Sync comments from ${machineOf(root).name}`, "--", files.file);
-    steps.push(`Committed ${files.file}.`);
+  // This PC's sync file, and the designs people made in the app (ADR-0006), which are plain files in the wiki.
+  const paths = [files.file, ...(existsSync(join(root, "designs")) ? ["designs"] : [])];
+  git(root, "add", "--", ...paths);
+  if (!gitOk(root, "diff", "--cached", "--quiet", "--", ...paths)) {
+    git(root, "commit", "-m", `Sync comments and designs from ${machineOf(root).name}`, "--", ...paths);
+    steps.push(`Committed ${paths.join(" and ")}.`);
   } else steps.push("Nothing new to commit.");
   if (upstream && push) {
     const ahead = Number(git(root, "rev-list", "--count", "@{u}..HEAD"));

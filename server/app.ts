@@ -8,13 +8,14 @@ import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import type { LiveEvent, SharesState } from "../shared/api.ts";
 import { addAnswer, listAnswers, setAnswerHidden } from "./answers.ts";
+import { designRoutes } from "./designRoutes.ts";
 import { serveFile } from "./files.ts";
 import type { Live } from "./live.ts";
 import { type Registry, toCard, type Wiki } from "./registry.ts";
 import { search } from "./search.ts";
 import { cleanName } from "./sharing/guest.ts";
 import { type Presence, placeOf, presenceFor, withTitles } from "./sharing/presence.ts";
-import type { Shares } from "./sharing/shares.ts";
+import { DEFAULT_HOST, type Shares } from "./sharing/shares.ts";
 import type { Tunnel } from "./sharing/tunnel.ts";
 import { addMessage, createThread, getThread, listThreads, setHidden, setStatus } from "./threads.ts";
 import { isToolboxFile, kitsOf, renderElements } from "./toolbox.ts";
@@ -258,6 +259,19 @@ export function buildApp({
     presence.leave(`host:${tab.data}`);
     return c.body(null, 204);
   });
+
+  // Designs (ADR-0006): the owner may change every one.
+  app.use("/api/wikis/:id/designs/*", async (c, next) =>
+    registry.get(c.req.param("id") ?? "") ? next() : c.json({ error: "no such wiki" }, 404),
+  );
+  app.route(
+    "/api/wikis/:id/designs",
+    designRoutes({
+      wikiOf: (c) => registry.get(c.req.param("id") ?? "") as Wiki,
+      viewerOf: () => ({ kind: "owner" }),
+      hostName: () => shares?.host() ?? DEFAULT_HOST,
+    }),
+  );
 
   app.get("/api/events", (c) =>
     streamSSE(c, async (stream) => {

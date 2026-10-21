@@ -39,6 +39,7 @@ export function useLive(onEvent: Listener) {
 interface Version {
   pages: number;
   threads: number;
+  designs: number;
   presence: string;
 }
 
@@ -81,6 +82,7 @@ export function pollChanges(wiki: string, onEnded: (status: number) => void): ()
         const v = (await res.json()) as Version;
         if (last && v.pages !== last.pages) emit({ type: "pages", wiki });
         if (last && v.threads !== last.threads) emit({ type: "threads", wiki });
+        if (last && v.designs !== last.designs) emit({ type: "designs", wiki });
         if (last && v.presence !== last.presence) emit({ type: "presence", wiki });
         last = v;
       } else if (ENDED.includes(res.status)) {

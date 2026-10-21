@@ -15,18 +15,20 @@ export function createWikiData(live: Live) {
   const elementsCache = new Map<string, PageData>();
   let pagesVersion = 0;
   const threadsVersion = new Map<string, number>();
+  const designsVersion = new Map<string, number>();
   /** Guests' requests waiting for their wiki to change (long polling). */
   const waiting = new Set<{ wiki: string; done: () => void }>();
   live.subscribe((e) => {
-    if (e.type === "shares") return;
+    if (e.type === "shares" || e.type === "presence") return;
     if (e.type === "threads") threadsVersion.set(e.wiki, (threadsVersion.get(e.wiki) ?? 0) + 1);
+    else if (e.type === "designs") designsVersion.set(e.wiki, (designsVersion.get(e.wiki) ?? 0) + 1);
     else {
       pagesVersion++;
       pageCache.clear();
       corpusCache.clear();
       elementsCache.clear();
     }
-    for (const w of waiting) if (e.type !== "threads" || w.wiki === e.wiki) w.done();
+    for (const w of waiting) if (!("wiki" in e) || e.type === "pages" || w.wiki === e.wiki) w.done();
   });
 
   const pagesOf = (w: Wiki) => {
@@ -67,7 +69,14 @@ export function createWikiData(live: Live) {
         const p = byPath.get(find(name).page?.path ?? "\0");
         return p?.path ? [{ path: p.path, title: p.title, icon: p.icon, summary: p.summary, isPage: true }] : [];
       });
-      return { ...toCard(w, pages.length), theme: w.theme, nav: buildNav(pages), pinned, problems: w.problems };
+      return {
+        ...toCard(w, pages.length),
+        theme: w.theme,
+        collections: w.manifest.collections,
+        nav: buildNav(pages),
+        pinned,
+        problems: w.problems,
+      };
     },
     index: (w: Wiki): WikiIndex => {
       const corpus = corpusOf(w);
@@ -81,8 +90,15 @@ export function createWikiData(live: Live) {
       );
       return { pages: corpus.index, wanted: corpus.wanted, questions, tasks: corpus.tasks };
     },
-    /** Changes since the server started: `pages` for any page or wiki file, `threads` for one wiki's comments. */
-    version: (w: Wiki) => ({ pages: pagesVersion, threads: threadsVersion.get(w.id) ?? 0 }),
+    /**
+     * Changes since the server started: `pages` for any page or wiki file, `threads` for one wiki's comments,
+     * `designs` for its designs.
+     */
+    version: (w: Wiki) => ({
+      pages: pagesVersion,
+      threads: threadsVersion.get(w.id) ?? 0,
+      designs: designsVersion.get(w.id) ?? 0,
+    }),
     /** Resolves when the wiki changes, after `ms`, or when `signal` aborts, whichever comes first. */
     waitForChange: (w: Wiki, ms: number, signal?: AbortSignal) =>
       new Promise<void>((resolve) => {

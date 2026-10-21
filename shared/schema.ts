@@ -19,6 +19,21 @@ export const manifestSchema = z.strictObject({
   order: z.number().default(0),
   /** Pages pinned at the top of the sidebar under Home, by wikilink name. Ones that don't exist are skipped. */
   pinned: z.array(z.string().min(1)).max(8).default(["Roadmap"]),
+  /**
+   * Collections people add designs to in the app (ADR-0006): a drawing, a description and pictures each, which agents
+   * turn into pages. Keyed by id, as `designs/<id>/` and a layout's `designs` block name them.
+   */
+  collections: z
+    .record(
+      z.string().regex(/^[a-z][a-z0-9-]{0,23}$/, "name a collection in lowercase letters, digits and dashes"),
+      z.strictObject({
+        /** The collection's name: "Mobs". */
+        title: z.string().min(1).max(60),
+        /** One of them: "Mob". */
+        item: z.string().min(1).max(40),
+      }),
+    )
+    .default({}),
 });
 export type Manifest = z.infer<typeof manifestSchema>;
 
@@ -76,6 +91,13 @@ export const frontmatterSchema = z.looseObject({
       }),
     )
     .optional(),
+  /** A layout from the wiki's `layouts/` that arranges this page (ADR-0006). */
+  layout: z.string().min(1).optional(),
+  /** The design this page was made from, as `<collection>/<id>`; a layout's `design` block shows it. */
+  design: z
+    .string()
+    .regex(/^[a-z][a-z0-9-]*\/[a-z0-9][a-z0-9-]*$/, "write it as <collection>/<id>")
+    .optional(),
   /** Pages this one relates to, as wikilink names, with an optional kind: "depends on", "competitor of". */
   related: z
     .array(z.union([z.string().min(1), z.object({ to: z.string().min(1), kind: z.string().min(1).optional() })]))
@@ -123,6 +145,16 @@ export const FRONTMATTER_FIELDS: { key: keyof Frontmatter; what: string; example
     key: "questions",
     what: "Open decisions. People answer them on the page; the agent writes back status: resolved and answer.",
     example: 'questions:\n  - id: q1\n    text: "Steam or itch.io first?"\n    options: [Steam, itch.io]',
+  },
+  {
+    key: "layout",
+    what: "A layout from the wiki's layouts/ folder that arranges the page's parts into a grid (Toolbox → Page kits shows which kits use one).",
+    example: "layout: mob",
+  },
+  {
+    key: "design",
+    what: "The design this page was made from, as collection/id; the layout's design block shows its drawing.",
+    example: "design: mobs/carrot-k3f9",
   },
   {
     key: "related",

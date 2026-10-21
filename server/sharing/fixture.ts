@@ -3,6 +3,7 @@
 import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import sharp from "sharp";
 import { afterEach, beforeEach } from "vitest";
 import type { LiveEvent } from "../../shared/api.ts";
 import { buildApp } from "../app.ts";
@@ -32,8 +33,11 @@ export interface Sharing {
   emit: (e: LiveEvent) => void;
   /** A guest's browser on a link. */
   browser: (share: Share, ip?: string) => Browser;
-  /** A request to the owner's server, from the app's own origin. */
-  owner: (path: string, init?: { method?: string; body?: unknown }) => Promise<Response>;
+  /** A request to the owner's server, from the app's own origin. A `raw` body is sent as `type`. */
+  owner: (
+    path: string,
+    init?: { method?: string; body?: unknown; raw?: Uint8Array; type?: string },
+  ) => Promise<Response>;
 }
 
 function wiki(app: string, id: string) {
@@ -84,11 +88,15 @@ export function sharingFixture(): Sharing {
         for (const l of listeners) l(e);
       },
       browser: (share: Share, ip?: string) => browser(s, share, ip),
-      owner: (path: string, init: { method?: string; body?: unknown } = {}) =>
+      owner: (path: string, init: { method?: string; body?: unknown; raw?: Uint8Array; type?: string } = {}) =>
         s.ownerApp.request(`${OWNER}${path}`, {
           method: init.method ?? "GET",
-          headers: init.body === undefined ? {} : { "content-type": "application/json", origin: OWNER },
-          body: init.body === undefined ? undefined : JSON.stringify(init.body),
+          headers: init.raw
+            ? { "content-type": init.type ?? "application/octet-stream", origin: OWNER }
+            : init.body === undefined
+              ? {}
+              : { "content-type": "application/json", origin: OWNER },
+          body: init.raw ? (init.raw as BodyInit) : init.body === undefined ? undefined : JSON.stringify(init.body),
         }),
     });
   });
@@ -102,6 +110,14 @@ export function sharingFixture(): Sharing {
 export interface Browser {
   get: (path: string, headers?: Record<string, string>) => Promise<Response>;
   send: (method: string, path: string, body?: unknown, headers?: Record<string, string>) => Promise<Response>;
+  /** A body that isn't JSON: a drawing or a picture. */
+  raw: (
+    method: string,
+    path: string,
+    body: Uint8Array,
+    type: string,
+    headers?: Record<string, string>,
+  ) => Promise<Response>;
   join: (name: string) => Promise<Response>;
   readonly cookie: string;
 }
@@ -110,28 +126,48 @@ export interface Browser {
 function browser(s: Sharing, share: Share, ip = "203.0.113.7"): Browser {
   let cookie = "";
   const base = `/s/${share.token}`;
-  const send = async (method: string, path: string, body?: unknown, headers: Record<string, string> = {}) => {
+  const request = async (method: string, path: string, body: BodyInit | undefined, headers: Record<string, string>) => {
     const res = await s.guestApp.request(`${HOST}${base}${path}`, {
       method,
       headers: {
         "cf-connecting-ip": ip,
         ...(cookie ? { cookie } : {}),
         ...(method === "GET" ? {} : { origin: HOST }),
-        ...(body === undefined ? {} : { "content-type": "application/json" }),
         ...headers,
       },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body,
     });
     const set = res.headers.get("set-cookie");
     if (set) cookie = set.split(";")[0];
     return res;
   };
+  const send = (method: string, path: string, body?: unknown, headers: Record<string, string> = {}) =>
+    request(method, path, body === undefined ? undefined : JSON.stringify(body), {
+      ...(body === undefined ? {} : { "content-type": "application/json" }),
+      ...headers,
+    });
   return {
     get: (path, headers) => send("GET", path, undefined, headers),
     send,
+    raw: (method, path, body, type, headers = {}) =>
+      request(method, path, body as BodyInit, { "content-type": type, ...headers }),
     join: (name) => send("POST", "/api/session", { name }),
     get cookie() {
       return cookie;
     },
   };
+}
+
+/** A small white PNG, as a drawing or a picture. */
+export const png = (width = 4, height = 3) =>
+  sharp({ create: { width, height, channels: 4, background: "#ffffff" } })
+    .png()
+    .toBuffer();
+
+/** Gives wiki alpha a "mobs" collection, as its wiki.json says it (ADR-0006). Emit "wikis" after. */
+export function withMobs(app: string) {
+  writeFileSync(
+    join(app, "wikis", "alpha", "wiki.json"),
+    JSON.stringify({ schema: 1, id: "alpha", title: "ALPHA", collections: { mobs: { title: "Mobs", item: "Mob" } } }),
+  );
 }

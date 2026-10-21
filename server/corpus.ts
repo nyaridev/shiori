@@ -4,6 +4,7 @@
 import type { Element, Root } from "hast";
 import { visit } from "unist-util-visit";
 import type { ImageGroup, PageData, PageEntry, PageImage, PageLink, TaskEntry, WantedPage } from "../shared/api.ts";
+import { loadLayouts } from "./layouts.ts";
 import { textOf } from "./markdown/elements.ts";
 import { buildNav, type PageFile, readingOrder, renderPage } from "./pages.ts";
 import type { Wiki } from "./registry.ts";
@@ -120,8 +121,9 @@ function imagesIn(page: PageData): PageImage[] {
 
 export function buildCorpus(wiki: Wiki, files: PageFile[]): Corpus {
   const pages = new Map<string, PageData>();
+  const layouts = loadLayouts(wiki);
   for (const f of files) {
-    const page = renderPage(wiki, files, f.path);
+    const page = renderPage(wiki, files, f.path, layouts);
     if (page) pages.set(f.path, page);
   }
 

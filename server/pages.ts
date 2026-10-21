@@ -5,6 +5,7 @@ import { visit } from "unist-util-visit";
 import type { NavNode, PageData, PageLink } from "../shared/api.ts";
 import { type Frontmatter, frontmatterSchema, issues, type PageStatus } from "../shared/schema.ts";
 import { ICON_NAME, iconSet } from "./icons.ts";
+import { type Layouts, loadLayouts } from "./layouts.ts";
 import { splitFrontmatter } from "./markdown/frontmatter.ts";
 import { fileUrl, type LinkContext, resolveFile } from "./markdown/links.ts";
 import { renderMarkdown } from "./markdown/render.ts";
@@ -181,7 +182,12 @@ function findNode(nav: NavNode[], path: string): NavNode | undefined {
   return undefined;
 }
 
-export function renderPage(wiki: Wiki, pages: PageFile[], path: string): PageData | null {
+export function renderPage(
+  wiki: Wiki,
+  pages: PageFile[],
+  path: string,
+  layouts: Layouts = loadLayouts(wiki),
+): PageData | null {
   const page = pages.find((p) => p.path === path);
   if (!page) return null;
   const { split, fm, problems, title } = readPage(wiki, page.file.slice("pages/".length));
@@ -260,6 +266,28 @@ export function renderPage(wiki: Wiki, pages: PageFile[], path: string): PageDat
     if (el.tagName === "sh-children") childrenPlaced = true;
     if (el.tagName === "sh-question" && el.properties.id) placedQuestions.push(String(el.properties.id));
   });
+  // A layout (ADR-0006): one the wiki has and that's valid, else the plain page and a problem.
+  let layout: PageData["layout"];
+  if (fm.layout) {
+    const found = layouts.layouts.get(fm.layout);
+    if (!found) {
+      const broken = layouts.problems.some((p) => p.startsWith(`layouts/${fm.layout}.json`));
+      problems.push(
+        broken
+          ? `frontmatter: layout: layouts/${fm.layout}.json has problems (pnpm wiki check lists them)`
+          : `frontmatter: layout: there's no layouts/${fm.layout}.json`,
+      );
+    } else {
+      layout = { name: fm.layout, ...found };
+      for (const block of Object.values(found.blocks)) {
+        if (block.type === "designs" && !wiki.manifest.collections[block.collection])
+          problems.push(`layout "${fm.layout}": there's no collection "${block.collection}" in wiki.json`);
+      }
+    }
+  }
+  const [collection, designId] = fm.design?.split("/") ?? [];
+  if (collection && !wiki.manifest.collections[collection])
+    problems.push(`frontmatter: design: there's no collection "${collection}" in wiki.json`);
   const questions = (fm.questions ?? []).map((q) => ({ ...q, options: q.options ?? [] }));
   const ids = questions.map((q) => q.id);
   for (const id of new Set(ids.filter((id, i) => ids.indexOf(id) !== i))) {
@@ -291,6 +319,8 @@ export function renderPage(wiki: Wiki, pages: PageFile[], path: string): PageDat
     prev: at > 0 ? link(order[at - 1]) : null,
     next: at >= 0 && at < order.length - 1 ? link(order[at + 1]) : null,
     toc: fm.toc === false ? [] : rendered.toc,
+    ...(layout ? { layout } : {}),
+    ...(collection && designId ? { design: { collection, id: designId } } : {}),
     hast: rendered.hast,
     problems: [...problems, ...rendered.problems],
   };

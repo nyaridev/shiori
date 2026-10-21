@@ -11,6 +11,7 @@ import { getSignedCookie, setSignedCookie } from "hono/cookie";
 import { z } from "zod";
 import type { Answer, Authored, GuestSession, PageData, Thread, WikiDetail } from "../../shared/api.ts";
 import { addAnswer, listAnswers } from "../answers.ts";
+import { designRoutes } from "../designRoutes.ts";
 import { serveFile } from "../files.ts";
 import type { Registry, Wiki } from "../registry.ts";
 import { search } from "../search.ts";
@@ -318,7 +319,10 @@ export function buildGuestApp({
 
   api.get("/wikis/:id/files/*", async (c) => {
     const w = c.get("wiki");
-    const res = await serveFile(c, w.root, c.req.path.slice(c.req.path.indexOf("/files/") + "/files/".length));
+    const rel = c.req.path.slice(c.req.path.indexOf("/files/") + "/files/".length);
+    // Designs' files go through the designs routes, which keep what the owner hid from guests.
+    if (/^designs(\/|%2f|$)/i.test(rel)) return c.json({ error: "not found" }, 404);
+    const res = await serveFile(c, w.root, rel);
     if (res.status === 200 || res.status === 304) res.headers.set("cache-control", "private, no-cache");
     return res;
   });
@@ -346,7 +350,7 @@ export function buildGuestApp({
     const version = () => ({ ...data.version(w), presence: presence.version(w.id, share.id) });
     const tag = () => {
       const v = version();
-      return `"${v.pages}.${v.threads}.${v.presence}"`;
+      return `"${v.pages}.${v.threads}.${v.designs}.${v.presence}"`;
     };
     // Cloudflare may weaken the ETag on the way.
     const known = c.req.header("if-none-match")?.replace(/^W\//, "");
@@ -473,6 +477,49 @@ export function buildGuestApp({
     shares.log(c.get("share"), c.get("me").name, `answered ${question} on ${page || "the home page"}`);
     return c.json(answerFor(a, c.get("me")), 201);
   });
+
+  // Designs (ADR-0006): every guest sees them; on a comment link a guest makes their own and changes only those.
+  // Writes need this site's Origin and room under the guest's limits; going over the save rate just waits, while
+  // making designs and adding pictures count like comments.
+  api.use("/wikis/:id/designs/*", async (c, next) => (c.req.method === "GET" ? next() : sameOrigin(c, next)));
+  api.route(
+    "/wikis/:id/designs",
+    designRoutes({
+      wikiOf: (c) => (c as unknown as Context<WikiEnv>).get("wiki"),
+      viewerOf: (c) => {
+        const ctx = c as unknown as Context<WikiEnv>;
+        const me = ctx.get("me");
+        return { kind: "guest", id: me.id, name: me.name, canWrite: ctx.get("share").kind === "comment" };
+      },
+      hostName: () => shares.host(),
+      limit: (c, kind, bytes) => {
+        const ctx = c as unknown as Context<Env>;
+        const share = ctx.get("share");
+        const me = ctx.get("guest") as Guest;
+        const t = now();
+        if (kind === "save") {
+          const wait = share.limits.designSave(me.id, t);
+          if (wait) {
+            ctx.header("retry-after", String(Math.max(1, Math.ceil(wait / 1000))));
+            return ctx.json({ error: "too many requests, slow down" }, 429);
+          }
+        } else {
+          const wait = (kind === "create" && share.limits.designCreate(me.id, t)) || share.limits.write(me.id, t);
+          if (wait) return tooMany(ctx, wait, kind === "create" ? "design" : "picture");
+          me.writes++;
+        }
+        if (bytes && !share.limits.designBytes(me.id, bytes, t)) {
+          ctx.header("retry-after", "3600");
+          return ctx.json({ error: "that's all the drawing and pictures for today" }, 429);
+        }
+        return null;
+      },
+      log: (c, what) => {
+        const ctx = c as unknown as Context<Env>;
+        shares.log(ctx.get("share"), (ctx.get("guest") as Guest).name, what);
+      },
+    }) as unknown as Hono<WikiEnv>,
+  );
 
   api.all("*", (c) => c.json({ error: "not found" }, 404));
   app.route("/s/:token/api", api as unknown as Hono<Env>);

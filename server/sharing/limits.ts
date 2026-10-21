@@ -14,6 +14,13 @@ export const LIMITS = {
   writesPerLinkPerDay: 300,
   /** Presence reports (which page a guest is on) per guest: 20 a minute, bursts of 10. */
   presence: { capacity: 10, per: 60_000, refill: 20 },
+  /** Design saves (the drawing, its text) per guest: 30 a minute, bursts of 20. Autosave stays well under. */
+  designSaves: { capacity: 20, per: 60_000, refill: 30 },
+  /** New designs per guest and per link, a day. */
+  designsPerGuestPerDay: 20,
+  designsPerLinkPerDay: 100,
+  /** Bytes of drawings and pictures a guest may send in a day. */
+  designBytesPerGuestPerDay: 200 * 1024 * 1024,
   /** New guest names per client address. */
   joins: { capacity: 10, per: 3_600_000, refill: 10 },
   /** This many 429s within `strikeWindow` blocks the guest and their address for the rest of the link's life. */
@@ -102,12 +109,47 @@ export class Windows {
   }
 }
 
+/** Amounts (bytes) per key within `span` milliseconds, at most `max`. */
+export class Budgets {
+  private readonly spent = new Map<string, { at: number; n: number }[]>();
+  private readonly max: number;
+  private readonly span: number;
+  constructor(max: number, span: number) {
+    this.max = max;
+    this.span = span;
+  }
+
+  private recent(key: string, now: number) {
+    const kept = (this.spent.get(key) ?? []).filter((e) => now - e.at < this.span);
+    if (kept.length) this.spent.set(key, kept);
+    else this.spent.delete(key);
+    return kept;
+  }
+
+  /** Spends `n` when it fits; false (spending nothing) when it doesn't. */
+  spend(key: string, n: number, now: number): boolean {
+    const kept = this.recent(key, now);
+    if (kept.reduce((sum, e) => sum + e.n, 0) + n > this.max) return false;
+    kept.push({ at: now, n });
+    this.spent.set(key, kept);
+    return true;
+  }
+
+  prune(now: number) {
+    for (const key of [...this.spent.keys()]) this.recent(key, now);
+  }
+}
+
 /** The limits of one share link. Keys are guest ids and client addresses. */
 export function createLinkLimits() {
   const reads = new Buckets(LIMITS.reads);
   const writes = new Buckets(LIMITS.writes);
   const joins = new Buckets(LIMITS.joins);
   const presence = new Buckets(LIMITS.presence);
+  const designSaves = new Buckets(LIMITS.designSaves);
+  const designs = new Windows(LIMITS.designsPerGuestPerDay, DAY);
+  const linkDesigns = new Windows(LIMITS.designsPerLinkPerDay, DAY);
+  const designBytes = new Budgets(LIMITS.designBytesPerGuestPerDay, DAY);
   const daily = new Windows(LIMITS.writesPerGuestPerDay, DAY);
   const linkDaily = new Windows(LIMITS.writesPerLinkPerDay, DAY);
   const strikes = new Windows(Number.POSITIVE_INFINITY, LIMITS.strikeWindow);
@@ -115,6 +157,19 @@ export function createLinkLimits() {
     read: (ip: string, now: number) => reads.take(ip, now),
     join: (ip: string, now: number) => joins.take(ip, now),
     presence: (guest: string, now: number) => presence.take(guest, now),
+    /** A design saved (its drawing or text): ms to wait, 0 when it may go. */
+    designSave: (guest: string, now: number) => designSaves.take(guest, now),
+    /** A new design: ms to wait for the day's caps, 0 when it may go (and it's counted). */
+    designCreate: (guest: string, now: number) => {
+      const wait = Math.max(designs.wait(guest, now), linkDesigns.wait("link", now));
+      if (!wait) {
+        designs.count(guest, now);
+        linkDesigns.count("link", now);
+      }
+      return wait;
+    },
+    /** Bytes of drawings and pictures: false when the guest's day is spent. */
+    designBytes: (guest: string, bytes: number, now: number) => designBytes.spend(guest, bytes, now),
     /** The per-day caps first, then the per-minute rate; a refused write uses up nothing. */
     write: (guest: string, now: number) => {
       const wait = Math.max(daily.wait(guest, now), linkDaily.wait("link", now)) || writes.take(guest, now);
@@ -127,7 +182,9 @@ export function createLinkLimits() {
     /** Counts a 429 against a key; true when the key has now struck out. */
     strike: (key: string, now: number) => strikes.count(key, now) >= LIMITS.strikes,
     prune: (now: number) => {
-      for (const l of [reads, writes, joins, presence, daily, linkDaily, strikes]) l.prune(now);
+      for (const l of [reads, writes, joins, presence, designSaves, daily, linkDaily, strikes, designs, linkDesigns])
+        l.prune(now);
+      designBytes.prune(now);
     },
   };
 }

@@ -1,5 +1,6 @@
 // Shapes the server sends to the browser.
 import type { Root } from "hast";
+import type { Layout } from "./layout.ts";
 import type { Quote } from "./quote.ts";
 import type { PageStatus } from "./schema.ts";
 import type { Theme } from "./theme.ts";
@@ -40,6 +41,8 @@ export interface PageLink {
 
 export interface WikiDetail extends WikiCard {
   theme: Theme;
+  /** Collections people add designs to (ADR-0006), from wiki.json. */
+  collections: Record<string, { title: string; item: string }>;
   nav: NavNode[];
   /** The sidebar's pinned pages under Home (`pinned` in wiki.json), as they resolve. */
   pinned: PageLink[];
@@ -92,6 +95,10 @@ export interface PageData {
   prev: PageLink | null;
   next: PageLink | null;
   toc: TocEntry[];
+  /** The layout from `layout:` that arranges the page (ADR-0006), when it has one that's valid. */
+  layout?: Layout & { name: string };
+  /** The design the page was made from (`design:`). */
+  design?: { collection: string; id: string };
   /** Rendered Markdown: HTML elements plus `sh-*` elements for the Shiori components. */
   hast: Root;
   problems: string[];
@@ -233,13 +240,14 @@ export interface Thread extends Synced {
 /** Server-sent events on /api/events. */
 /** `threads` means the wiki's data (comments and answers) changed. */
 /** `shares` means share links, their guests or their activity changed (the Share dialog, ADR-0003). */
-/** `presence` means who is on the wiki, or where, changed (ADR-0005). */
+/** `presence` means who is on the wiki, or where, changed (ADR-0005). `designs`: a design was made or changed. */
 export type LiveEvent =
   | { type: "wikis" }
   | { type: "pages"; wiki: string }
   | { type: "threads"; wiki: string }
   | { type: "shares" }
-  | { type: "presence"; wiki: string };
+  | { type: "presence"; wiki: string }
+  | { type: "designs"; wiki: string };
 
 /** What a share link lets a guest do (ADR-0003). */
 export type ShareKind = "view" | "comment";
@@ -346,4 +354,32 @@ export interface Person {
   lastSeen: string;
   /** This is you. */
   me?: boolean;
+}
+
+/** Where a design stands (ADR-0006): still being made, ready for the agent, or turned into a page. */
+export type DesignStatus = "draft" | "ready" | "done";
+
+/** A design as a viewer sees it. Never carries a guest's id. */
+export interface DesignInfo {
+  id: string;
+  collection: string;
+  name: string;
+  description: string;
+  status: DesignStatus;
+  createdAt: string;
+  updatedAt: string;
+  /** Who made it: the owner (by the name guests know them by) or a guest. */
+  author: { kind: "owner" | "guest"; name: string };
+  /** The drawing's URL, changing with each save; null until someone draws. */
+  board: string | null;
+  images: { file: string; caption: string; url: string }[];
+  /** The page it became, and the agent's note. */
+  page: string | null;
+  note: string;
+  /** This viewer may change it: the owner always, a guest on a comment link only their own. */
+  editable: boolean;
+  /** This viewer made it. */
+  mine: boolean;
+  /** Owner only: hidden from guests. */
+  hidden?: boolean;
 }

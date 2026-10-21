@@ -113,11 +113,12 @@ export function toCard(wiki: Wiki, pages: number): WikiCard {
 export interface Change {
   wiki: string | null;
   /** `meta`: wiki.json, theme.json, the cover or a new folder. `data`: the comment database. */
-  area: "pages" | "meta" | "data" | "ignore";
+  area: "pages" | "meta" | "data" | "designs" | "ignore";
 }
 
 function areaOf(wiki: Wiki, rel: string[]): Change["area"] {
   if (rel[0] === "data") return "data";
+  if (rel[0] === "designs") return "designs";
   if (rel[0] === "wiki.json" || rel[0] === "theme.json" || rel[0] === wiki.manifest.cover) return "meta";
   return "pages";
 }
