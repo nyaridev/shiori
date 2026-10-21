@@ -363,7 +363,7 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
         <Categories wikiId={wiki.id} pages={pages} />
       );
   } else {
-    head = { icon: "❓", title: "No such special page", summary: `There's no special page called “${route}”.` };
+    head = { icon: "question", title: "No such special page", summary: `There's no special page called “${route}”.` };
     body = <Specials wikiId={wiki.id} />;
   }
   // The toolbox and designs read their own data, not the page index.

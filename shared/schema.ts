@@ -13,6 +13,11 @@ export const manifestSchema = z.strictObject({
   id: wikiIdSchema,
   title: z.string().min(1),
   tagline: z.string().default(""),
+  /** The project's icon in the wiki header: a name from Shiori's icon set. Without one the header shows the cover. */
+  icon: z
+    .string()
+    .regex(/^[a-z][a-z0-9-]{0,39}$/, "name an icon from Shiori's icon set (Toolbox → Icons)")
+    .optional(),
   /** Card art, relative to the wiki root. Tall (1:4) SVG or image. */
   cover: z.string().default("cover.svg"),
   /** Position in the deck; lower comes first, then by title. */

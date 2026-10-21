@@ -1,6 +1,6 @@
 // The bar above every wiki page, across the whole window. Left: back to the deck (the owner only) and the project:
-// its cover, name and tagline, linking home. Middle: search. Right: whether the wiki is live and who is on it
-// (ADR-0005), share, the UI primitives (the owner only), and day or night at the far right. The page list and the
+// its icon (else its cover), name and tagline, linking home. Middle: search. Right: whether the wiki is live and who is
+// on it (ADR-0005), share, the UI primitives (the owner only), and day or night at the far right. The page list and the
 // comments open from here wherever they're drawers: on the home page and on narrow screens.
 import { Link, useNavigate } from "react-router";
 import type { Person, WikiDetail } from "../../shared/api.ts";
@@ -12,6 +12,7 @@ import { LiveBadge } from "../sharing/LiveBadge.tsx";
 import { ShareDialog } from "../sharing/ShareDialog.tsx";
 import { Icon, IconButton, Kbd, Tooltip } from "../ui/index.ts";
 import { pageHref } from "./PageHead.tsx";
+import { PageIcon } from "./PageIcon.tsx";
 import { shortcutLabel } from "./SearchPalette.tsx";
 import "./header.css";
 
@@ -50,7 +51,13 @@ export function WikiHeader({
           </Tooltip>
         )}
         <Link to={pageHref(wiki.id, "")} className="sh-head-project">
-          <img src={picture(wiki.coverUrl, 160)} alt="" className="sh-head-cover" />
+          {wiki.icon ? (
+            <span className="sh-head-badge">
+              <PageIcon icon={wiki.icon} />
+            </span>
+          ) : (
+            <img src={picture(wiki.coverUrl, 160)} alt="" className="sh-head-cover" />
+          )}
           <span className="sh-head-names">
             <span className="sh-head-title">{wiki.title}</span>
             {wiki.tagline && <span className="sh-head-tagline">{wiki.tagline}</span>}

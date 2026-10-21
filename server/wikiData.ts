@@ -4,6 +4,7 @@
 import type { PageData, PageLink, WikiDetail, WikiIndex } from "../shared/api.ts";
 import { answerCounts } from "./answers.ts";
 import { buildCorpus, type Corpus } from "./corpus.ts";
+import { iconSet } from "./icons.ts";
 import type { Live } from "./live.ts";
 import { buildNav, listPages, type PageFile, pageFinder } from "./pages.ts";
 import { toCard, type Wiki } from "./registry.ts";
@@ -72,6 +73,7 @@ export function createWikiData(live: Live) {
       return {
         ...toCard(w, pages.length),
         theme: w.theme,
+        icon: w.manifest.icon && iconSet().has(w.manifest.icon) ? w.manifest.icon : undefined,
         collections: w.manifest.collections,
         nav: buildNav(pages),
         pinned,

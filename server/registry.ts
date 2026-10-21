@@ -5,6 +5,7 @@ import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { WikiCard } from "../shared/api.ts";
 import { issues, type Manifest, manifestSchema } from "../shared/schema.ts";
 import { DEFAULT_THEME, type Theme, themeAccent, themeSchema } from "../shared/theme.ts";
+import { iconSet } from "./icons.ts";
 import { fileUrl } from "./markdown/links.ts";
 import { readJson, slashes } from "./paths.ts";
 import { buildPreview, previewDir, templateDir } from "./template.ts";
@@ -49,6 +50,9 @@ export function loadWiki(root: string, source: Wiki["source"]): Wiki | Broken {
     else problems.push(...issues(parsed.error).map((i) => `theme.json: ${i}`));
   }
   if (!existsSync(join(root, manifest.data.cover))) problems.push(`cover "${manifest.data.cover}" is missing`);
+  const icon = manifest.data.icon;
+  if (icon && !iconSet().has(icon))
+    problems.push(`wiki.json: icon "${icon}" isn't in Shiori's icon set (Toolbox → Icons lists them)`);
   if (!existsSync(join(root, "pages"))) problems.push("pages/ folder is missing");
   return { id: manifest.data.id, root, source, manifest: manifest.data, theme, problems };
 }

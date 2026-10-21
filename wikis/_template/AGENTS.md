@@ -11,7 +11,7 @@ their content with the project's own, rename or delete what doesn't fit, and add
 
 | Path | What |
 |---|---|
-| `wiki.json` | `id` (kebab-case, unique), `title`, `tagline`, `cover`, `order` (position in the deck), `pinned` (pages pinned at the top of the sidebar under Home, by wikilink name: `["Roadmap"]`), `collections` (see Layouts and designs) |
+| `wiki.json` | `id` (kebab-case, unique), `title`, `tagline`, `icon` (the project's, from Shiori's set, in the header; without one the header shows the cover), `cover`, `order` (position in the deck), `pinned` (pages pinned at the top of the sidebar under Home, by wikilink name: `["Roadmap"]`), `collections` (see Layouts and designs) |
 | `theme.json` | Small style overrides on the app's defaults. See Theme below |
 | `cover.svg` | The deck card art, 2:3 (portrait), with the subject in the middle (card styles crop the edges). Art only, no title text: the app draws the title |
 | `pages/**/*.md` | The pages. `pages/index.md` is the home page; a folder is a sidebar section and its `index.md` is the section page |
@@ -63,11 +63,13 @@ their content with the project's own, rename or delete what doesn't fit, and add
   project's own links and text. Pick what fits this project, so its home is its own.
 - **Icons.** Every page gets an icon, and the same thing always gets the same one:
   1. Pick from Shiori's drawn set by name: `icon: compass`. Toolbox → Icons (`/w/{{id}}/_/icons`) shows them all;
-     `:icon[name]` puts one in text, tables and cards, and a box takes `icon="name"`.
-  2. Only when nothing in the set fits, draw one for this wiki: an SVG on a 24 px grid, flat shapes in a few colours
-     that read on light and dark (`viewBox="0 0 24 24"`, no text, no scripts), saved in `assets/icons/<thing>.svg`
-     and named `icon: "/assets/icons/<thing>.svg"`. Look in `assets/icons/` first: reuse the wiki's own before
-     drawing another.
+     `:icon[name]` puts one in text, tables and cards, and a box takes `icon="name"`. The set takes this wiki's
+     accent from `theme.json`, in day and night. `icon` in `wiki.json` is the project's own, beside its name in the
+     header.
+  2. Only when nothing in the set fits, draw one for this wiki in the set's style: bold filled shapes with round
+     corners and ends on a 24 px grid (`viewBox="0 0 24 24"`, no text, no scripts, nothing thinner than 2 px), in
+     the wiki's accent with details cut out as holes, saved in `assets/icons/<thing>.svg` and named
+     `icon: "/assets/icons/<thing>.svg"`. Look in `assets/icons/` first: reuse the wiki's own before drawing another.
   3. Never an emoji, unless the owner asks for one.
 - Don't repeat the title as a `#` heading; start the body with text or `##` sections. `##` and `###` build the
   table of contents.

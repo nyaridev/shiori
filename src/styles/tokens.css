@@ -31,6 +31,11 @@
   --accent-line: color-mix(in oklab, var(--accent) 45%, transparent);
   --accent-hover: color-mix(in oklab, var(--accent) 88%, var(--text));
   --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-line);
+  /* Page icons (src/icons/): filled shapes in the accent, a softer second tone, and details cut out in the background
+     (themes keep the accent readable on it). */
+  --icon-ink: var(--accent);
+  --icon-tint: color-mix(in oklab, var(--accent) 50%, var(--bg));
+  --icon-detail: var(--bg);
 
   --tone-note: color-mix(in oklab, var(--muted) 70%, var(--text));
   --tone-tip: #6fbf8e;

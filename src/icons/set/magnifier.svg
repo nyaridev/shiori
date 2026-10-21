@@ -1,6 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>magnifier</title>
-<circle cx="10" cy="10" r="6.5" fill="#5b8def"/>
-<circle cx="10" cy="10" r="4.3" fill="#fff4dc"/>
-<path d="M8 8.2a2.6 2.6 0 0 1 2.6-1.4" fill="none" stroke="#5b8def" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="m15 15 5.2 5.2" fill="none" stroke="#f0b44c" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#e8b86d" stroke-linecap="round" stroke-linejoin="round"><title>magnifier</title>
+<path class="is" fill="none" stroke="#e8b86d" stroke-width="4" d="m16 16 4.5 4.5"/>
+<circle cx="10" cy="10" r="7.5"/>
+<circle class="t" fill="#7c643f" cx="10" cy="10" r="4.5"/>
 </svg>

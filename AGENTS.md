@@ -87,9 +87,12 @@ Decisions: `docs/adr/` (0001 architecture, 0002 wiki pages, links and universal 
 6. **Template changes** reach new wikis only. Mention it when an existing wiki needs the same change.
 7. Server code runs on Node 25's TypeScript type stripping: import with `.ts` extensions, no enums or namespaces.
 8. Windows first: `.bat` with CRLF, forward slashes in files.
-9. **Icons are drawn, not emoji.** The app's own lists and the template's pages use names from `src/icons/set/`.
-   Reuse an icon that fits before drawing one; a new one is a 24 px SVG (`viewBox="0 0 24 24"`, a `<title>` of its
-   name), flat shapes in the
-   set's few colours (blue `#5b8def`, gold `#f0b44c`, coral `#ef7d6b`, green `#4fb487`, violet `#9b7be0`, cream
-   `#fff4dc`, slate `#8a94a6`) that read on light and dark, named for the thing it shows (`sword`, not `item-icon`).
-   Wikis draw their own in `assets/icons/` only when the set has nothing that fits (the template's `AGENTS.md`).
+9. **Icons are drawn, not emoji.** The app's own lists, the template's pages and its `wiki.json` (the header's
+   project icon) use names from `src/icons/set/`. Reuse an icon that fits before drawing one; a new one is a 24 px SVG
+   (`viewBox="0 0 24 24"`, a `<title>` of its name) named for the thing it shows (`sword`, not `item-icon`), in the
+   set's style: bold filled shapes with round corners and ends, nothing thinner than 2 px, legible at 16 px. PageIcon
+   draws it inline and colours it from tokens (`--icon-ink`, `--icon-tint`, `--icon-detail` in `tokens.css`), so
+   each shape takes a class: none for the main shape (the accent), `t` for the softer second tone, `d` for details
+   cut out in the background; `is`, `ts`, `ds` for strokes in those tones. Fills in the file are only fallbacks for
+   viewing it alone. Wikis draw their own in `assets/icons/` only when the set has nothing that fits (the template's
+   `AGENTS.md`).

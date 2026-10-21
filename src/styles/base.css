@@ -72,7 +72,38 @@ html,
   }
 }
 
-/* Page icons drawn for a wiki (PageIcon.tsx): a picture sized like the emoji it stands in for. */
+/* Page icons (PageIcon.tsx): Shiori's set drawn inline in the icon tokens, or a picture drawn for a wiki; both sized
+   like the emoji they stand in for. The set's files carry fallback fills for viewing them alone; these win. */
+.sh-glyph {
+  display: inline-block;
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.2em;
+  fill: var(--icon-ink);
+}
+.sh-glyph .t {
+  fill: var(--icon-tint);
+}
+.sh-glyph .d {
+  fill: var(--icon-detail);
+}
+.sh-glyph .is {
+  stroke: var(--icon-ink);
+}
+.sh-glyph .ts {
+  stroke: var(--icon-tint);
+}
+.sh-glyph .ds {
+  stroke: var(--icon-detail);
+}
+/* On the accent itself, icons turn over: the accent's text color with details cut in the accent. */
+.sh-button[data-variant="solid"],
+.sh-home-action[data-primary] {
+  --icon-ink: var(--accent-text);
+  --icon-tint: color-mix(in oklab, var(--accent-text) 55%, var(--accent));
+  --icon-detail: var(--accent);
+}
 .sh-icon-img {
   display: inline-block;
   width: 1.15em;

@@ -23,6 +23,7 @@ const GROUPS = [
 ] as const;
 
 const count = (n: NavNode): number => n.children.reduce((sum, c) => sum + 1 + count(c), 0);
+const flatten = (nodes: NavNode[]): NavNode[] => nodes.flatMap((n) => [n, ...flatten(n.children)]);
 
 export function Sidebar({
   wiki,
@@ -36,7 +37,14 @@ export function Sidebar({
   onNavigate?: () => void;
   onSearch: () => void;
 }) {
-  const recent = useRecentlyViewed(wiki.id).filter((p) => p.path !== path);
+  // What this browser remembers, with each page's name and icon as they are now.
+  const pages = new Map(flatten(wiki.nav).map((n) => [n.path, n]));
+  const recent = useRecentlyViewed(wiki.id)
+    .filter((p) => p.path !== path)
+    .map((p) => {
+      const now = pages.get(p.path);
+      return now ? { ...p, title: now.title, icon: now.icon } : p;
+    });
   return (
     <nav className="sh-sidebar" aria-label={`${wiki.title} pages`}>
       <button type="button" className="sh-sidebar-search" onClick={onSearch}>

@@ -8,8 +8,20 @@ const isPicture = (icon: string) => icon.startsWith("/") || /^https?:\/\//.test(
 export function PageIcon({ icon, fallback, className }: { icon?: string; fallback?: string; className?: string }) {
   const shown = icon ?? fallback;
   if (!shown) return null;
-  const src = ICONS[shown] ?? (isPicture(shown) ? picture(shown, 160) : null);
-  if (src) return <img src={src} alt="" aria-hidden="true" className={`sh-icon-img ${className ?? ""}`} />;
+  const glyph = ICONS[shown];
+  if (glyph !== undefined)
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        className={`sh-glyph ${className ?? ""}`}
+        // The set's own files, bundled with the app: never a wiki's content.
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: see above
+        dangerouslySetInnerHTML={{ __html: glyph }}
+      />
+    );
+  if (isPicture(shown))
+    return <img src={picture(shown, 160)} alt="" aria-hidden="true" className={`sh-icon-img ${className ?? ""}`} />;
   return (
     <span aria-hidden="true" className={className}>
       {shown}

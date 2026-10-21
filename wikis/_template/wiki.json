@@ -3,6 +3,7 @@
   "id": "{{id}}",
   "title": "{{title}}",
   "tagline": "{{tagline}}",
+  "icon": "sparkles",
   "cover": "cover.svg",
   "order": 0,
   "pinned": ["Roadmap"],

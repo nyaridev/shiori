@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>blocks</title>
-<rect x="3" y="12.5" width="8.5" height="8.5" rx="1.5" fill="#5b8def"/>
-<rect x="12.5" y="12.5" width="8.5" height="8.5" rx="1.5" fill="#ef7d6b"/>
-<rect x="7.75" y="3" width="8.5" height="8.5" rx="1.5" fill="#f0b44c"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#e8b86d" stroke-linecap="round" stroke-linejoin="round"><title>blocks</title>
+<rect x="7.5" y="2.5" width="9" height="9" rx="2.5"/>
+<rect x="2.5" y="12.5" width="9" height="9" rx="2.5"/>
+<rect class="t" fill="#7c643f" x="12.5" y="12.5" width="9" height="9" rx="2.5"/>
 </svg>

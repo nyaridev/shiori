@@ -1,6 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pencil</title>
-<path d="M15.5 3.5 20.5 8.5 9 20H4v-5Z" fill="#f0b44c"/>
-<path d="M15.5 3.5 18 1a1.4 1.4 0 0 1 2 0L23 4a1.4 1.4 0 0 1 0 2l-2.5 2.5Z" fill="#ef7d6b"/>
-<path d="M4 15v5h5Z" fill="#fff4dc"/>
-<path d="M4 18.5V20h1.5Z" fill="#8a94a6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#e8b86d" stroke-linecap="round" stroke-linejoin="round"><title>pencil</title>
+<g transform="rotate(-45 12 12)">
+<rect class="t" fill="#7c643f" x="1.8" y="8" width="4.7" height="8" rx="2.2"/>
+<rect x="7.3" y="8" width="9.7" height="8" rx="1"/>
+<path d="M17.8 8 22.4 11.1a1.1 1.1 0 0 1 0 1.8L17.8 16Z"/>
+</g>
 </svg>

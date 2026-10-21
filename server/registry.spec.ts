@@ -52,6 +52,18 @@ describe("discover", () => {
     expect(wikis[0].problems[0]).toMatch(/^theme.json: radius/);
     expect(broken[0].problems).toEqual(['duplicate id "same"']);
   });
+
+  it("checks the header icon against Shiori's icon set", () => {
+    wiki(join(app, "wikis", "a"), "a", { icon: "sparkles" });
+    wiki(join(app, "wikis", "b"), "b", { icon: "dragon" });
+    wiki(join(app, "wikis", "c"), "c", { icon: "✨" });
+    const { wikis, broken } = discover(app);
+    expect(wikis.map((w) => [w.id, w.problems])).toEqual([
+      ["a", []],
+      ["b", [`wiki.json: icon "dragon" isn't in Shiori's icon set (Toolbox → Icons lists them)`]],
+    ]);
+    expect(broken[0].problems[0]).toMatch(/^wiki.json: icon: name an icon/);
+  });
 });
 
 describe("pages and threads", () => {

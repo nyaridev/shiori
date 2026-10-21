@@ -41,6 +41,8 @@ export interface PageLink {
 
 export interface WikiDetail extends WikiCard {
   theme: Theme;
+  /** The project's icon in the header (`icon` in wiki.json), a name from Shiori's icon set. */
+  icon?: string;
   /** Collections people add designs to (ADR-0006), from wiki.json. */
   collections: Record<string, { title: string; item: string }>;
   nav: NavNode[];

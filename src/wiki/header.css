@@ -57,6 +57,20 @@ html:has(.sh-wiki-head) {
   border-radius: calc(var(--r-sm) - 1px);
   box-shadow: var(--shadow-1);
 }
+/* The project's icon (`icon` in wiki.json): its glyph on a round tile of the accent's soft tone. */
+.sh-head-badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  font-size: 20px;
+}
+.sh-head-badge .sh-glyph {
+  vertical-align: 0;
+}
 .sh-head-names {
   display: grid;
   min-width: 0;
@@ -151,5 +165,10 @@ html:has(.sh-wiki-head) {
 @media (max-width: 520px) {
   .sh-head-cover {
     display: none;
+  }
+  .sh-head-badge {
+    width: 28px;
+    height: 28px;
+    font-size: 17px;
   }
 }
