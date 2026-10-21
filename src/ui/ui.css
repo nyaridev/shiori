@@ -4,6 +4,10 @@
   flex: none;
   display: block;
 }
+/* A filled icon's second tone (Icon.tsx). */
+.sh-icon-soft {
+  opacity: 0.45;
+}
 
 .sh-sr-only {
   position: absolute;

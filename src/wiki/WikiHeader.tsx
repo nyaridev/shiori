@@ -39,11 +39,12 @@ export function WikiHeader({
   return (
     <header className="sh-wiki-head" data-home={home || undefined}>
       <div className="sh-head-start">
-        <IconButton icon="menu" label="Pages" className="sh-head-menu" onClick={onPages} />
+        <IconButton filled icon="menu" label="Pages" className="sh-head-menu" onClick={onPages} />
         {!guest && (
           // A guest has no deck to go back to (ADR-0003).
           <Tooltip content="Back to the deck" side="bottom">
             <IconButton
+              filled
               icon="deck"
               label="Back to the deck"
               onClick={() => navigate("/", { state: { from: wiki.id } })}
@@ -65,7 +66,7 @@ export function WikiHeader({
         </Link>
       </div>
       <button type="button" className="sh-head-search" onClick={onSearch}>
-        <Icon name="search" size={15} />
+        <Icon filled name="search" size={15} />
         <span className="sh-head-search-text">Search {wiki.title}</span>
         <Kbd>{shortcutLabel()}</Kbd>
       </button>
@@ -75,7 +76,7 @@ export function WikiHeader({
             className="sh-guest-badge"
             title={guest.kind === "comment" ? "Shared with you" : "Shared with you to read"}
           >
-            <Icon name={guest.kind === "comment" ? "comment" : "eye"} size={14} />
+            <Icon filled name={guest.kind === "comment" ? "comment" : "eye"} size={14} />
             {guest.guest?.name}
           </span>
         )}
@@ -85,16 +86,18 @@ export function WikiHeader({
           <ShareDialog
             wikiId={wiki.id}
             title={wiki.title}
-            trigger={<IconButton icon="share" label="Share this wiki" />}
+            trigger={<IconButton filled icon="share" label="Share this wiki" />}
           />
         )}
         {!guest && (
           <Tooltip content="UI primitives" side="bottom">
-            <IconButton icon="primitives" label="UI primitives" onClick={() => navigate("/dev/ui")} />
+            <IconButton filled icon="primitives" label="UI primitives" onClick={() => navigate("/dev/ui")} />
           </Tooltip>
         )}
-        <IconButton icon="search" label="Search" className="sh-head-narrow" onClick={onSearch} />
-        {onComments && <IconButton icon="comment" label="Comments" className="sh-head-rail" onClick={onComments} />}
+        <IconButton filled icon="search" label="Search" className="sh-head-narrow" onClick={onSearch} />
+        {onComments && (
+          <IconButton filled icon="comment" label="Comments" className="sh-head-rail" onClick={onComments} />
+        )}
         <ModeSwitch own={wiki.theme.mode} />
       </div>
     </header>
@@ -113,6 +116,7 @@ function ModeSwitch({ own }: { own: "dark" | "light" }) {
   return (
     <Tooltip content={picked && next === own ? `${label}: this wiki's own look` : label} side="bottom">
       <IconButton
+        filled
         icon={mode === "dark" ? "sun" : "moon"}
         label={label}
         onClick={() => setViewerMode(next === own ? null : next)}

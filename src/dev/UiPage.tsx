@@ -206,7 +206,7 @@ export function UiPage() {
             <Badge tone="bad">Bad</Badge>
           </Row>
           <Row label="Key">
-            <Kbd>Ctrl</Kbd> <Kbd>K</Kbd> <Kbd>Space</Kbd> <Kbd>LMB</Kbd>
+            <Kbd>Ctrl</Kbd> <Kbd>P</Kbd> <Kbd>Space</Kbd> <Kbd>LMB</Kbd>
           </Row>
           <Row label="Avatar">
             <Avatar id="host" name="Nari" host />

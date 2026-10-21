@@ -25,9 +25,19 @@ interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
   variant?: ButtonVariant;
   size?: ButtonSize;
+  /** The filled icon (the wiki header). */
+  filled?: boolean;
 }
 
-export function IconButton({ icon, label, variant = "ghost", size = "md", className, ...rest }: IconButtonProps) {
+export function IconButton({
+  icon,
+  label,
+  variant = "ghost",
+  size = "md",
+  filled,
+  className,
+  ...rest
+}: IconButtonProps) {
   return (
     <button
       type="button"
@@ -38,7 +48,7 @@ export function IconButton({ icon, label, variant = "ghost", size = "md", classN
       title={label}
       {...rest}
     >
-      <Icon name={icon} size={size === "sm" ? 15 : 18} />
+      <Icon name={icon} size={size === "sm" ? 15 : 18} filled={filled} />
     </button>
   );
 }

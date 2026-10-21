@@ -1,4 +1,4 @@
-// Search inside a wiki: Ctrl+K (⌘K) or "/" opens it. Results update as you type; arrows move, Enter opens the page
+// Search inside a wiki: Ctrl+P (⌘P) or "/" opens it. Results update as you type; arrows move, Enter opens the page
 // at the matching heading, which flashes so the eye finds it.
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
@@ -12,7 +12,7 @@ import { PageIcon } from "./PageIcon.tsx";
 /** Wait before asking the server, so a fast typist sends one request, not one per key. */
 const DEBOUNCE = 90;
 
-export const shortcutLabel = () => (/Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘K" : "Ctrl K");
+export const shortcutLabel = () => (/Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘P" : "Ctrl P");
 
 /** True when a key press belongs to a text field, not to the page. */
 export const typing = (target: EventTarget | null) =>

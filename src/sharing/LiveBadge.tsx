@@ -2,6 +2,7 @@
 // to the internet, "Starting…" while the tunnel comes up, "This PC only" when it can't. Nothing when the wiki isn't
 // shared. A click opens the Share dialog.
 import type { SharesState } from "../../shared/api.ts";
+import { Icon } from "../ui/index.ts";
 import { ShareDialog } from "./ShareDialog.tsx";
 import { useShares } from "./useShares.ts";
 
@@ -40,7 +41,9 @@ export function LiveBadge({ wikiId, title, here }: { wikiId: string; title: stri
       title={title}
       trigger={
         <button type="button" className="sh-live" data-tone={shown.tone} title={shown.hint}>
-          <span className="sh-live-dot" aria-hidden="true" />
+          <span className="sh-live-mark">
+            <Icon filled name="live" size={16} />
+          </span>
           {shown.text}
         </button>
       }

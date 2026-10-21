@@ -178,25 +178,20 @@
 .sh-live[data-tone="off"] {
   --tone: var(--muted);
 }
-.sh-live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--tone);
+/* The filled "live" icon in the tone; its outer waves pulse while the wiki is live. */
+.sh-live-mark {
+  color: var(--tone);
 }
-.sh-live[data-tone="live"] .sh-live-dot {
-  animation: sh-live-pulse 1.8s ease-out infinite;
+.sh-live[data-tone="live"] .sh-live-mark .sh-icon-soft {
+  animation: sh-live-pulse 1.8s ease-in-out infinite;
 }
 @keyframes sh-live-pulse {
-  from {
-    box-shadow: 0 0 0 0 color-mix(in oklab, var(--tone) 60%, transparent);
-  }
-  to {
-    box-shadow: 0 0 0 7px transparent;
+  50% {
+    opacity: 1;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sh-live[data-tone="live"] .sh-live-dot {
+  .sh-live[data-tone="live"] .sh-live-mark .sh-icon-soft {
     animation: none;
   }
 }

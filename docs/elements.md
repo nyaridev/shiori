@@ -6,7 +6,7 @@ shows how it looks in the default theme.
 ## Text
 
 Paragraphs with **bold**, *italic*, ~~struck~~, `inline code` and [an external link](https://example.com).
-Keys like :kbd[Ctrl] + :kbd[K], and badges: :badge[Neutral] :badge[Accent]{tone="accent"} :badge[Good]{tone="good"}
+Keys like :kbd[Ctrl] + :kbd[P], and badges: :badge[Neutral] :badge[Accent]{tone="accent"} :badge[Good]{tone="good"}
 :badge[Warn]{tone="warn"} :badge[Bad]{tone="bad"}.
 
 ```md

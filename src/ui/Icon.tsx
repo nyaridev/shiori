@@ -35,12 +35,125 @@ const PATHS = {
   moon: "M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z",
   home: "M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1v-8.5Z",
   primitives: "M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm12.5 0a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Z",
+  live: "M12 12h.01M8.5 8.5a5 5 0 0 0 0 7m7-7a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8m12.8-12.8a9 9 0 0 1 0 12.8",
 } as const;
 
 export type IconName = keyof typeof PATHS;
 export const ICON_NAMES = Object.keys(PATHS) as IconName[];
 
-export function Icon({ name, size = 18, label }: { name: IconName; size?: number; label?: string }) {
+/** A shape of a filled icon: filled (holes cut by even-odd), or a round stroke `stroke` wide; `soft` is the second tone. */
+type Part = { d: string; soft?: true; stroke?: number };
+
+/**
+ * Filled versions in the page icons' style (bold, round, solid; src/icons/), for the wiki header. Still one color,
+ * `currentColor`, with a softer second tone, so they follow the button they're in.
+ */
+const FILLED: Partial<Record<IconName, Part[]>> = {
+  menu: [
+    {
+      d: "M4.6 4.4h14.8a1.6 1.6 0 0 1 0 3.2H4.6a1.6 1.6 0 0 1 0-3.2Zm0 6h14.8a1.6 1.6 0 0 1 0 3.2H4.6a1.6 1.6 0 0 1 0-3.2Zm0 6h14.8a1.6 1.6 0 0 1 0 3.2H4.6a1.6 1.6 0 0 1 0-3.2Z",
+    },
+  ],
+  deck: [
+    {
+      d: "M4.5 6h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm14 0h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z",
+      soft: true,
+    },
+    { d: "M10.5 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm1.5 6.3-2 2.7 2 2.7 2-2.7Z" },
+  ],
+  search: [
+    { d: "M6.6 10.5a3.9 3.9 0 1 0 7.8 0 3.9 3.9 0 1 0-7.8 0Z", soft: true },
+    { d: "M3.2 10.5a7.3 7.3 0 1 0 14.6 0 7.3 7.3 0 1 0-14.6 0Zm3.4 0a3.9 3.9 0 1 0 7.8 0 3.9 3.9 0 1 0-7.8 0Z" },
+    { d: "m16.2 16.2 4.3 4.3", stroke: 3.4 },
+  ],
+  share: [
+    {
+      d: "M4 12.5a1.5 1.5 0 0 1 3 0V18h10v-5.5a1.5 1.5 0 0 1 3 0V19a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 19Z",
+      soft: true,
+    },
+    { d: "M12 14.5V4.5M7.8 8.5 12 4.3l4.2 4.2", stroke: 2.8 },
+  ],
+  primitives: [
+    {
+      d: "M15.5 3.5h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2Zm-10 10h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2Z",
+      soft: true,
+    },
+    {
+      d: "M5.5 3.5h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2ZM13.4 17a3.6 3.6 0 1 0 7.2 0 3.6 3.6 0 1 0-7.2 0Z",
+    },
+  ],
+  comment: [
+    {
+      d: "M5.5 4h13A2.5 2.5 0 0 1 21 6.5v8a2.5 2.5 0 0 1-2.5 2.5H12l-4.3 3.4a1 1 0 0 1-1.7-.8V17h-.5A2.5 2.5 0 0 1 3 14.5v-8A2.5 2.5 0 0 1 5.5 4Zm1.1 6.5a1.4 1.4 0 1 0 2.8 0 1.4 1.4 0 1 0-2.8 0Zm4 0a1.4 1.4 0 1 0 2.8 0 1.4 1.4 0 1 0-2.8 0Zm4 0a1.4 1.4 0 1 0 2.8 0 1.4 1.4 0 1 0-2.8 0Z",
+    },
+  ],
+  eye: [
+    {
+      d: "M12 5c5.5 0 9.3 5 9.8 6.3a1.6 1.6 0 0 1 0 1.4C21.3 14 17.5 19 12 19S2.7 14 2.2 12.7a1.6 1.6 0 0 1 0-1.4C2.7 10 6.5 5 12 5Zm-4.3 7a4.3 4.3 0 1 0 8.6 0 4.3 4.3 0 1 0-8.6 0Zm2.2 0a2.1 2.1 0 1 0 4.2 0 2.1 2.1 0 1 0-4.2 0Z",
+    },
+  ],
+  sun: [
+    { d: "M7.4 12a4.6 4.6 0 1 0 9.2 0 4.6 4.6 0 1 0-9.2 0Z" },
+    {
+      d: "M12 2.6v1.6m0 15.6v1.6M2.6 12h1.6m15.6 0h1.6M5.4 5.4l1.1 1.1m11 11 1.1 1.1M5.4 18.6l1.1-1.1m11-11 1.1-1.1",
+      stroke: 2.6,
+    },
+  ],
+  moon: [
+    { d: "M17 3.5c.3 1.5.9 2.1 2.4 2.4-1.5.3-2.1.9-2.4 2.4-.3-1.5-.9-2.1-2.4-2.4 1.5-.3 2.1-.9 2.4-2.4Z", soft: true },
+    { d: "M20.2 14.6A8.3 8.3 0 0 1 9.4 3.8a8.6 8.6 0 1 0 10.8 10.8Z" },
+  ],
+  live: [
+    { d: "M5 5a9.9 9.9 0 0 0 0 14M19 5a9.9 9.9 0 0 1 0 14", stroke: 2.4, soft: true },
+    { d: "M8.1 8.1a5.5 5.5 0 0 0 0 7.8m7.8-7.8a5.5 5.5 0 0 1 0 7.8", stroke: 2.4 },
+    { d: "M9.4 12a2.6 2.6 0 1 0 5.2 0 2.6 2.6 0 1 0-5.2 0Z" },
+  ],
+};
+
+/** `filled`: the filled version where there is one (the wiki header), else the line icon. */
+export function Icon({
+  name,
+  size = 18,
+  label,
+  filled,
+}: {
+  name: IconName;
+  size?: number;
+  label?: string;
+  filled?: boolean;
+}) {
+  const parts = filled ? FILLED[name] : undefined;
+  if (parts)
+    return (
+      <svg
+        className="sh-icon"
+        data-filled=""
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        role={label ? "img" : undefined}
+        aria-label={label}
+        aria-hidden={label ? undefined : true}
+      >
+        {parts.map((p) =>
+          p.stroke ? (
+            <path
+              key={p.d}
+              d={p.d}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={p.stroke}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={p.soft ? "sh-icon-soft" : undefined}
+            />
+          ) : (
+            <path key={p.d} d={p.d} fillRule="evenodd" className={p.soft ? "sh-icon-soft" : undefined} />
+          ),
+        )}
+      </svg>
+    );
   return (
     <svg
       className="sh-icon"

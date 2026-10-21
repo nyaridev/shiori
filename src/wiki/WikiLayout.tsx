@@ -66,10 +66,10 @@ export function WikiLayout() {
   const [viewing, setViewing] = useState<string | null>(null);
   const viewer = useMemo(() => ({ open: setViewing }), []);
 
-  // Ctrl+K / ⌘K anywhere, or "/" outside a text field, opens search.
+  // Ctrl+P / ⌘P anywhere (instead of printing), or "/" outside a text field, opens search.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const combo = (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "k";
+      const combo = (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "p";
       if (!combo && !(e.key === "/" && !e.ctrlKey && !e.metaKey && !typing(e.target))) return;
       e.preventDefault();
       setSearchOpen(true);
