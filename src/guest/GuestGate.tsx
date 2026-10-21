@@ -117,7 +117,10 @@ function NamePrompt({ session, onJoined }: { session: GuestSession; onJoined: (s
 const ENDED: Record<number, { title: string; text: string }> = {
   404: { title: "No such link", text: "Check that you copied the whole link." },
   410: { title: "This link has ended", text: "It expired, or the person who shared it turned it off." },
-  403: { title: "You can't open this link anymore", text: "Too many requests came from here." },
+  403: {
+    title: "You can't open this wiki any more",
+    text: "The person who shared it took away your access, or too many requests came from here.",
+  },
   401: { title: "Your name was forgotten", text: "Reload the page to pick it again." },
 };
 

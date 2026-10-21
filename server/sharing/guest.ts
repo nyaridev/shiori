@@ -137,11 +137,24 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
     return c.json({ error: "too many requests, slow down" }, 429);
   };
 
+  /** The built app's page. It holds no wiki data: the app asks the API for everything. */
+  const shell = () => (staticDir ? readFileSync(join(staticDir, "index.html"), "utf8") : null);
+  /**
+   * A link that can't be opened. The API answers JSON; a page (a guest opening or reloading the link) gets the bare
+   * app with the same status, so the gate can say why from its own `/api/session` call.
+   */
+  const refuse = (c: Context<Env>, status: 403 | 404 | 410, error: string) => {
+    const token = c.req.param("token") ?? "";
+    const page = c.req.method === "GET" && TOKEN.test(token) && !c.req.path.startsWith(`/s/${token}/api/`);
+    const html = page ? shell() : null;
+    return html === null ? c.json({ error }, status) : c.html(html, status);
+  };
+
   const link: MiddlewareHandler<Env> = async (c, next) => {
     const token = c.req.param("token") ?? "";
     const found = TOKEN.test(token) ? shares.find(token) : null;
-    if (!found) return c.json({ error: "not found" }, 404);
-    if ("gone" in found) return c.json({ error: "this link has expired or was turned off" }, 410);
+    if (!found) return refuse(c, 404, "not found");
+    if ("gone" in found) return refuse(c, 410, "this link has expired or was turned off");
     const { share } = found;
     // cloudflared is the only client of this loopback server, and it sets the visitor's address.
     const incoming = (c.env as { incoming?: IncomingMessage } | undefined)?.incoming;
@@ -149,10 +162,10 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
     c.set("share", share);
     c.set("ip", ip);
     c.set("guest", null);
-    if (share.blockedIps.has(ip)) return c.json({ error: "blocked" }, 403);
+    if (share.blockedIps.has(ip)) return refuse(c, 403, "blocked");
     const id = await getSignedCookie(c, secret, COOKIE);
     const guest = id ? (share.guests.get(id) ?? null) : null;
-    if (guest?.blocked) return c.json({ error: "blocked" }, 403);
+    if (guest?.blocked) return refuse(c, 403, "blocked");
     c.set("guest", guest);
     const wait = share.limits.read(ip, now());
     if (wait) return tooMany(c, wait, "request");
@@ -381,9 +394,10 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
   app.route("/s/:token/api", api as unknown as Hono<Env>);
 
   // Any other path under a link is the app, which routes itself.
-  app.get("/s/:token/*", (c) =>
-    staticDir ? c.html(readFileSync(join(staticDir, "index.html"), "utf8")) : c.notFound(),
-  );
+  app.get("/s/:token/*", (c) => {
+    const html = shell();
+    return html === null ? c.notFound() : c.html(html);
+  });
   app.all("*", (c) => c.json({ error: "not found" }, 404));
   return app;
 }

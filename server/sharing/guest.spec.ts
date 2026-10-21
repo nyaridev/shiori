@@ -13,6 +13,8 @@ import { LIMITS } from "./limits.ts";
 import { createShares, type Share, type Shares } from "./shares.ts";
 
 const HOST = "http://share.test";
+/** The built app's page, as the guest server serves it. */
+const SHELL = '<!doctype html><div id="root"></div><script type="module" src="/assets/index.js"></script>';
 let app: string;
 let clock: number;
 let shares: Shares;
@@ -46,7 +48,10 @@ beforeEach(() => {
   const live = createLive(registry);
   const data = createWikiData(live);
   shares = createShares({ now: () => clock, origin: () => HOST });
-  guestApp = buildGuestApp({ registry, data, shares, secret: "test-secret" });
+  const dist = join(app, "dist");
+  mkdirSync(dist);
+  writeFileSync(join(dist, "index.html"), SHELL);
+  guestApp = buildGuestApp({ registry, data, shares, staticDir: dist, secret: "test-secret" });
   tunnel = {
     now: { state: "off", url: null },
     starts: 0,
@@ -95,6 +100,15 @@ function browser(share: Share, ip = "203.0.113.7") {
   };
 }
 
+/** A page the link can't open: the bare app with the refusal's status, and nothing from the wiki. */
+async function refusedPage(res: Response, status: number) {
+  expect(res.status).toBe(status);
+  expect(res.headers.get("content-type")).toContain("text/html");
+  expect(res.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+  expect(res.headers.get("cache-control")).toBe("private, no-store");
+  expect(await res.text()).toBe(SHELL);
+}
+
 const quote = { exact: "The plan", prefix: "", suffix: "." };
 const alpha = () => join(app, "wikis", "alpha");
 
@@ -126,6 +140,21 @@ describe("the link", () => {
     expect((await browser(forever).get("/api/session")).status).toBe(200);
     shares.stopAll();
     expect((await browser(forever).get("/api/session")).status).toBe(410);
+  });
+
+  it("serves pages of a link that ended or never existed the bare app, and the API JSON", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "view" });
+    shares.revoke(share.id);
+    const b = browser(share);
+    for (const path of ["", "/", "/w/alpha/plan"]) await refusedPage(await b.get(path), 410);
+    const api = await b.get("/api/session");
+    expect(api.status).toBe(410);
+    expect(api.headers.get("content-type")).toContain("application/json");
+    const unknown = `${HOST}/s/${"x".repeat(43)}`;
+    await refusedPage(await guestApp.request(`${unknown}/w/alpha`), 404);
+    expect((await guestApp.request(`${unknown}/api/session`)).headers.get("content-type")).toContain("json");
+    // Not a token the app would recognize: no page.
+    expect((await guestApp.request(`${HOST}/s/short/`)).headers.get("content-type")).toContain("json");
   });
 
   it("sends the security headers on everything", async () => {
@@ -452,8 +481,18 @@ describe("the owner's share state", () => {
       owner(`/api/shares/${sid}/guests/${gid}`, send("PATCH", { blocked }));
     expect((await block(true)).status).toBe(200);
     expect((await ana.get("/api/wikis/alpha")).status).toBe(403);
+    // Opening or reloading the link shows the app, which explains; the API tells it why and nothing more.
+    for (const path of ["", "/", "/w/alpha/plan"]) await refusedPage(await ana.get(path), 403);
+    for (const path of ["/api/session", "/api/wikis/alpha/page?path=plan", "/api/wikis/alpha/threads"]) {
+      const res = await ana.get(path);
+      expect(res.status, path).toBe(403);
+      expect(await res.json(), path).toEqual({ error: "blocked" });
+    }
+    expect((await ana.post("/w/alpha/plan", {})).status).toBe(403);
+    expect((await ana.post("/w/alpha/plan", {})).headers.get("content-type")).toContain("json");
     // A fresh cookie from the same address is blocked too.
     expect((await browser(share).get("/api/session")).status).toBe(403);
+    await refusedPage(await browser(share).get("/"), 403);
     const listed = (await state()).shares[0];
     expect(listed.guests[0]).toMatchObject({ name: "Ana", blocked: true });
     expect(listed.activity.at(-1)).toMatchObject({ who: "Ana", what: "was blocked by the host" });
