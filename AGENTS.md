@@ -28,7 +28,7 @@ every change to a wiki.
 
 A local web app (React + a small Hono server on Node) that shows a deck of wikis and renders them with one shared
 set of components. Each wiki only nudges the design tokens with its `theme.json`. A Tauri window
-(`start-app.bat`) wraps the same app with a custom title bar. Decisions: `docs/adr/` (0001 architecture, 0002 wiki pages, links and universal elements).
+(`start-app.bat`) wraps the same app with a custom title bar. Decisions: `docs/adr/` (0001 architecture, 0002 wiki pages, links and universal elements, 0003 sharing a wiki by link).
 
 ## Commands
 

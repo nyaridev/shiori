@@ -90,7 +90,8 @@ The ideas (text-quote anchors, CLI inbox loop, directive elements) were carried 
   previous/next around them, so wikis can plan any project, not only games. Planning elements: stats, timeline, cards,
   gallery, progress.
 - Sharing wikis publicly with other people (hosting, accounts, comments from many people) changes the local-only
-  model above and needs its own ADR first.
+  model above and needs its own ADR first: ADR-0003 (temporary share links through a tunnel, data stays on the
+  host).
 
 ## Action Items
 
