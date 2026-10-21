@@ -5,7 +5,8 @@ import { isGuest } from "../lib/base.ts";
 import { useLive } from "../lib/live.ts";
 import { useResource } from "../lib/useResource.ts";
 import { useTheme } from "../lib/useTheme.ts";
-import { IconButton, ScrollArea } from "../ui/index.ts";
+import { usePresence } from "../presence/usePresence.ts";
+import { ScrollArea } from "../ui/index.ts";
 import { PageArea } from "./PageArea.tsx";
 import { SearchPalette, typing } from "./SearchPalette.tsx";
 import { Sidebar } from "./Sidebar.tsx";
@@ -13,6 +14,7 @@ import { MissingPage } from "./special/MissingPage.tsx";
 import { SpecialPage } from "./special/SpecialPage.tsx";
 import { ImageViewer } from "./viewer/ImageViewer.tsx";
 import { ViewerContext } from "./viewer/ViewerContext.ts";
+import { WikiHeader } from "./WikiHeader.tsx";
 import { WikiIndexContext } from "./WikiIndexContext.ts";
 import "./wiki.css";
 
@@ -43,6 +45,7 @@ export function WikiLayout() {
     }
   });
   useTheme(wiki.data?.theme);
+  const people = usePresence(wikiId, path);
 
   const [navOpen, setNavOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(false);
@@ -101,12 +104,13 @@ export function WikiLayout() {
               {navOpen && (
                 <button type="button" className="sh-scrim" aria-label="Close menu" onClick={() => setNavOpen(false)} />
               )}
-              <div className="sh-wiki-mobilebar">
-                <IconButton icon="menu" label="Pages" onClick={() => setNavOpen(true)} />
-                <span>{wiki.data.title}</span>
-                <IconButton icon="search" label="Search" onClick={() => setSearchOpen(true)} />
-                <IconButton icon="comment" label="Comments" onClick={() => setRailOpen((o) => !o)} />
-              </div>
+              <WikiHeader
+                wiki={wiki.data}
+                people={people}
+                onPages={() => setNavOpen(true)}
+                onSearch={() => setSearchOpen(true)}
+                onComments={special === null && !page.error ? () => setRailOpen((o) => !o) : undefined}
+              />
               <SearchPalette wiki={wiki.data} open={searchOpen} onOpenChange={setSearchOpen} />
             </>
           )}

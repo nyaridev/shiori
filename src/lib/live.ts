@@ -35,6 +35,13 @@ export function useLive(onEvent: Listener) {
   }, []);
 }
 
+/** What a guest's request for changes answers: the wiki's versions, and who is here (ADR-0005). */
+interface Version {
+  pages: number;
+  threads: number;
+  presence: string;
+}
+
 /** Seconds the server may hold a guest's request for changes; it answers sooner when something changes. */
 const WAIT = 25;
 /** The link is gone, the guest was blocked, or their name was lost. Anything else (a 304, a busy tunnel) retries. */
@@ -48,13 +55,13 @@ const UNREACHABLE = 3;
 const RETRY = 4000;
 
 /**
- * Guests: live updates by long polling. Each request waits on the server until the wiki's pages or comments change
- * (or 25 seconds pass), then the answer becomes live events and the next request goes out at once. `onEnded` hears
- * the status when the link stops working, and asking stops.
+ * Guests: live updates by long polling. Each request waits on the server until the wiki's pages, comments or people
+ * change (or 25 seconds pass), then the answer becomes live events and the next request goes out at once. `onEnded`
+ * hears the status when the link stops working, and asking stops.
  */
 export function pollChanges(wiki: string, onEnded: (status: number) => void): () => void {
   let etag = "";
-  let last: { pages: number; threads: number } | null = null;
+  let last: Version | null = null;
   let stopped = false;
   let failures = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -71,9 +78,10 @@ export function pollChanges(wiki: string, onEnded: (status: number) => void): ()
       if (res.status === 429) pause = Math.max(RETRY, Number(res.headers.get("retry-after")) * 1000 || 0);
       if (res.status === 200) {
         etag = res.headers.get("etag") ?? "";
-        const v = (await res.json()) as { pages: number; threads: number };
+        const v = (await res.json()) as Version;
         if (last && v.pages !== last.pages) emit({ type: "pages", wiki });
         if (last && v.threads !== last.threads) emit({ type: "threads", wiki });
+        if (last && v.presence !== last.presence) emit({ type: "presence", wiki });
         last = v;
       } else if (ENDED.includes(res.status)) {
         if (!stopped) onEnded(res.status);

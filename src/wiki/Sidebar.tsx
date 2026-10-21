@@ -1,10 +1,9 @@
 import { Fragment } from "react";
-import { Link, NavLink, useNavigate } from "react-router";
+import { Link, NavLink } from "react-router";
 import type { NavNode, WikiDetail } from "../../shared/api.ts";
 import { useGuest } from "../guest/GuestContext.ts";
 import { picture } from "../lib/base.ts";
-import { ShareDialog } from "../sharing/ShareDialog.tsx";
-import { Icon, IconButton, Kbd, Tooltip } from "../ui/index.ts";
+import { Icon, Kbd } from "../ui/index.ts";
 import { shortcutLabel } from "./SearchPalette.tsx";
 import { SPECIALS } from "./special/specials.ts";
 
@@ -23,34 +22,9 @@ export function Sidebar({
   onNavigate?: () => void;
   onSearch: () => void;
 }) {
-  const navigate = useNavigate();
   const guest = useGuest();
   return (
     <nav className="sh-sidebar" aria-label={`${wiki.title} pages`}>
-      <div className="sh-sidebar-head">
-        {guest ? (
-          // A guest has no deck to go back to (ADR-0003).
-          <span className="sh-guest-badge">
-            <Icon name="comment" size={14} />
-            {guest.kind === "comment" ? "Shared with you" : "Shared with you to read"} · {guest.guest?.name}
-          </span>
-        ) : (
-          <>
-            <Tooltip content="Back to the deck" side="right">
-              <IconButton
-                icon="deck"
-                label="Back to the deck"
-                onClick={() => navigate("/", { state: { from: wiki.id } })}
-              />
-            </Tooltip>
-            <ShareDialog
-              wikiId={wiki.id}
-              title={wiki.title}
-              trigger={<IconButton icon="share" label="Share this wiki" className="sh-sidebar-share" />}
-            />
-          </>
-        )}
-      </div>
       <NavLink to={`/w/${wiki.id}`} end className="sh-sidebar-wiki" onClick={onNavigate}>
         <img src={picture(wiki.coverUrl, 160)} alt="" className="sh-sidebar-cover" />
         <span>

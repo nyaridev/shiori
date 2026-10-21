@@ -559,3 +559,55 @@
     opacity: 0;
   }
 }
+
+/* Avatar */
+.sh-avatar {
+  --tone: var(--accent);
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--tone) 78%, var(--bg));
+  color: var(--bg);
+  font-family: var(--font-body);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+.sh-avatar[data-hue="1"] {
+  --tone: var(--tone-good);
+}
+.sh-avatar[data-hue="2"] {
+  --tone: var(--tone-warn);
+}
+.sh-avatar[data-hue="3"] {
+  --tone: var(--tone-bad);
+}
+.sh-avatar[data-hue="4"] {
+  --tone: color-mix(in oklab, var(--tone-good) 50%, var(--accent));
+}
+.sh-avatar[data-hue="5"] {
+  --tone: color-mix(in oklab, var(--tone-note) 60%, var(--accent));
+}
+.sh-avatar[data-ring] {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 3.5px var(--accent);
+}
+/* The host: a small star on the edge. */
+.sh-avatar[data-host]::after {
+  content: "★";
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--raised);
+  color: var(--accent);
+  font-size: 8px;
+}

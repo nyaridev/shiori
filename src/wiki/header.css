@@ -1,0 +1,65 @@
+/* The wiki header (WikiHeader.tsx): sticky over the page and the rail. */
+.sh-wiki-head {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  grid-row: 1;
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: var(--head);
+  padding: 0 var(--s-4);
+  border-bottom: var(--bw) solid var(--border);
+  background: color-mix(in oklab, var(--bg) 86%, transparent);
+  backdrop-filter: blur(12px);
+}
+/* Headings jumped to from the contents or search land below the header. */
+html:has(.sh-wiki-head) {
+  scroll-padding-top: 56px;
+}
+
+.sh-head-space {
+  flex: 1;
+}
+.sh-head-back {
+  margin-left: calc(-1 * var(--s-2));
+  color: var(--text-soft);
+}
+.sh-head-title {
+  overflow: hidden;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Buttons for what the sidebar (narrow) and the rail (medium) hold on wide screens. */
+.sh-wiki-head .sh-head-narrow,
+.sh-wiki-head .sh-head-rail {
+  display: none;
+}
+@media (max-width: 1180px) {
+  .sh-wiki-head .sh-head-rail {
+    display: inline-flex;
+  }
+}
+@media (max-width: 860px) {
+  .sh-wiki-head {
+    grid-column: 1 / -1;
+    gap: var(--s-1);
+    padding: 0 var(--s-2);
+  }
+  .sh-wiki-head .sh-head-narrow {
+    display: inline-flex;
+  }
+  .sh-wiki-head .sh-head-title {
+    display: block;
+    flex: 1;
+    min-width: 0;
+  }
+  .sh-head-space,
+  .sh-head-wide {
+    display: none;
+  }
+}

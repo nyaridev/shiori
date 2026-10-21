@@ -1,9 +1,12 @@
 .sh-wiki {
   --sidebar: 264px;
   --rail: 300px;
+  --head: 52px;
   --page-width: 1180px;
   display: grid;
   grid-template-columns: var(--sidebar) minmax(0, 1fr) var(--rail);
+  /* The header (WikiHeader.tsx) over the page and the rail; the sidebar runs the full height. */
+  grid-template-rows: auto 1fr;
   min-height: 100%;
   /* The entrance slides the 100vh sticky columns up from below; clipping keeps that from overflowing the page and
      flashing a scrollbar. `clip` (unlike `hidden`) makes no scroll container, so the columns stay sticky. */
@@ -17,6 +20,20 @@
   top: 0;
   height: 100vh;
 }
+.sh-wiki-sidebar {
+  grid-row: 1 / span 2;
+  grid-column: 1;
+}
+.sh-wiki-main {
+  grid-row: 2;
+  grid-column: 2;
+}
+.sh-wiki-rail {
+  grid-row: 2;
+  grid-column: 3;
+  top: var(--head);
+  height: calc(100vh - var(--head));
+}
 
 /* Sidebar */
 .sh-wiki-sidebar {
@@ -25,13 +42,6 @@
 }
 .sh-sidebar {
   padding: var(--s-3);
-}
-.sh-sidebar-head {
-  display: flex;
-  margin-bottom: var(--s-2);
-}
-.sh-sidebar-share {
-  margin-left: auto;
 }
 .sh-sidebar-wiki {
   display: flex;
@@ -128,7 +138,7 @@ a.sh-nav-link.active {
   /* Wide, like a wiki: the article shares it with the floating infobox, galleries and tables. */
   max-width: var(--page-width);
   margin: 0 auto;
-  padding: var(--s-7) var(--s-6) 30vh;
+  padding: var(--s-6) var(--s-6) 30vh;
 }
 
 /* Rail */
@@ -136,7 +146,7 @@ a.sh-nav-link.active {
   display: grid;
   align-content: start;
   gap: var(--s-6);
-  padding: var(--s-7) var(--s-4) var(--s-6);
+  padding: var(--s-6) var(--s-4) var(--s-6);
 }
 .sh-wiki-rail-close {
   display: none;
@@ -181,6 +191,9 @@ a.sh-nav-link.active {
 .sh-wiki[data-enter] .sh-wiki-sidebar {
   animation: sh-enter-side 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+.sh-wiki[data-enter] .sh-wiki-head {
+  animation: sh-enter-up 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 .sh-wiki[data-enter] .sh-wiki-main {
   animation: sh-enter-up 600ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both;
 }
@@ -200,7 +213,6 @@ a.sh-nav-link.active {
   }
 }
 
-.sh-wiki-mobilebar,
 .sh-scrim {
   display: none;
 }
@@ -221,6 +233,7 @@ a.sh-nav-link.active {
     position: fixed;
     top: 0;
     right: 0;
+    height: 100vh;
     width: min(360px, 100vw);
     z-index: 20;
     background: var(--surface);
@@ -238,25 +251,14 @@ a.sh-nav-link.active {
     justify-content: flex-end;
     margin-bottom: calc(-1 * var(--s-4));
   }
-  .sh-wiki-mobilebar {
-    position: fixed;
-    right: var(--s-3);
-    bottom: var(--s-3);
-    z-index: 15;
-    display: flex;
-    border-radius: 999px;
-    background: var(--raised);
-    border: var(--bw) solid var(--border);
-    box-shadow: var(--shadow-2);
-  }
-  .sh-wiki-mobilebar > :not(:last-child) {
-    display: none;
-  }
 }
 
 @media (max-width: 860px) {
   .sh-wiki {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .sh-wiki-main {
+    grid-column: 1;
   }
   .sh-wiki-sidebar {
     position: fixed;
@@ -279,23 +281,6 @@ a.sh-nav-link.active {
     background: rgb(0 0 0 / 0.4);
   }
   .sh-wiki-main {
-    padding: 72px var(--s-4) 30vh;
-  }
-  .sh-wiki-mobilebar {
-    top: var(--s-3);
-    left: var(--s-3);
-    bottom: auto;
-    align-items: center;
-    gap: var(--s-2);
-    padding: 3px;
-    padding-right: 3px;
-  }
-  .sh-wiki-mobilebar > :not(:last-child) {
-    display: revert;
-  }
-  .sh-wiki-mobilebar > span {
-    flex: 1;
-    font-weight: 600;
-    font-size: var(--t-sm);
+    padding: var(--s-5) var(--s-4) 30vh;
   }
 }

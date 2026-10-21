@@ -1,6 +1,7 @@
 // The app's primitives. Features import from here, never from radix-ui directly.
 import "./ui.css";
 
+export { Avatar, initials } from "./Avatar.tsx";
 export { Badge, type BadgeTone, Kbd } from "./Badge.tsx";
 export { Button, type ButtonSize, type ButtonVariant, cx, IconButton } from "./Button.tsx";
 export { Callout, type CalloutTone } from "./Callout.tsx";

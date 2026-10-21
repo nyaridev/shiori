@@ -146,3 +146,57 @@
   padding-top: var(--s-3);
   border-top: var(--bw) solid var(--border);
 }
+
+/* The header's live badge (LiveBadge.tsx). */
+.sh-live {
+  --tone: var(--tone-good);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 28px;
+  padding: 0 var(--s-3);
+  border: var(--bw) solid color-mix(in oklab, var(--tone) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tone) 14%, transparent);
+  color: color-mix(in oklab, var(--tone) 70%, var(--text));
+  font: inherit;
+  font-size: var(--t-xs);
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sh-live:hover {
+  background: color-mix(in oklab, var(--tone) 22%, transparent);
+}
+.sh-live:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-live[data-tone="wait"] {
+  --tone: var(--tone-warn);
+}
+.sh-live[data-tone="off"] {
+  --tone: var(--muted);
+}
+.sh-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+.sh-live[data-tone="live"] .sh-live-dot {
+  animation: sh-live-pulse 1.8s ease-out infinite;
+}
+@keyframes sh-live-pulse {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--tone) 60%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sh-live[data-tone="live"] .sh-live-dot {
+    animation: none;
+  }
+}

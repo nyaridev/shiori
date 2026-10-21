@@ -4,6 +4,7 @@ import type {
   ImageGroup,
   KitInfo,
   PageData,
+  Person,
   SearchHit,
   ShareDuration,
   ShareInfo,
@@ -16,7 +17,7 @@ import type {
   WikiIndex,
 } from "../../shared/api.ts";
 import type { Quote } from "../../shared/quote.ts";
-import { withBase } from "./base.ts";
+import { isGuest, withBase } from "./base.ts";
 
 /** A failed request, with its HTTP status (a guest's link answers 410 once it ends). */
 export class ApiError extends Error {
@@ -92,6 +93,20 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ blocked }),
     }),
+  /** Who is on the wiki (ADR-0005): the owner sees everyone, a guest the host and their own link's guests. */
+  people: (id: string) => request<{ people: Person[] }>(`/api/wikis/${enc(id)}/presence`).then((r) => r.people),
+  /** Says which page this tab is on; answers who is here. The owner's tabs name themselves, a guest is their cookie. */
+  here: (id: string, tab: string, page: string | null) =>
+    request<{ people: Person[] }>(`/api/wikis/${enc(id)}/presence`, {
+      method: "PUT",
+      body: JSON.stringify(isGuest ? { page } : { tab, page }),
+    }).then((r) => r.people),
+  /** This tab is leaving the wiki. `keepalive`, so it still goes out while the page closes. */
+  leave: (id: string, tab: string) =>
+    fetch(withBase(`/api/wikis/${enc(id)}/presence${isGuest ? "" : `/${enc(tab)}`}`), {
+      method: "DELETE",
+      keepalive: true,
+    }).catch(() => undefined),
   /** Guests only: the share link they came through, and their name once they picked one. */
   session: () => request<GuestSession>("/api/session"),
   join: (name: string) => request<GuestSession>("/api/session", { method: "POST", body: JSON.stringify({ name }) }),

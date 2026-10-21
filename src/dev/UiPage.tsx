@@ -5,6 +5,7 @@ import { api } from "../lib/api.ts";
 import { useResource } from "../lib/useResource.ts";
 import { useTheme } from "../lib/useTheme.ts";
 import {
+  Avatar,
   Badge,
   Button,
   Callout,
@@ -44,7 +45,7 @@ const SECTIONS = [
   ["buttons", "Buttons"],
   ["fields", "Fields"],
   ["toggles", "Toggles"],
-  ["badges", "Badges and keys"],
+  ["badges", "Badges, keys, avatars"],
   ["callouts", "Callouts"],
   ["tabs", "Tabs"],
   ["overlays", "Overlays"],
@@ -194,7 +195,7 @@ export function UiPage() {
           <ToggleDemo />
         </Section>
 
-        <Section id="badges" title="Badges and keys">
+        <Section id="badges" title="Badges, keys and avatars">
           <Row label="Badge">
             <Badge>Neutral</Badge>
             <Badge tone="accent">Accent</Badge>
@@ -204,6 +205,13 @@ export function UiPage() {
           </Row>
           <Row label="Key">
             <Kbd>Ctrl</Kbd> <Kbd>K</Kbd> <Kbd>Space</Kbd> <Kbd>LMB</Kbd>
+          </Row>
+          <Row label="Avatar">
+            <Avatar id="host" name="Nari" host />
+            <Avatar id="you" name="Mika Tanaka" ring />
+            {["ren", "sol", "ivy", "oak", "kai", "zed"].map((id) => (
+              <Avatar key={id} id={id} name={id} />
+            ))}
           </Row>
         </Section>
 
