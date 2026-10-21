@@ -28,6 +28,23 @@ Esc clears. `/dev/ui` shows every UI primitive in the default theme.
 
 Agents: see `AGENTS.md`.
 
+## Sharing a wiki
+
+The Share button on a wiki makes a temporary link for friends (view, or view and comment). Sharing needs:
+
+- **The built app**: `start-web.bat` or `start-app.bat`. Dev mode can't share.
+- **cloudflared**, which gives the link a public `https://….trycloudflare.com` address (no account needed):
+
+  ```bash
+  winget install Cloudflare.cloudflared
+  ```
+
+  Without it, links point at `http://127.0.0.1:4420/…` and only work on this PC. Shiori finds cloudflared right after
+  it's installed: click **Try again** in the Share dialog, no restart needed.
+
+Everything stays on this PC; links end when they expire, when you revoke them, or when Shiori closes. Details:
+`docs/adr/0003-sharing-a-wiki-by-link.md`.
+
 ## Develop
 
 ```bash
