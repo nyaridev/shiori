@@ -15,7 +15,12 @@ Every wiki has the same structure and components, and its own light theme (color
 
 Needs Node 25+ and pnpm. On the deck: drag and release to spin, scroll, or use the arrow keys; click or press
 Enter on the centered card. Start typing to search: the deck spins to the best match, Enter opens it,
-Esc clears. `/dev/ui` shows every UI primitive in the default theme.
+Esc clears. `/dev/ui` shows every UI primitive in the default theme, and opens each special screen (guest
+prompts, errors) with sample data.
+
+On a wiki, the header goes back to the deck, switches between day and night (remembered in this browser), shows
+who else is on the wiki (click an avatar to go to their page) and, while it's shared, a **Live** badge. The
+sidebar's Toolbox lists what pages can use: page kits, elements, page fields and special pages.
 
 ## Wikis
 
@@ -29,7 +34,7 @@ Agents: see `AGENTS.md`.
 
 ## Sharing a wiki
 
-The Share button on a wiki makes a temporary link for friends (view, or view and comment). Sharing needs:
+The Share button in a wiki's header makes a temporary link for friends (view, or view and comment). Sharing needs:
 
 - **The built app**: `start-web.bat`. Dev mode can't share.
 - **cloudflared**, which gives the link a public `https://….trycloudflare.com` address (no account needed):
