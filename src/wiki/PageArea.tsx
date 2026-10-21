@@ -39,10 +39,10 @@ export function PageArea({
   const [anchors, setAnchors] = useState<Anchors>(new Map());
   const [showProblems, setShowProblems] = useState(false);
   const onAnchors = useCallback((a: Anchors) => setAnchors(a), []);
-  const { answers, answer } = useAnswers(wiki.id, path);
+  const { answers, answer, hide: hideAnswer } = useAnswers(wiki.id, path);
   const context = useMemo(
-    () => ({ wikiId: wiki.id, page, answers, answer, threads }),
-    [wiki.id, page, answers, answer, threads],
+    () => ({ wikiId: wiki.id, page, answers, answer, hideAnswer, threads }),
+    [wiki.id, page, answers, answer, hideAnswer, threads],
   );
 
   return (

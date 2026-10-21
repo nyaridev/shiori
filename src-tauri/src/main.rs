@@ -48,6 +48,25 @@ fn start_server(root: &Path) -> std::io::Result<Child> {
     cmd.spawn()
 }
 
+/// Ends the server and what it started: cloudflared, while a share link is active (ADR-0003).
+fn stop_server(mut child: Child) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let tree = Command::new("taskkill")
+            .args(["/PID", &child.id().to_string(), "/T", "/F"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .status();
+        if matches!(tree, Ok(s) if s.success()) {
+            let _ = child.wait();
+            return;
+        }
+    }
+    let _ = child.kill();
+    let _ = child.wait();
+}
+
 fn server_url(app: &tauri::App) -> Result<String, Box<dyn std::error::Error>> {
     if cfg!(debug_assertions) {
         return Ok(DEV_URL.to_string());
@@ -87,8 +106,8 @@ fn main() {
         .expect("Shiori failed to start")
         .run(|app, event| {
             if let RunEvent::Exit = event {
-                if let Some(mut child) = app.state::<Server>().0.lock().unwrap().take() {
-                    let _ = child.kill();
+                if let Some(child) = app.state::<Server>().0.lock().unwrap().take() {
+                    stop_server(child);
                 }
             }
         });

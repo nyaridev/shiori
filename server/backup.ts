@@ -11,8 +11,8 @@ import { authorColumns, dbFor, listThreads, type Writer } from "./threads.ts";
 export const BACKUP_FILE = "backup.json";
 const BACKUP_SCHEMA = 1;
 
-// Guests' names and ids came with ADR-0003; backups made before them have neither, and still load.
-const guestFields = { name: z.string().optional(), guestId: z.string().optional() };
+// Guests' names and ids came with ADR-0003, and so did hiding their text; older backups have none, and still load.
+const guestFields = { name: z.string().optional(), guestId: z.string().optional(), hidden: z.boolean().optional() };
 
 const backupSchema = z.object({
   schema: z.literal(BACKUP_SCHEMA),
@@ -96,17 +96,27 @@ export function importData(root: string, data: Backup, { replace = false } = {})
       "insert into threads (id, page, quote, status, created_at, resolved_at) values (?, ?, ?, ?, ?, ?)",
     );
     const message = db.prepare(
-      "insert into messages (id, thread_id, author, guest_id, guest_name, body, created_at) values (?, ?, ?, ?, ?, ?, ?)",
+      "insert into messages (id, thread_id, author, guest_id, guest_name, body, created_at, hidden) values (?, ?, ?, ?, ?, ?, ?, ?)",
     );
     const answer = db.prepare(
-      "insert into answers (id, page, question, choice, body, author, guest_id, guest_name, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "insert into answers (id, page, question, choice, body, author, guest_id, guest_name, created_at, hidden) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     for (const t of data.threads) {
       thread.run(t.id, t.page, JSON.stringify(t.quote), t.status, t.createdAt, t.resolvedAt);
-      for (const m of t.messages) message.run(m.id, t.id, ...authorColumns(writer(m)), m.body, m.createdAt);
+      for (const m of t.messages)
+        message.run(m.id, t.id, ...authorColumns(writer(m)), m.body, m.createdAt, m.hidden ? 1 : 0);
     }
     for (const a of data.answers)
-      answer.run(a.id, a.page, a.question, a.choice, a.body, ...authorColumns(writer(a)), a.createdAt);
+      answer.run(
+        a.id,
+        a.page,
+        a.question,
+        a.choice,
+        a.body,
+        ...authorColumns(writer(a)),
+        a.createdAt,
+        a.hidden ? 1 : 0,
+      );
     db.exec("commit");
   } catch (error) {
     db.exec("rollback");

@@ -3,7 +3,7 @@ import type { Thread } from "../../shared/api.ts";
 import { isPageComment } from "../../shared/quote.ts";
 import { authorName, canComment, canResolve, useGuest } from "../guest/GuestContext.ts";
 import { ago } from "../lib/time.ts";
-import { Badge, Button, cx, Segmented, Textarea } from "../ui/index.ts";
+import { Badge, Button, cx, IconButton, Segmented, Textarea } from "../ui/index.ts";
 import type { Anchors } from "./CommentLayer.tsx";
 import type { Threads } from "./useThreads.ts";
 
@@ -117,7 +117,10 @@ export function ThreadCard({
     <article ref={ref} className={cx("sh-thread", active && "is-active")} data-status={thread.status}>
       <button type="button" className="sh-thread-main" onClick={onClick}>
         <span className="sh-thread-meta">
-          {thread.status === "open" ? (
+          {thread.messages[0]?.hidden ? (
+            // Hidden by the owner: neither guests nor agents see it, so nobody is waiting on it.
+            <Badge tone="warn">Hidden from guests</Badge>
+          ) : thread.status === "open" ? (
             last?.author === "agent" ? (
               <Badge tone="accent">Agent replied</Badge>
             ) : (
@@ -137,8 +140,23 @@ export function ThreadCard({
       {active && (
         <div className="sh-thread-body">
           {thread.messages.map((m) => (
-            <div key={m.id} className="sh-message" data-author={m.author}>
-              <span className="sh-message-author">{authorName(guest, m)}</span>
+            <div key={m.id} className="sh-message" data-author={m.author} data-hidden={m.hidden || undefined}>
+              <div className="sh-message-head">
+                <span className="sh-message-author">
+                  {authorName(guest, m)}
+                  {m.hidden && " · hidden from guests"}
+                </span>
+                {/* Moderation (ADR-0003): only the owner sees this, only on guests' messages. */}
+                {!guest && m.author === "guest" && (
+                  <IconButton
+                    icon={m.hidden ? "eye" : "eyeOff"}
+                    label={m.hidden ? "Show to guests again" : "Hide from guests and the inbox"}
+                    size="sm"
+                    className="sh-message-hide"
+                    onClick={() => void threads.hide(m.id, !m.hidden)}
+                  />
+                )}
+              </div>
               <p>{m.body}</p>
             </div>
           ))}

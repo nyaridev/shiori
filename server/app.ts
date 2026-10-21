@@ -6,15 +6,18 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
-import { addAnswer, listAnswers } from "./answers.ts";
+import type { SharesState } from "../shared/api.ts";
+import { addAnswer, listAnswers, setAnswerHidden } from "./answers.ts";
 import { serveFile } from "./files.ts";
 import type { Live } from "./live.ts";
 import { splitFrontmatter } from "./markdown/frontmatter.ts";
 import { renderMarkdown } from "./markdown/render.ts";
 import { type Registry, toCard, type Wiki } from "./registry.ts";
 import { search } from "./search.ts";
+import { cleanName } from "./sharing/guest.ts";
 import type { Shares } from "./sharing/shares.ts";
-import { addMessage, createThread, getThread, listThreads, setStatus } from "./threads.ts";
+import type { Tunnel } from "./sharing/tunnel.ts";
+import { addMessage, createThread, getThread, listThreads, setHidden, setStatus } from "./threads.ts";
 import { answerProblem, createWikiData, type WikiData } from "./wikiData.ts";
 
 // An empty `exact` is a comment on the whole page.
@@ -28,12 +31,17 @@ const newAnswerSchema = z.strictObject({
 const newThreadSchema = z.strictObject({ page: z.string(), quote: quoteSchema, body: z.string().trim().min(1) });
 const messageSchema = z.strictObject({ body: z.string().trim().min(1) });
 const statusSchema = z.strictObject({ status: z.enum(["open", "resolved", "wontfix"]) });
+const hiddenSchema = z.strictObject({ hidden: z.boolean() });
 const newShareSchema = z.strictObject({
   wiki: z.string(),
   kind: z.enum(["view", "comment"]),
   duration: z.enum(["1h", "24h", "7d", "session"]).default("24h"),
   label: z.string().trim().max(60).default(""),
+  /** How the owner signs for guests; the dialog sends the name it remembers. */
+  host: z.string().max(200).optional(),
 });
+const hostSchema = z.strictObject({ name: z.string().max(200) });
+const blockSchema = z.strictObject({ blocked: z.boolean() });
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const isLoopback = (url: string) => {
@@ -65,11 +73,13 @@ export interface AppOptions {
   data?: WikiData;
   /** Share links. Only the built app shares (ADR-0003); without them `/api/shares` says so. */
   shares?: Shares;
+  /** The tunnel that gives links a public address. */
+  tunnel?: Pick<Tunnel, "status" | "start">;
   /** Serve the built UI from this folder (start-web / the desktop app). */
   staticDir?: string;
 }
 
-export function buildApp({ registry, live, data = createWikiData(live), shares, staticDir }: AppOptions) {
+export function buildApp({ registry, live, data = createWikiData(live), shares, tunnel, staticDir }: AppOptions) {
   const app = new Hono();
   const { pagesOf, corpusOf } = data;
   app.use("*", localOnly);
@@ -162,6 +172,20 @@ export function buildApp({ registry, live, data = createWikiData(live), shares, 
     return c.json(setStatus(w.root, id, body.data.status));
   });
 
+  // Moderation (ADR-0003): the owner hides a guest's message or answer from guests and the inbox, or shows it again.
+  const hide = async (c: Context, apply: (root: string, id: number, hidden: boolean) => unknown) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const body = hiddenSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: "bad request" }, 400);
+    const result = apply(w.root, Number(c.req.param("mid")), body.data.hidden);
+    if (result === null) return c.notFound();
+    if (result === "not a guest's") return c.json({ error: "only guests' comments can be hidden" }, 400);
+    return c.json(result);
+  };
+  app.patch("/api/wikis/:id/messages/:mid", (c) => hide(c, setHidden));
+  app.patch("/api/wikis/:id/answers/:mid", (c) => hide(c, setAnswerHidden));
+
   /** The element reference (docs/elements.md), rendered for the /dev/ui page. */
   app.get("/api/dev/elements", (c) => {
     const split = splitFrontmatter(readFileSync(join(registry.appRoot, "docs", "elements.md"), "utf8"));
@@ -202,22 +226,65 @@ export function buildApp({ registry, live, data = createWikiData(live), shares, 
     }),
   );
 
-  // Share links (ADR-0003). The Share dialog (phase 2) uses these; the guest server serves the links.
+  // Share links (ADR-0003), for the Share dialog; the guest server serves the links.
   const noSharing = (c: Context) =>
     c.json({ error: "Sharing needs the built app: start Shiori with start-web.bat or start-app.bat." }, 409);
 
-  app.get("/api/shares", (c) => (shares ? c.json({ shares: shares.list().map(shares.info) }) : noSharing(c)));
+  const state = (s: Shares): SharesState => ({
+    shares: s.list().map(s.info),
+    tunnel: tunnel?.status() ?? { state: "off", url: null },
+    host: s.host(),
+  });
+  app.get("/api/shares", (c) => (shares ? c.json(state(shares)) : noSharing(c)));
+
+  /** Sets how the owner signs for guests: a display name no guest on an active link already uses. */
+  const setHost = (s: Shares, raw: string): string | null => {
+    const name = cleanName(raw);
+    if (!name) return "a name is 2 to 32 characters";
+    const lower = name.toLowerCase();
+    if (s.list().some((x) => [...x.guests.values()].some((g) => g.name.toLowerCase() === lower)))
+      return "a guest already uses that name";
+    s.setHost(name);
+    return null;
+  };
+  app.put("/api/shares/host", async (c) => {
+    if (!shares) return noSharing(c);
+    const body = hostSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: "bad request" }, 400);
+    const problem = setHost(shares, body.data.name);
+    return problem ? c.json({ error: problem }, problem.startsWith("a guest") ? 409 : 400) : c.json(state(shares));
+  });
 
   app.post("/api/shares", async (c) => {
     if (!shares) return noSharing(c);
     const body = newShareSchema.safeParse(await c.req.json().catch(() => null));
     if (!body.success) return c.json({ error: "bad request" }, 400);
-    if (!registry.get(body.data.wiki)) return c.json({ error: "no such wiki" }, 404);
+    const { host, ...link } = body.data;
+    if (!registry.get(link.wiki)) return c.json({ error: "no such wiki" }, 404);
+    // A remembered name that no longer fits keeps the current one; the dialog shows which is used.
+    if (host !== undefined) setHost(shares, host);
     try {
-      return c.json(shares.info(shares.create(body.data)), 201);
+      return c.json(shares.info(shares.create(link)), 201);
     } catch (e) {
       return c.json({ error: (e as Error).message }, 409);
     }
+  });
+
+  // After installing cloudflared, or when the tunnel failed: try again.
+  app.post("/api/shares/tunnel", (c) => {
+    if (!shares) return noSharing(c);
+    if (!shares.list().length) return c.json({ error: "No link is active." }, 409);
+    tunnel?.start();
+    return c.json(state(shares));
+  });
+
+  app.patch("/api/shares/:sid/guests/:gid", async (c) => {
+    if (!shares) return noSharing(c);
+    const body = blockSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: "bad request" }, 400);
+    return shares.block(c.req.param("sid"), c.req.param("gid"), body.data.blocked)
+      ? c.json(state(shares))
+      : c.json({ error: "no such guest" }, 404);
   });
 
   // Revoke one link, or every link at once ("Stop all sharing").

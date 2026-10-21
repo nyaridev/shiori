@@ -14,14 +14,21 @@ import { addAnswer, listAnswers } from "../answers.ts";
 import { serveFile } from "../files.ts";
 import type { Registry, Wiki } from "../registry.ts";
 import { search } from "../search.ts";
-import { addMessage, createThread, getThread, listThreads, setStatus, startedBy } from "../threads.ts";
+import {
+  addMessage,
+  createThread,
+  getThread,
+  listThreads,
+  setStatus,
+  startedBy,
+  visible,
+  visibleThreads,
+} from "../threads.ts";
 import { answerProblem, type WikiData } from "../wikiData.ts";
 import { LIMITS } from "./limits.ts";
 import { type Guest, newGuestId, type Share, type Shares, TOKEN } from "./shares.ts";
 
 const COOKIE = "shiori_guest";
-/** How the owner signs messages for guests, until the owner can pick a name (ADR-0003, phase 2). */
-export const HOST_NAME = "Host";
 
 /** Embeds `::embed` may show (server/markdown/elements.ts). */
 const FRAMES = ["https://www.youtube-nocookie.com", "https://player.vimeo.com", "https://www.figma.com"];
@@ -75,7 +82,7 @@ export function cleanName(raw: string): string | null {
   if (length < 2 || length > 32 || /[\p{C}]/u.test(name)) return null;
   return name;
 }
-/** Names a guest can't take, so nobody signs as the owner or an agent. */
+/** Names a guest can't take, so nobody signs as the owner or an agent. The owner's chosen name is taken too. */
 const RESERVED = new Set(["host", "owner", "agent", "you", "shiori", "admin"]);
 
 type Env = { Variables: { share: Share; ip: string; guest: Guest | null } };
@@ -176,7 +183,7 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
       kind: share.kind,
       expiresAt: share.expiresAt === null ? null : new Date(share.expiresAt).toISOString(),
       guest: guest ? { name: guest.name } : null,
-      host: HOST_NAME,
+      host: shares.host(),
     };
   };
 
@@ -192,7 +199,8 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
     const taken = [...share.guests.values()].some(
       (g) => g.id !== current?.id && g.name.toLowerCase() === name.toLowerCase(),
     );
-    if (taken || RESERVED.has(name.toLowerCase())) return c.json({ error: "that name is taken" }, 409);
+    const reserved = RESERVED.has(name.toLowerCase()) || name.toLowerCase() === shares.host().toLowerCase();
+    if (taken || reserved) return c.json({ error: "that name is taken" }, 409);
     if (current) {
       shares.log(share, current.name, `is now ${name}`);
       current.name = name;
@@ -249,11 +257,12 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
   // `wikiOnly` has already run for every wiki route.
   const write = [sameOrigin, small, writes] as const;
 
-  /** What guests see of who wrote something: never guest ids; the owner signs as the host. */
+  /** What guests see of who wrote something: never guest ids; the owner signs with the name they picked. */
   const authored = <T extends Authored>(x: T, me: Guest): T => {
-    const { guestId, ...rest } = x;
-    return { ...rest, name: x.author === "user" ? HOST_NAME : x.name, mine: !!guestId && guestId === me.id } as T;
+    const { guestId, hidden: _, ...rest } = x;
+    return { ...rest, name: x.author === "user" ? shares.host() : x.name, mine: !!guestId && guestId === me.id } as T;
   };
+  /** Callers pass threads through `visible` first: what the owner hid never reaches guests. */
   const threadFor = (t: Thread, me: Guest): Thread => ({ ...t, messages: t.messages.map((m) => authored(m, me)) });
   const answerFor = (a: Answer, me: Guest): Answer => authored(a, me);
 
@@ -298,18 +307,25 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
 
   api.get("/wikis/:id/threads", (c) => {
     const me = c.get("me");
-    const threads = listThreads(c.get("wiki").root, { page: c.req.query("page") });
+    const threads = visibleThreads(listThreads(c.get("wiki").root, { page: c.req.query("page") }));
     return c.json({ threads: threads.map((t) => threadFor(t, me)) });
   });
 
   api.get("/wikis/:id/answers", (c) => {
     const me = c.get("me");
     return c.json({
-      answers: listAnswers(c.get("wiki").root, { page: c.req.query("page") }).map((a) => answerFor(a, me)),
+      answers: listAnswers(c.get("wiki").root, { page: c.req.query("page") })
+        .filter((a) => !a.hidden)
+        .map((a) => answerFor(a, me)),
     });
   });
 
   const me = (c: Context<WikiEnv>) => ({ guest: c.get("me").id, name: c.get("me").name });
+  /** A thread as guests may see it; a hidden one doesn't exist for them. */
+  const shown = (w: Wiki, id: number) => {
+    const t = getThread(w.root, id);
+    return t && visible(t);
+  };
   const json = async (c: Context<WikiEnv>) => c.req.json().catch(() => null);
 
   api.post("/wikis/:id/threads", ...write, async (c) => {
@@ -328,12 +344,12 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
     const parsed = messageSchema.safeParse(await json(c));
     if (!parsed.success) return c.json({ error: "bad request" }, 400);
     const id = Number(c.req.param("tid"));
-    const t = getThread(w.root, id);
+    const t = shown(w, id);
     if (!t) return c.json({ error: "no such thread" }, 404);
     if (t.status !== "open") return c.json({ error: "this thread is closed" }, 409);
-    const updated = addMessage(w.root, id, me(c), parsed.data.body) as Thread;
+    addMessage(w.root, id, me(c), parsed.data.body);
     shares.log(c.get("share"), c.get("me").name, `replied to #${id}`);
-    return c.json(threadFor(updated, c.get("me")));
+    return c.json(threadFor(shown(w, id) as Thread, c.get("me")));
   });
 
   api.patch("/wikis/:id/threads/:tid", ...write, async (c) => {
@@ -341,12 +357,12 @@ export function buildGuestApp({ registry, data, shares, staticDir, secret }: Gue
     const parsed = statusSchema.safeParse(await json(c));
     if (!parsed.success) return c.json({ error: "bad request" }, 400);
     const id = Number(c.req.param("tid"));
-    const t = getThread(w.root, id);
+    const t = shown(w, id);
     if (!t) return c.json({ error: "no such thread" }, 404);
     if (startedBy(t) !== c.get("me").id) return c.json({ error: "only the person who started it can do that" }, 403);
-    const updated = setStatus(w.root, id, parsed.data.status) as Thread;
+    setStatus(w.root, id, parsed.data.status);
     shares.log(c.get("share"), c.get("me").name, `${parsed.data.status === "open" ? "reopened" : "resolved"} #${id}`);
-    return c.json(threadFor(updated, c.get("me")));
+    return c.json(threadFor(shown(w, id) as Thread, c.get("me")));
   });
 
   api.post("/wikis/:id/answers", ...write, async (c) => {

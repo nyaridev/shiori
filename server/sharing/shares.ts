@@ -15,6 +15,8 @@ export const DURATIONS: Record<ShareDuration, number | null> = {
 const ACTIVITY = 500;
 /** Ended links answer 410 instead of 404 while the guest server runs; only the latest are remembered. */
 const ENDED = 200;
+/** How the owner signs for guests until they pick a name in the Share dialog. */
+export const DEFAULT_HOST = "Host";
 
 export interface Guest {
   id: string;
@@ -55,6 +57,7 @@ export function createShares({
   origin?: () => string;
 } = {}) {
   const active = new Map<string, Share>();
+  let host = DEFAULT_HOST;
   const ended = new Set<string>();
   const listeners = new Set<() => void>();
   const changed = () => {
@@ -82,6 +85,11 @@ export function createShares({
   };
 
   const iso = (ms: number) => new Date(ms).toISOString();
+
+  const log = (share: Share, who: string, what: string) => {
+    share.activity.push({ at: iso(now()), who, what });
+    if (share.activity.length > ACTIVITY) share.activity.splice(0, share.activity.length - ACTIVITY);
+  };
 
   return {
     create({
@@ -156,10 +164,25 @@ export function createShares({
       return () => listeners.delete(l);
     },
 
-    log(share: Share, who: string, what: string) {
-      share.activity.push({ at: iso(now()), who, what });
-      if (share.activity.length > ACTIVITY) share.activity.splice(0, share.activity.length - ACTIVITY);
+    /** Blocks a guest and the address they joined from, or lets them back in. False when there's no such guest. */
+    block(shareId: string, guestId: string, blocked: boolean): boolean {
+      const share = [...active.values()].find((s) => s.id === shareId);
+      const guest = share?.guests.get(guestId);
+      if (!share || !guest) return false;
+      guest.blocked = blocked;
+      if (blocked) share.blockedIps.add(guest.ip);
+      else share.blockedIps.delete(guest.ip);
+      log(share, guest.name, blocked ? "was blocked by the host" : "was let back in by the host");
+      return true;
     },
+
+    /** How the owner's messages are signed for guests. */
+    host: () => host,
+    setHost(name: string) {
+      host = name;
+    },
+
+    log,
 
     info(share: Share): ShareInfo {
       const path = `/s/${share.token}/`;
@@ -173,6 +196,7 @@ export function createShares({
         path,
         url: `${origin()}${path}`,
         guests: [...share.guests.values()].map((g) => ({
+          id: g.id,
           name: g.name,
           joinedAt: iso(g.joinedAt),
           lastSeen: iso(g.lastSeen),

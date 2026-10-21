@@ -42,6 +42,13 @@
   background: var(--hover);
   color: var(--text);
 }
+.titlebar-share {
+  display: flex;
+  gap: var(--s-1);
+  width: auto;
+  padding: 0 var(--s-3);
+  font-size: var(--t-xs);
+}
 .titlebar-close:hover {
   background: #c42b1c;
   color: #fff;

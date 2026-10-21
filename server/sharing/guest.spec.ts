@@ -2,11 +2,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { GuestSession, Thread } from "../../shared/api.ts";
+import type { Answer, GuestSession, SharesState, Thread, TunnelStatus } from "../../shared/api.ts";
 import { buildApp } from "../app.ts";
 import { createLive } from "../live.ts";
 import { createRegistry } from "../registry.ts";
-import { addMessage, closeAll, listThreads } from "../threads.ts";
+import { addMessage, closeAll, listThreads, waitingForAgent } from "../threads.ts";
 import { createWikiData } from "../wikiData.ts";
 import { buildGuestApp, cleanName } from "./guest.ts";
 import { LIMITS } from "./limits.ts";
@@ -18,6 +18,8 @@ let clock: number;
 let shares: Shares;
 let guestApp: ReturnType<typeof buildGuestApp>;
 let ownerApp: ReturnType<typeof buildApp>;
+/** The tunnel the owner's app reports; tests set its status. */
+let tunnel: { now: TunnelStatus; starts: number; status: () => TunnelStatus; start: () => void };
 
 function wiki(id: string) {
   const root = join(app, "wikis", id);
@@ -45,7 +47,15 @@ beforeEach(() => {
   const data = createWikiData(live);
   shares = createShares({ now: () => clock, origin: () => HOST });
   guestApp = buildGuestApp({ registry, data, shares, secret: "test-secret" });
-  ownerApp = buildApp({ registry, live, data, shares });
+  tunnel = {
+    now: { state: "off", url: null },
+    starts: 0,
+    status: () => tunnel.now,
+    start: () => {
+      tunnel.starts++;
+    },
+  };
+  ownerApp = buildApp({ registry, live, data, shares, tunnel });
 });
 afterEach(() => {
   closeAll();
@@ -390,5 +400,165 @@ describe("the owner's share routes", () => {
     const devApp = buildApp({ registry, live: createLive(registry) });
     const res = await devApp.request("http://localhost:4411/api/shares");
     expect(res.status).toBe(409);
+  });
+});
+
+describe("the owner's share state", () => {
+  const owner = (path: string, init?: RequestInit) => ownerApp.request(`http://127.0.0.1:4400${path}`, init);
+  const send = (method: string, body: unknown) => ({
+    method,
+    headers: { "content-type": "application/json", origin: "http://localhost:4400" },
+    body: JSON.stringify(body),
+  });
+  const state = async () => (await (await owner("/api/shares")).json()) as SharesState;
+
+  it("lists the tunnel and how the owner signs, and tries the tunnel again", async () => {
+    tunnel.now = { state: "missing", url: null, install: "winget install Cloudflare.cloudflared" };
+    expect(await state()).toMatchObject({ shares: [], tunnel: tunnel.now, host: "Host" });
+    expect((await owner("/api/shares/tunnel", send("POST", {}))).status).toBe(409);
+    shares.create({ wiki: "alpha", kind: "view" });
+    expect((await owner("/api/shares/tunnel", send("POST", {}))).status).toBe(200);
+    expect(tunnel.starts).toBe(1);
+  });
+
+  it("let the owner pick their name for guests", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    expect((await owner("/api/shares/host", send("PUT", { name: "  Nari " }))).status).toBe(200);
+    expect((await state()).host).toBe("Nari");
+    const ana = browser(share);
+    expect(((await (await ana.get("/api/session")).json()) as GuestSession).host).toBe("Nari");
+    expect((await ana.join("nari")).status).toBe(409);
+    await ana.join("Ana");
+    const t = (await (
+      await ana.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "Hi" })
+    ).json()) as Thread;
+    addMessage(alpha(), t.id, "user", "Hello");
+    const seen = ((await (await ana.get("/api/wikis/alpha/threads")).json()) as { threads: Thread[] }).threads[0];
+    expect(seen.messages[1].name).toBe("Nari");
+
+    expect((await owner("/api/shares/host", send("PUT", { name: "ana" }))).status).toBe(409);
+    expect((await owner("/api/shares/host", send("PUT", { name: "x" }))).status).toBe(400);
+    // A new link carries the name the dialog remembers.
+    await owner("/api/shares", send("POST", { wiki: "beta", kind: "view", host: "Nari N." }));
+    expect(shares.host()).toBe("Nari N.");
+  });
+
+  it("block a guest and their address, and let them back in", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const ana = browser(share);
+    await ana.join("Ana");
+    const { id } = (await state()).shares[0].guests[0];
+    const block = (blocked: boolean, sid = share.id, gid = id) =>
+      owner(`/api/shares/${sid}/guests/${gid}`, send("PATCH", { blocked }));
+    expect((await block(true)).status).toBe(200);
+    expect((await ana.get("/api/wikis/alpha")).status).toBe(403);
+    // A fresh cookie from the same address is blocked too.
+    expect((await browser(share).get("/api/session")).status).toBe(403);
+    const listed = (await state()).shares[0];
+    expect(listed.guests[0]).toMatchObject({ name: "Ana", blocked: true });
+    expect(listed.activity.at(-1)).toMatchObject({ who: "Ana", what: "was blocked by the host" });
+    expect((await block(false)).status).toBe(200);
+    expect((await ana.get("/api/wikis/alpha")).status).toBe(200);
+    expect((await block(true, share.id, "nobody")).status).toBe(404);
+    expect((await block(true, "nolink")).status).toBe(404);
+  });
+
+  it("refuse other sites", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const evil = (method: string, path: string, body: unknown) =>
+      owner(path, { ...send(method, body), headers: { origin: "https://evil.example" } });
+    expect((await evil("PUT", "/api/shares/host", { name: "Mallory" })).status).toBe(403);
+    expect((await evil("POST", "/api/shares/tunnel", {})).status).toBe(403);
+    expect((await evil("PATCH", `/api/shares/${share.id}/guests/x`, { blocked: false })).status).toBe(403);
+    expect((await evil("PATCH", "/api/wikis/alpha/messages/1", { hidden: true })).status).toBe(403);
+    expect((await evil("PATCH", "/api/wikis/alpha/answers/1", { hidden: true })).status).toBe(403);
+    expect(shares.host()).toBe("Host");
+  });
+
+  it("say so in dev", async () => {
+    const registry = createRegistry(app);
+    const devApp = buildApp({ registry, live: createLive(registry) });
+    for (const [method, path] of [
+      ["PUT", "/api/shares/host"],
+      ["POST", "/api/shares/tunnel"],
+      ["PATCH", "/api/shares/a/guests/b"],
+    ]) {
+      const res = await devApp.request(`http://localhost:4411${path}`, send(method, {}));
+      expect(res.status, path).toBe(409);
+    }
+  });
+});
+
+describe("hiding a guest's comment", () => {
+  const owner = (path: string, init?: RequestInit) => ownerApp.request(`http://127.0.0.1:4400${path}`, init);
+  const hide = (what: "messages" | "answers", id: number, hidden = true) =>
+    owner(`/api/wikis/alpha/${what}/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", origin: "http://localhost:4400" },
+      body: JSON.stringify({ hidden }),
+    });
+  const threadsOf = async (b: ReturnType<typeof browser>) =>
+    ((await (await b.get("/api/wikis/alpha/threads")).json()) as { threads: Thread[] }).threads;
+  const posted = async (res: Promise<Response>) => (await (await res).json()) as Thread;
+
+  it("keeps it from guests and the inbox; the owner still sees it, marked", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const ana = browser(share);
+    await ana.join("Ana");
+    const bo = browser(share, "198.51.100.2");
+    await bo.join("Bo");
+    const t = await posted(ana.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "Fine" }));
+    const spam = await posted(bo.post(`/api/wikis/alpha/threads/${t.id}/messages`, { body: "BUY NOW" }));
+    const spamId = spam.messages[1].id;
+
+    expect((await hide("messages", spamId)).status).toBe(200);
+    for (const b of [ana, bo]) {
+      const seen = await threadsOf(b);
+      expect(seen[0].messages.map((m) => m.body)).toEqual(["Fine"]);
+      expect(JSON.stringify(seen)).not.toContain("BUY NOW");
+      expect(JSON.stringify(seen)).not.toContain("hidden");
+    }
+    // Replying hands back the thread as guests see it.
+    const after = await posted(ana.post(`/api/wikis/alpha/threads/${t.id}/messages`, { body: "Thanks" }));
+    expect(after.messages.map((m) => m.body)).toEqual(["Fine", "Thanks"]);
+    const mine = listThreads(alpha())[0];
+    expect(mine.messages[1]).toMatchObject({ body: "BUY NOW", hidden: true });
+    // The inbox sees what guests see.
+    expect(waitingForAgent(listThreads(alpha()))[0].messages.map((m) => m.body)).toEqual(["Fine", "Thanks"]);
+
+    expect((await hide("messages", spamId, false)).status).toBe(200);
+    expect((await threadsOf(ana))[0].messages).toHaveLength(3);
+  });
+
+  it("hides the whole thread when its first message is hidden", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const bo = browser(share);
+    await bo.join("Bo");
+    const t = await posted(bo.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "spam" }));
+    await hide("messages", t.messages[0].id);
+    expect(await threadsOf(bo)).toEqual([]);
+    expect((await bo.post(`/api/wikis/alpha/threads/${t.id}/messages`, { body: "more" })).status).toBe(404);
+    expect((await bo.patch(`/api/wikis/alpha/threads/${t.id}`, { status: "resolved" })).status).toBe(404);
+    expect(waitingForAgent(listThreads(alpha()))).toEqual([]);
+    expect(listThreads(alpha())[0].messages).toHaveLength(1);
+  });
+
+  it("hides answers too, and only guests' text", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const bo = browser(share);
+    await bo.join("Bo");
+    const res = await bo.post("/api/wikis/alpha/answers", { page: "plan", question: "q1", choice: "Steam", body: "x" });
+    const a = (await res.json()) as Answer;
+    expect((await hide("answers", a.id)).status).toBe(200);
+    const seen = (await (await bo.get("/api/wikis/alpha/answers?page=plan")).json()) as { answers: Answer[] };
+    expect(seen.answers).toEqual([]);
+    const index = await (await bo.get("/api/wikis/alpha/pages")).json();
+    expect(index.questions[0].answers).toBe(0);
+
+    const t = await posted(bo.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "Hi" }));
+    const reply = addMessage(alpha(), t.id, "agent", "Hello") as Thread;
+    expect((await hide("messages", reply.messages[1].id)).status).toBe(400);
+    expect((await hide("messages", 999)).status).toBe(404);
+    expect((await hide("answers", 999)).status).toBe(404);
   });
 });

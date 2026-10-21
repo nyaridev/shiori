@@ -1,0 +1,148 @@
+/* The owner's Share dialog (ShareDialog.tsx). */
+.sh-share {
+  display: grid;
+  gap: var(--s-4);
+}
+.sh-share p {
+  margin: 0;
+}
+.sh-share-quiet {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-share-problem {
+  color: var(--tone-bad);
+  font-size: var(--t-sm);
+}
+.sh-share-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+.sh-share-row > .sh-field {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+}
+.sh-share-command {
+  flex: 1;
+  min-width: 0;
+}
+.sh-share-tunnel {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+}
+
+.sh-share-new {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--raised);
+}
+.sh-share-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-3);
+}
+@media (max-width: 560px) {
+  .sh-share-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.sh-share-field {
+  display: grid;
+  gap: var(--s-1);
+  align-content: start;
+}
+.sh-share-label {
+  font-size: var(--t-xs);
+  font-weight: 650;
+}
+.sh-share-actions,
+.sh-share-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.sh-share-links {
+  display: grid;
+  gap: var(--s-3);
+}
+.sh-share-heading {
+  margin: 0;
+  font-size: var(--t-md);
+}
+.sh-share-link {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+}
+.sh-share-for {
+  font-size: var(--t-sm);
+}
+.sh-share-ends {
+  margin-left: auto;
+}
+.sh-share-subheading {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: var(--s-1) 0 0;
+  font-size: var(--t-sm);
+}
+.sh-share-guests {
+  display: grid;
+  gap: var(--s-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-share-guests li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-sm);
+}
+.sh-share-guests li > :last-child {
+  margin-left: auto;
+}
+.sh-share-guest {
+  font-weight: 600;
+}
+.sh-share-guests li[data-blocked] .sh-share-guest {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.sh-share-activity summary {
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+  cursor: pointer;
+}
+.sh-share-activity ul {
+  display: grid;
+  gap: 2px;
+  margin: var(--s-2) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-soft);
+  font-size: var(--t-xs);
+}
+.sh-share-activity time {
+  color: var(--muted);
+}
+.sh-share-foot {
+  padding-top: var(--s-3);
+  border-top: var(--bw) solid var(--border);
+}

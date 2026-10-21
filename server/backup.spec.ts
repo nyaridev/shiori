@@ -2,9 +2,9 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { addAnswer, listAnswers } from "./answers.ts";
+import { addAnswer, listAnswers, setAnswerHidden } from "./answers.ts";
 import { BACKUP_FILE, importData, readBackup, writeBackup } from "./backup.ts";
-import { addMessage, closeAll, createThread, listThreads, setStatus } from "./threads.ts";
+import { addMessage, closeAll, createThread, listThreads, setHidden, setStatus } from "./threads.ts";
 
 let a: string;
 let b: string;
@@ -27,7 +27,10 @@ describe("backups", () => {
     addMessage(a, second.id, { guest: "g1", name: "Ana" }, "Agreed");
     setStatus(a, second.id, "resolved");
     addAnswer(a, "plan", "q1", "Steam", "Most players are there");
-    addAnswer(a, "plan", "q1", "itch.io", "", { guest: "g1", name: "Ana" });
+    const hidden = addAnswer(a, "plan", "q1", "itch.io", "", { guest: "g1", name: "Ana" });
+    // What the owner hid stays hidden.
+    setHidden(a, (listThreads(a)[1].messages.at(-1) as { id: number }).id, true);
+    setAnswerHidden(a, hidden.id, true);
 
     const written = writeBackup(a);
     expect(written).toMatchObject({ file: join(a, BACKUP_FILE), threads: 2, answers: 2 });
@@ -36,6 +39,8 @@ describe("backups", () => {
     importData(b, readBackup(a));
     expect(listThreads(b)).toEqual(listThreads(a));
     expect(listAnswers(b)).toEqual(listAnswers(a));
+    expect(listAnswers(b)[1].hidden).toBe(true);
+    expect(listThreads(b)[1].messages[2].hidden).toBe(true);
     // New comments continue after the restored ids.
     expect(createThread(b, "", { exact: "x", prefix: "", suffix: "" }, "New").id).toBe(3);
   });

@@ -53,6 +53,9 @@ const MIGRATIONS = [
    alter table answers add column author text not null default 'user' check (author in ('user', 'guest'));
    alter table answers add column guest_id text;
    alter table answers add column guest_name text;`,
+  // Moderation (ADR-0003): the owner hides a guest's text from guests and from the inbox, and can show it again.
+  `alter table messages add column hidden integer not null default 0;
+   alter table answers add column hidden integer not null default 0;`,
 ];
 
 const open = new Map<string, DatabaseSync>();
@@ -117,6 +120,7 @@ interface MessageRow {
   guest_name: string | null;
   body: string;
   created_at: string;
+  hidden: number;
 }
 
 function hydrate(db: DatabaseSync, rows: ThreadRow[]): Thread[] {
@@ -134,7 +138,13 @@ function hydrate(db: DatabaseSync, rows: ThreadRow[]): Thread[] {
     resolvedAt: r.resolved_at,
     messages: messages
       .filter((m) => m.thread_id === r.id)
-      .map((m) => ({ id: m.id, ...authoredOf(m), body: m.body, createdAt: m.created_at })),
+      .map((m) => ({
+        id: m.id,
+        ...authoredOf(m),
+        body: m.body,
+        createdAt: m.created_at,
+        ...(m.hidden ? { hidden: true } : {}),
+      })),
   }));
 }
 
@@ -192,7 +202,36 @@ export function setStatus(root: string, id: number, status: ThreadStatus): Threa
   return getThread(root, id);
 }
 
+/**
+ * Hides a guest's message from guests and from the inbox, or shows it again. Only guests' messages can be hidden;
+ * null when there's no such message.
+ */
+export function setHidden(root: string, messageId: number, hidden: boolean): Thread | null | "not a guest's" {
+  const db = dbFor(root);
+  const row = db.prepare("select thread_id, author from messages where id = ?").get(messageId) as
+    | { thread_id: number; author: Author }
+    | undefined;
+  if (!row) return null;
+  if (row.author !== "guest") return "not a guest's";
+  db.prepare("update messages set hidden = ? where id = ?").run(hidden ? 1 : 0, messageId);
+  return getThread(root, row.thread_id);
+}
+
+/**
+ * A thread as guests and the inbox see it: without hidden messages, and gone when its first message (the comment
+ * itself, with its quote) is hidden.
+ */
+export function visible(t: Thread): Thread | null {
+  if (t.messages[0]?.hidden) return null;
+  return t.messages.some((m) => m.hidden) ? { ...t, messages: t.messages.filter((m) => !m.hidden) } : t;
+}
+export const visibleThreads = (threads: Thread[]): Thread[] =>
+  threads.flatMap((t) => {
+    const v = visible(t);
+    return v ? [v] : [];
+  });
+
 /** Open threads whose last message is a person's (the owner's or a guest's): what an agent should look at. */
 export function waitingForAgent(threads: Thread[]): Thread[] {
-  return threads.filter((t) => t.status === "open" && t.messages.at(-1)?.author !== "agent");
+  return visibleThreads(threads).filter((t) => t.status === "open" && t.messages.at(-1)?.author !== "agent");
 }

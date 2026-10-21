@@ -13,6 +13,7 @@ interface AnswerRow {
   guest_id: string | null;
   guest_name: string | null;
   created_at: string;
+  hidden: number;
 }
 
 const toAnswer = (r: AnswerRow): Answer => ({
@@ -24,6 +25,7 @@ const toAnswer = (r: AnswerRow): Answer => ({
   ...authoredOf(r),
   author: r.author,
   createdAt: r.created_at,
+  ...(r.hidden ? { hidden: true } : {}),
 });
 
 /** Who answers: the owner, or a guest from a share link. Agents decide in the page instead. */
@@ -55,9 +57,21 @@ export function addAnswer(
   return toAnswer(db.prepare("select * from answers where id = ?").get(lastInsertRowid) as unknown as AnswerRow);
 }
 
-/** How many answers each question has, keyed `page#question`. */
+/** Hides a guest's answer from guests and from the inbox, or shows it again. */
+export function setAnswerHidden(root: string, id: number, hidden: boolean): Answer | null | "not a guest's" {
+  const db = dbFor(root);
+  const row = db.prepare("select * from answers where id = ?").get(id) as unknown as AnswerRow | undefined;
+  if (!row) return null;
+  if (row.author !== "guest") return "not a guest's";
+  db.prepare("update answers set hidden = ? where id = ?").run(hidden ? 1 : 0, id);
+  return toAnswer({ ...row, hidden: hidden ? 1 : 0 });
+}
+
+/** How many answers each question has (hidden ones don't count), keyed `page#question`. */
 export function answerCounts(root: string): Map<string, number> {
-  const rows = dbFor(root).prepare("select page, question, count(*) as n from answers group by page, question").all();
+  const rows = dbFor(root)
+    .prepare("select page, question, count(*) as n from answers where hidden = 0 group by page, question")
+    .all();
   return new Map(
     (rows as unknown as { page: string; question: string; n: number }[]).map((r) => [`${r.page}#${r.question}`, r.n]),
   );

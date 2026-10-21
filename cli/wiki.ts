@@ -78,12 +78,16 @@ function printThread(wiki: Wiki, t: Thread) {
   console.log(`\n#${t.id} [${t.status}] ${wiki.id} › ${t.page || "(home)"}  pages/${t.page || "index"}.md`);
   if (isPageComment(t.quote)) console.log("  on:    the whole page");
   else console.log(`  quote: …${short(t.quote.prefix, 32)}«${t.quote.exact}»${short(t.quote.suffix, 32)}…`);
-  for (const m of t.messages) console.log(`  ${who(m)}: ${m.body.replace(/\n/g, "\n         ")}`);
+  for (const m of t.messages) {
+    // Hidden by the owner (ADR-0003): `threads` lists it, marked; the inbox leaves it out.
+    const tag = m.hidden ? " (hidden by the owner)" : "";
+    console.log(`  ${who(m)}${tag}: ${m.body.replace(/\n/g, "\n         ")}`);
+  }
 }
 
 /** Answers to questions their page still has open, grouped by question. Resolving the question clears them. */
 function openAnswers(wiki: Wiki): { page: PageData; question: Question; answers: Answer[] }[] {
-  const answers = listAnswers(wiki.root);
+  const answers = listAnswers(wiki.root).filter((a) => !a.hidden);
   if (!answers.length) return [];
   const corpus = buildCorpus(wiki, listPages(wiki));
   const groups = new Map<string, { page: PageData; question: Question; answers: Answer[] }>();

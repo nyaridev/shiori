@@ -15,8 +15,8 @@ export function DialogContent({
   title: string;
   description?: string;
   /** `wide` for media: an image at a readable size. `palette`: near the top, no title bar (the title is for screen
-   * readers), for a search box and its results. */
-  size?: "md" | "wide" | "palette";
+   * readers), for a search box and its results. `lg`: a form with lists under it, scrolling when tall. */
+  size?: "md" | "lg" | "wide" | "palette";
   children: ReactNode;
 }) {
   return (

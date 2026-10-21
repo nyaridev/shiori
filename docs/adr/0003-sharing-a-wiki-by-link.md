@@ -155,6 +155,24 @@ Details settled while building the guest server (2026-10-21):
 | Owner's server | Now answers only to loopback host names (no DNS rebinding) and refuses writes whose `Origin` isn't the app, so another site can't make a share link |
 | Until the tunnel | Links point at `http://127.0.0.1:4420/s/<token>/` and work on the host only; item 10 swaps in the public address |
 
+### Phase 2 as built
+
+Details settled while building the tunnel and the owner's controls (2026-10-21):
+
+| Part | Decision |
+|---|---|
+| Code | `server/sharing/tunnel.ts` (cloudflared), owner routes in `server/app.ts`, client in `src/sharing/` (`ShareDialog.tsx`, `useShares.ts`) |
+| Finding cloudflared | On `PATH`, then where winget installs it (`Program Files (x86)/cloudflared/`), so installing while Shiori runs works without a restart. Checked again each time the tunnel starts |
+| Starting | `cloudflared tunnel --no-autoupdate --url http://127.0.0.1:4420` with the first active link. The address is the `*.trycloudflare.com` URL in its log |
+| Health check | Once cloudflared logs "Registered tunnel connection" (or 5 s after the address shows), `GET <address>/` until it answers with the guest server's own 404 and CSP, every 2 s, for up to 60 s. The name is resolved through 1.1.1.1, so Windows never caches "no such name" for an address a few seconds too new |
+| States | `GET /api/shares` returns `{ shares, tunnel, host }`; `tunnel.state` is `off`, `missing` (with the install command), `starting`, `up` (with the address) or `failed` (with cloudflared's last log line). `POST /api/shares/tunnel` tries again; any link starting or ending does too |
+| Links' address | `ShareInfo.url` is on the tunnel's address only while it's `up`; otherwise on `http://127.0.0.1:4420`, which the dialog says works on this PC only |
+| Stopping | With the last link, on `SIGINT`/`SIGTERM` and on the server's exit. The desktop app ends the server with `taskkill /T`, so cloudflared goes with it |
+| Owner's name | Held in memory (`PUT /api/shares/host`, 2–32 characters); the dialog remembers it in the browser and sends it with each new link, so it survives restarts. A guest can't join with it, and the owner can't take a name a guest on an active link uses |
+| Blocking | `PATCH /api/shares/:id/guests/:guest { blocked }` blocks the guest and the address they joined from (a fresh cookie doesn't get around it); letting them back in clears both |
+| Hiding | Migration 4 adds `hidden` to `messages` and `answers`. `PATCH /api/wikis/:id/messages/:mid` and `/answers/:aid { hidden }`, for guests' text only. Guests never receive hidden text; a hidden first message hides the whole thread from them (replying to it or resolving it answers `404`). `pnpm wiki inbox` and the question counts leave it out; `pnpm wiki threads` lists it marked "hidden by the owner"; backups keep the flag |
+| Dialog | A Share button in the sidebar head and, in the desktop window, the title bar. Never rendered for guests. In dev it shows the server's `409` message |
+
 ### Two PCs with the same wiki (phase 2)
 
 Pages are already files in git. To merge comments too: comments and answers get IDs that can't collide (ULIDs plus
@@ -239,9 +257,9 @@ Anything not written into it can't be reached, so new owner features stay privat
 
 **Phase 2: tunnel and owner UI**
 
-10. [ ] `cloudflared` manager: detect, start, read the address, health check, stop on exit
-11. [ ] Share dialog: kind, duration, copy link; active links, guests, activity
-12. [ ] Moderation: hide a comment, block a guest; owner's display name for guests
+10. [x] `cloudflared` manager: detect, start, read the address, health check, stop on exit
+11. [x] Share dialog: kind, duration, copy link; active links, guests, activity
+12. [x] Moderation: hide a comment, block a guest; owner's display name for guests
 
 **Phase 3: desktop**
 

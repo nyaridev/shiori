@@ -146,6 +146,26 @@
   margin: 2px 0 0;
   white-space: pre-wrap;
 }
+.sh-message-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  min-height: 24px;
+}
+.sh-message-hide {
+  opacity: 0;
+}
+.sh-message:hover .sh-message-hide,
+.sh-message-hide:focus-visible,
+.sh-message[data-hidden] .sh-message-hide {
+  opacity: 1;
+}
+/* Hidden by the owner: still here for them, faded. */
+.sh-message[data-hidden] p {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
 .sh-message-author {
   color: var(--muted);
   font-size: var(--t-xs);

@@ -1,5 +1,6 @@
 // Starts the Shiori server. `--static` also serves the built UI from dist/ (start-web.bat, the desktop app) and can
-// share wikis: the guest server (ADR-0003) listens on its own port while at least one share link is active.
+// share wikis: the guest server (ADR-0003) listens on its own port while at least one share link is active, and
+// cloudflared's Quick Tunnel gives it a public address.
 // `--dev` shows only the template, filled in as a preview (pnpm dev), and can't share.
 import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
@@ -12,6 +13,7 @@ import { APP_ROOT } from "./paths.ts";
 import { createRegistry } from "./registry.ts";
 import { buildGuestApp } from "./sharing/guest.ts";
 import { createShares } from "./sharing/shares.ts";
+import { createTunnel } from "./sharing/tunnel.ts";
 import { closeAll } from "./threads.ts";
 import { createWikiData } from "./wikiData.ts";
 
@@ -36,9 +38,12 @@ const registry = createRegistry(APP_ROOT, { dev: values.dev });
 const live = createLive(registry);
 live.start();
 const data = createWikiData(live);
-// Until the tunnel (ADR-0003, phase 2) gives links a public address, they work on this machine only.
-const shares = values.static ? createShares({ origin: () => `http://127.0.0.1:${guestPort}` }) : undefined;
-const app = buildApp({ registry, live, data, shares, staticDir: servedDir });
+const tunnel = createTunnel({ port: guestPort, log: (line) => console.log(line) });
+// Until the tunnel is up, links point at the guest server itself and work on this PC only.
+const shares = values.static
+  ? createShares({ origin: () => tunnel.url() ?? `http://127.0.0.1:${guestPort}` })
+  : undefined;
+const app = buildApp({ registry, live, data, shares, tunnel, staticDir: servedDir });
 
 const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
   const n = registry.all().length;
@@ -65,7 +70,10 @@ if (shares) {
         console.log(`Sharing: guest server on http://127.0.0.1:${guestPort}`),
       );
       sweeper = setInterval(() => shares.sweep(), 30_000);
-    } else if (!active && guestServer) {
+    }
+    if (active) tunnel.start();
+    else if (guestServer) {
+      tunnel.stop();
       guestServer.close();
       if ("closeAllConnections" in guestServer) guestServer.closeAllConnections();
       guestServer = null;
@@ -75,8 +83,11 @@ if (shares) {
   });
 }
 
+// cloudflared stops with Shiori. The desktop app, which can't let Node clean up, ends the whole process tree.
+process.on("exit", () => tunnel.stop());
 const shutdown = () => {
   shares?.stopAll();
+  tunnel.stop();
   live.stop();
   closeAll();
   server.close();

@@ -38,6 +38,15 @@ export function useThreads(wikiId: string, page: string) {
     [wikiId, reload],
   );
 
-  return { threads: res.data ?? NONE, create, reply, setStatus };
+  /** The owner hides a guest's message from guests and the inbox, or shows it again. */
+  const hide = useCallback(
+    async (message: number, hidden: boolean) => {
+      await api.hideMessage(wikiId, message, hidden);
+      reload();
+    },
+    [wikiId, reload],
+  );
+
+  return { threads: res.data ?? NONE, create, reply, setStatus, hide };
 }
 export type Threads = ReturnType<typeof useThreads>;

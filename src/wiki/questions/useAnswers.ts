@@ -20,5 +20,13 @@ export function useAnswers(wikiId: string, page: string) {
     },
     [wikiId, page, reload],
   );
-  return { answers: res.data ?? NONE, answer };
+  /** The owner hides a guest's answer from guests and the inbox, or shows it again. */
+  const hide = useCallback(
+    async (id: number, hidden: boolean) => {
+      await api.hideAnswer(wikiId, id, hidden);
+      reload();
+    },
+    [wikiId, reload],
+  );
+  return { answers: res.data ?? NONE, answer, hide };
 }

@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { Question } from "../../../shared/api.ts";
 import { authorName, canComment, useGuest } from "../../guest/GuestContext.ts";
 import { ago } from "../../lib/time.ts";
-import { Badge, Button, Textarea } from "../../ui/index.ts";
+import { Badge, Button, IconButton, Textarea } from "../../ui/index.ts";
 import { usePage } from "../PageContext.ts";
 import "./questions.css";
 
@@ -91,11 +91,23 @@ export function QuestionCard({ question }: { question: Question }) {
       {answers.length > 0 && (
         <ul className="sh-question-answers" aria-label="Answers so far">
           {answers.map((a) => (
-            <li key={a.id}>
+            <li key={a.id} data-hidden={a.hidden || undefined}>
               {(guest || a.author === "guest") && <span className="sh-question-by">{authorName(guest, a)}</span>}
               {a.choice && <span className="sh-question-choice">{a.choice}</span>}
               {a.body && <span>{a.body}</span>}
-              <time dateTime={a.createdAt}>{ago(a.createdAt)}</time>
+              <time dateTime={a.createdAt}>
+                {ago(a.createdAt)}
+                {a.hidden && " · hidden from guests"}
+              </time>
+              {!guest && a.author === "guest" && ctx && (
+                <IconButton
+                  icon={a.hidden ? "eye" : "eyeOff"}
+                  label={a.hidden ? "Show to guests again" : "Hide from guests and the inbox"}
+                  size="sm"
+                  className="sh-question-hide"
+                  onClick={() => void ctx.hideAnswer(a.id, !a.hidden)}
+                />
+              )}
             </li>
           ))}
         </ul>

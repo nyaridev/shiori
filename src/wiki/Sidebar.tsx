@@ -2,6 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router";
 import type { NavNode, WikiDetail } from "../../shared/api.ts";
 import { useGuest } from "../guest/GuestContext.ts";
 import { withBase } from "../lib/base.ts";
+import { ShareDialog } from "../sharing/ShareDialog.tsx";
 import { Icon, IconButton, Kbd, Tooltip } from "../ui/index.ts";
 import { shortcutLabel } from "./SearchPalette.tsx";
 import { SPECIALS } from "./special/SpecialPage.tsx";
@@ -27,13 +28,20 @@ export function Sidebar({
             {guest.kind === "comment" ? "Shared with you" : "Shared with you to read"} · {guest.guest?.name}
           </span>
         ) : (
-          <Tooltip content="Back to the deck" side="right">
-            <IconButton
-              icon="deck"
-              label="Back to the deck"
-              onClick={() => navigate("/", { state: { from: wiki.id } })}
+          <>
+            <Tooltip content="Back to the deck" side="right">
+              <IconButton
+                icon="deck"
+                label="Back to the deck"
+                onClick={() => navigate("/", { state: { from: wiki.id } })}
+              />
+            </Tooltip>
+            <ShareDialog
+              wikiId={wiki.id}
+              title={wiki.title}
+              trigger={<IconButton icon="share" label="Share this wiki" className="sh-sidebar-share" />}
             />
-          </Tooltip>
+          </>
         )}
       </div>
       <NavLink to={`/w/${wiki.id}`} end className="sh-sidebar-wiki" onClick={onNavigate}>

@@ -323,6 +323,11 @@
   z-index: 41;
   animation: sh-pop 180ms var(--ease);
 }
+.sh-dialog[data-size="lg"] {
+  width: min(600px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
 .sh-dialog[data-size="wide"] {
   width: min(1100px, calc(100vw - 32px));
 }

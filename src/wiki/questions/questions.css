@@ -124,3 +124,10 @@
   color: var(--muted);
   font-size: var(--t-xs);
 }
+.sh-question-hide {
+  margin-left: auto;
+}
+.sh-question-answers li[data-hidden] > :not(time, .sh-question-hide) {
+  opacity: 0.5;
+  text-decoration: line-through;
+}

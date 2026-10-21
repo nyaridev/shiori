@@ -34,6 +34,9 @@
   display: flex;
   margin-bottom: var(--s-2);
 }
+.sh-sidebar-share {
+  margin-left: auto;
+}
 .sh-sidebar-wiki {
   display: flex;
   align-items: center;

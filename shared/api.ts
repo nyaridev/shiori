@@ -187,6 +187,8 @@ export interface Authored {
   guestId?: string;
   /** Guests only: this guest wrote it. */
   mine?: boolean;
+  /** Owner and CLI only: the owner hid this guest's text from guests and from the inbox. */
+  hidden?: boolean;
 }
 
 export interface Message extends Authored {
@@ -225,12 +227,46 @@ export interface ShareInfo {
   expiresAt: string | null;
   /** The link's path on the guest server: `/s/<token>/`. */
   path: string;
-  /** The full link, on the guest server's local address until a tunnel gives it a public one. */
+  /** The full link: on the tunnel's public address while it's up, else the guest server's, for this PC only. */
   url: string;
-  guests: { name: string; joinedAt: string; lastSeen: string; writes: number; blocked: boolean }[];
+  guests: ShareGuest[];
   /** Client addresses blocked for going over the limits. */
   blockedIps: number;
   activity: ShareActivity[];
+}
+
+/** Someone who joined through a link, as the owner sees them. */
+export interface ShareGuest {
+  /** For blocking; never shown to other guests. */
+  id: string;
+  name: string;
+  joinedAt: string;
+  lastSeen: string;
+  /** Comments, replies and answers. */
+  writes: number;
+  blocked: boolean;
+}
+
+/**
+ * The Cloudflare Quick Tunnel that gives links a public address: `off` with no link active, `missing` when
+ * `cloudflared` isn't installed, `starting` until its address answers, `up`, or `failed` with why.
+ */
+export type TunnelState = "off" | "missing" | "starting" | "up" | "failed";
+
+export interface TunnelStatus {
+  state: TunnelState;
+  /** The public address while `up`. */
+  url: string | null;
+  error?: string;
+  /** The command that installs `cloudflared`, while it's `missing`. */
+  install?: string;
+}
+
+/** `GET /api/shares`: every active link, the tunnel, and how the owner signs for guests. */
+export interface SharesState {
+  shares: ShareInfo[];
+  tunnel: TunnelStatus;
+  host: string;
 }
 
 export interface ShareActivity {
