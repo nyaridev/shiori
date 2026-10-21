@@ -1,10 +1,10 @@
-/* The wiki header (WikiHeader.tsx): sticky over the page and the rail. */
+/* The wiki header (WikiHeader.tsx): sticky across the whole window, over the sidebar, the page and the rail. */
 .sh-wiki-head {
   position: sticky;
   top: 0;
   z-index: 12;
   grid-row: 1;
-  grid-column: 2 / -1;
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: var(--s-2);
@@ -46,7 +46,6 @@ html:has(.sh-wiki-head) {
 }
 @media (max-width: 860px) {
   .sh-wiki-head {
-    grid-column: 1 / -1;
     gap: var(--s-1);
     padding: 0 var(--s-2);
   }

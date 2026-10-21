@@ -5,7 +5,7 @@
   --page-width: 1180px;
   display: grid;
   grid-template-columns: var(--sidebar) minmax(0, 1fr) var(--rail);
-  /* The header (WikiHeader.tsx) over the page and the rail; the sidebar runs the full height. */
+  /* The header (WikiHeader.tsx) across the whole window, then the sidebar, the page and the rail under it. */
   grid-template-rows: auto 1fr;
   min-height: 100%;
   /* The entrance slides the 100vh sticky columns up from below; clipping keeps that from overflowing the page and
@@ -17,11 +17,11 @@
 .sh-wiki-sidebar,
 .sh-wiki-rail {
   position: sticky;
-  top: 0;
-  height: 100vh;
+  top: var(--head);
+  height: calc(100vh - var(--head));
+  grid-row: 2;
 }
 .sh-wiki-sidebar {
-  grid-row: 1 / span 2;
   grid-column: 1;
 }
 .sh-wiki-main {
@@ -29,10 +29,7 @@
   grid-column: 2;
 }
 .sh-wiki-rail {
-  grid-row: 2;
   grid-column: 3;
-  top: var(--head);
-  height: calc(100vh - var(--head));
 }
 
 /* Sidebar */
@@ -264,6 +261,7 @@ a.sh-nav-link.active {
     position: fixed;
     left: 0;
     top: 0;
+    height: 100vh;
     width: min(300px, 86vw);
     z-index: 25;
     translate: -100% 0;
