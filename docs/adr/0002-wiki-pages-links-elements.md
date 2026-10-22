@@ -10,7 +10,7 @@ Shiori wikis now plan any kind of project: games, apps, a Shopify shop, a YouTub
 like documents, not like a wiki website: there's no fact box beside the article, no way to see what links to a page,
 no categories, no recent changes, and links are plain Markdown links that need exact paths.
 
-The FOUMA wiki (`A:/Projects/Games/FOUMA/wiki`, ADR-0002, -0004, -0005 and -0007 there) has most of this, but built
+The FOUMA wiki (its ADR-0002, -0004, -0005 and -0007) has most of this, but built
 for one game: fixed page types (item, boss, enemy…), game-only elements (drops, recipes, boss phases, item chips) and
 a sync with the game's code. Shiori needs the same wiki feel with nothing tied to one domain.
 

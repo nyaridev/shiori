@@ -7,7 +7,7 @@
 ## Context
 
 Nari wants one app that hosts a wiki per project, written and maintained by agents. The FOUMA wiki
-(`A:/Projects/Games/FOUMA/wiki`) already proved the core idea for one game: Markdown pages, SQLite, comments
+(the wiki of Nari's game FOUMA) already proved the core idea for one game: Markdown pages, SQLite, comments
 anchored to text and an agent CLI. Shiori generalizes it to many wikis. The requirements:
 
 - A wiki has a fixed structure and component set, created from a template. Each one gets its own theme, which only

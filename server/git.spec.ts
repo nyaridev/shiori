@@ -51,7 +51,7 @@ describe("remotes", () => {
   });
 
   it("has no page for a folder, a drive or an SSH alias", () => {
-    expect(webOf("A:/WORKSTATION/remotes/wiki.git")).toBeNull();
+    expect(webOf("D:/remotes/wiki.git")).toBeNull();
     expect(webOf("/srv/git/wiki.git")).toBeNull();
     expect(webOf("file:///srv/git/wiki.git")).toBeNull();
     expect(webOf("work:nyaridev/shiori.git")).toBeNull();

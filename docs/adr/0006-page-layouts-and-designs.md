@@ -9,7 +9,7 @@
 Nari wants new kinds of pages without changing Shiori: "like in the FOUMA wiki, where I can draw mobs and write
 descriptions for them, … only change layouts inside the wiki to get that result, so component based."
 
-What FOUMA does (`A:/Projects/Games/FOUMA/wiki`, ADR-0011 there): a `/designs` route lists mob designs; each has a
+What FOUMA's wiki does (its ADR-0011): a `/designs` route lists mob designs; each has a
 name, a drawing board (pen with pressure, eraser, fill, inks, sizes, undo, resizable paper), a description and
 reference pictures, all autosaved to `designs/mobs/<id>/` (`design.json`, `board.png`, the pictures). Status goes
 `draft` → `ready` (the user's "add it") → `added` (set by the agent, with a note). The agent reads ready designs from
