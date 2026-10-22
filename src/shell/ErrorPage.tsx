@@ -1,7 +1,7 @@
 // Shown instead of React Router's default error screen when a page throws while rendering.
 import { isRouteErrorResponse, Link, useRouteError } from "react-router";
 import { isGuest } from "../lib/base.ts";
-import { Button, Icon } from "../ui/index.ts";
+import { Button, Icon, ScrollArea } from "../ui/index.ts";
 import "./error.css";
 
 function describe(error: unknown): { title: string; message: string; stack?: string } {
@@ -28,7 +28,9 @@ export function ErrorPage() {
         {import.meta.env.DEV && stack && (
           <details className="sh-error-details">
             <summary>Details</summary>
-            <pre>{stack}</pre>
+            <ScrollArea label="Error details" viewClassName="sh-error-stack">
+              <pre>{stack}</pre>
+            </ScrollArea>
           </details>
         )}
         <div className="sh-error-actions">

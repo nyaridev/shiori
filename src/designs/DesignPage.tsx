@@ -71,7 +71,7 @@ export function DesignPage({ wiki, collection, id }: { wiki: WikiDetail; collect
 
   if (loaded.error || !meta) {
     return (
-      <main className="sh-wiki-main sh-special">
+      <main id="sh-main" tabIndex={-1} className="sh-wiki-main sh-special">
         <header className="sh-page-head">
           <Crumbs wikiId={wiki.id} trail={trail} />
           <h1 className="sh-page-title">No such design</h1>
@@ -83,12 +83,17 @@ export function DesignPage({ wiki, collection, id }: { wiki: WikiDetail; collect
       </main>
     );
   }
-  if (!design) return <main className="sh-wiki-main sh-special" />;
+  if (!design) return <main id="sh-main" tabIndex={-1} className="sh-wiki-main sh-special" />;
 
   const edit = design.editable;
   const ids = [wiki.id, collection, id] as const;
   return (
-    <main className="sh-wiki-main sh-special sh-design-page" data-path={`_/designs/${collection}/${id}`}>
+    <main
+      id="sh-main"
+      tabIndex={-1}
+      className="sh-wiki-main sh-special sh-design-page"
+      data-path={`_/designs/${collection}/${id}`}
+    >
       <header className="sh-page-head">
         <Crumbs wikiId={wiki.id} trail={trail} />
         <p className="sh-special-kicker">{meta.item}</p>

@@ -29,7 +29,7 @@ export function HomeHero({
   onProblems: () => void;
 }) {
   const index = useWikiIndex()?.index;
-  const open = index?.questions.filter((q) => q.status === "open" && q.kind === "question").length;
+  const open = index?.questions.open;
   const tasks = index?.tasks;
   const done = tasks?.filter((t) => t.done).length ?? 0;
   const stats: { value: number | string; label: string; to: string }[] = [
@@ -48,16 +48,21 @@ export function HomeHero({
       <div className="sh-hero-banner-art">
         <img src={picture(page.banner ?? wiki.coverUrl, 2400)} alt="" aria-hidden="true" />
         <div className="sh-hero-banner-text">
-          {(page.status || page.updatedAt) && (
-            <p className="sh-home-pill">
-              {page.status && <StatusBadge status={page.status} />}
-              {page.status && page.updatedAt && <span aria-hidden="true">/</span>}
-              {page.updatedAt && (
-                <Link to={historyHref(wiki.id, "")} className="sh-home-pill-link" title="The home page's history">
-                  <time dateTime={page.updatedAt}>Updated {ago(page.updatedAt)}</time>
-                </Link>
+          {(page.status || page.updatedAt || !isGuest) && (
+            <div className="sh-home-pills">
+              {(page.status || page.updatedAt) && (
+                <p className="sh-home-pill">
+                  {page.status && <StatusBadge status={page.status} />}
+                  {page.status && page.updatedAt && <span aria-hidden="true">/</span>}
+                  {page.updatedAt && (
+                    <Link to={historyHref(wiki.id, "")} className="sh-home-pill-link" title="The home page's history">
+                      <time dateTime={page.updatedAt}>Updated {ago(page.updatedAt)}</time>
+                    </Link>
+                  )}
+                </p>
               )}
-            </p>
+              {!isGuest && <GitBadge wikiId={wiki.id} />}
+            </div>
           )}
           <h1 className="sh-home-title">
             <PageIcon icon={page.icon} />
@@ -74,7 +79,7 @@ export function HomeHero({
           ))}
         </div>
       </div>
-      {(ways.length > 0 || problems > 0 || !isGuest) && (
+      {(ways.length > 0 || problems > 0) && (
         <div className="sh-hero-banner-bar">
           {ways.length > 0 && (
             <nav className="sh-home-actions" aria-label="Start here">
@@ -98,7 +103,6 @@ export function HomeHero({
                 <Badge tone="warn">{problems}</Badge> page problem{problems === 1 ? "" : "s"}
               </Button>
             )}
-            {!isGuest && <GitBadge wikiId={wiki.id} />}
           </div>
         </div>
       )}

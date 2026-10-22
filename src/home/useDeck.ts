@@ -208,8 +208,9 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
 
     const key = (e: KeyboardEvent) => {
       if (live.current.disabled || e.altKey || e.ctrlKey || e.metaKey) return;
-      // Typing in the search field: its keys are its own.
-      if (e.target instanceof HTMLInputElement) return;
+      // Typing in the search field, or a button or link with focus: their keys are their own.
+      const t = e.target;
+      if (t instanceof HTMLInputElement || t instanceof HTMLButtonElement || t instanceof HTMLAnchorElement) return;
       const base = heading();
       if (e.key === "ArrowRight" || e.key === "ArrowDown") snapTo(base + 1);
       else if (e.key === "ArrowLeft" || e.key === "ArrowUp") snapTo(base - 1);

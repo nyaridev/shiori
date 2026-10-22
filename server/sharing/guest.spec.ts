@@ -646,8 +646,8 @@ describe("hiding a guest's comment", () => {
     expect((await hide("answers", a.id)).status).toBe(200);
     const seen = (await (await bo.get("/api/wikis/alpha/answers?page=plan")).json()) as { answers: Answer[] };
     expect(seen.answers).toEqual([]);
-    const index = await (await bo.get("/api/wikis/alpha/pages")).json();
-    expect(index.questions[0].answers).toBe(0);
+    const list = await (await bo.get("/api/wikis/alpha/questions")).json();
+    expect(list.items[0].answers).toBe(0);
 
     const t = await posted(bo.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "Hi" }));
     const reply = addMessage(alpha(), t.id, "agent", "Hello") as Thread;

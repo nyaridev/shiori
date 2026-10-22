@@ -211,3 +211,7 @@
   border-color: var(--accent-line);
   color: var(--text);
 }
+/* Where a card on a wiki-wide list comes from (Special:Questions). */
+.sh-question .sh-question-from {
+  margin: 0;
+}

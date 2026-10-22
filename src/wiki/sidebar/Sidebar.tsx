@@ -138,11 +138,11 @@ function Section({
       </div>
       <div className="sh-collapse" data-folded={folded || undefined} inert={folded || undefined}>
         {/* The fold squeezes this, not the list: a list that scrolls would show its scrollbar while it opens. */}
-        <div>
+        <ScrollArea viewClassName="sh-nav-scroll">
           <ul id={list} className="sh-nav">
             {children}
           </ul>
-        </div>
+        </ScrollArea>
       </div>
     </section>
   );

@@ -109,6 +109,11 @@ export const frontmatterSchema = z.looseObject({
     .optional(),
   /** A wide picture from `assets/` behind the page head. */
   banner: z.string().min(1).optional(),
+  /**
+   * A panel page, like the home page: no page head, a banner instead (with the numbers of its roadmap and its infobox
+   * rows), wide beside the sidebar, the rail a drawer.
+   */
+  panel: z.boolean().optional(),
   /** `false` hides "On this page" (for short pages). */
   toc: z.boolean().optional(),
   /**
@@ -170,6 +175,11 @@ export const FRONTMATTER_FIELDS: { key: keyof Frontmatter; what: string; example
     example: 'infobox:\n  Owner: "Sam"\n  Stock: \':progress{value="12" max="50"}\'',
   },
   { key: "banner", what: "A wide picture from assets/ behind the page head.", example: 'banner: "/assets/wide.png"' },
+  {
+    key: "panel",
+    what: "A panel page, like the home page: a banner instead of the page head (its infobox rows and roadmap numbers in it), the whole width, comments in a drawer. For dashboards such as a roadmap.",
+    example: "panel: true",
+  },
   { key: "toc", what: "false hides “On this page” (for short pages).", example: "toc: false" },
   {
     key: "questions",

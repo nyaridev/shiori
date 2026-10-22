@@ -44,3 +44,33 @@
   border-bottom-color: rgb(239 107 115 / 0.6);
   color: rgb(243 239 230 / 0.6);
 }
+
+/* The touch button that opens the search (there's no keyboard to type on). Only where the pointer is a finger. */
+.deck-search-open {
+  display: none;
+}
+@media (pointer: coarse) {
+  .deck-search-open {
+    position: absolute;
+    bottom: max(24px, env(safe-area-inset-bottom));
+    left: 50%;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    translate: -50% 0;
+    border: 1px solid rgb(255 255 255 / 0.22);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.08);
+    color: #f3efe6;
+    backdrop-filter: blur(6px);
+  }
+}
+.deck-search-open:focus-visible {
+  outline: 2px solid #e6c27a;
+  outline-offset: 2px;
+}
+.deck-search input::placeholder {
+  color: rgb(243 239 230 / 0.45);
+}

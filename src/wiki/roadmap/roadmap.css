@@ -1,0 +1,225 @@
+/* Roadmaps (Roadmap.tsx): a chapter per release. Tokens only, so wiki themes apply. */
+
+.sh-rm {
+  margin: var(--s-5) 0;
+  container: roadmap / inline-size;
+}
+.sh-prose .sh-rm p {
+  margin: 0;
+}
+.sh-prose .sh-rm ol.sh-rm-chapters {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-prose .sh-rm-body > :first-child {
+  margin-top: 0;
+}
+.sh-prose .sh-rm-body > :last-child {
+  margin-bottom: 0;
+}
+.sh-prose .sh-rm-body p {
+  margin: var(--s-2) 0;
+}
+
+/* A milestone's parts (parts.tsx) */
+.sh-prose .sh-rm .sh-rm-goal {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin: var(--s-1) 0 0;
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+}
+.sh-rm-goal > .sh-icon {
+  flex: none;
+  translate: 0 2px;
+  color: var(--tone-good);
+}
+.sh-rm-goal-label {
+  color: var(--text);
+  font-weight: 650;
+}
+.sh-rm-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 120px;
+}
+.sh-rm-bar-track {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--raised);
+  box-shadow: inset 0 0 0 var(--bw) var(--border);
+}
+.sh-rm-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+[data-status="done"] .sh-rm-bar-fill {
+  background: var(--tone-good);
+}
+.sh-rm-bar-count {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Chapters: the version on the left, a line of dots, a card per release */
+.sh-prose .sh-rm ol.sh-rm-chapters {
+  display: grid;
+}
+.sh-rm-chapter {
+  position: relative;
+  display: grid;
+  grid-template-columns: 96px 24px minmax(0, 1fr);
+  gap: var(--s-3);
+  margin: 0;
+  padding-bottom: var(--s-4);
+}
+.sh-rm-chapter::before {
+  content: "";
+  position: absolute;
+  top: 26px;
+  bottom: 0;
+  left: calc(96px + var(--s-3) + 11px);
+  width: 2px;
+  background: var(--border);
+}
+.sh-rm-chapter[data-status="done"]::before {
+  background: var(--accent-line);
+}
+.sh-rm-chapter:last-child::before {
+  display: none;
+}
+.sh-rm-chapter-side {
+  display: grid;
+  justify-items: end;
+  align-content: start;
+  padding-top: 8px;
+  text-align: right;
+}
+.sh-rm-chapter-number {
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-size: var(--t-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.sh-rm-chapter[data-current] .sh-rm-chapter-number {
+  color: var(--accent-ink);
+}
+.sh-rm-chapter[data-status="done"] .sh-rm-chapter-number {
+  color: var(--muted);
+}
+.sh-rm-chapter-when {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-rm-chapter-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-top: 10px;
+  border: 3px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--accent-text);
+}
+.sh-rm-chapter[data-status="done"] .sh-rm-chapter-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.sh-rm-chapter[data-current] .sh-rm-chapter-dot {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 5px var(--accent-soft);
+}
+.sh-rm-chapter-card {
+  min-width: 0;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+.sh-rm-chapter[data-current] .sh-rm-chapter-card {
+  border-color: var(--accent-line);
+  background: linear-gradient(160deg, color-mix(in oklab, var(--accent) 9%, var(--surface)), var(--surface));
+  box-shadow: var(--shadow-2);
+}
+.sh-rm-chapter-card > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-radius: inherit;
+  cursor: pointer;
+  list-style: none;
+}
+.sh-rm-chapter-card > summary::-webkit-details-marker {
+  display: none;
+}
+.sh-rm-chapter-card > summary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-rm-chapter-chevron {
+  display: inline-flex;
+  margin-left: auto;
+  color: var(--muted);
+  transition: rotate var(--fast) var(--ease);
+}
+.sh-rm-chapter-card:not([open]) > summary > .sh-rm-chapter-chevron {
+  rotate: -90deg;
+}
+.sh-rm-chapter-card > summary .sh-rm-bar {
+  width: 160px;
+}
+.sh-rm-chapter-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-size: var(--t-md);
+  font-weight: 650;
+}
+.sh-rm-chapter-body {
+  padding: 0 var(--s-4) var(--s-4);
+}
+.sh-rm-chapter-body > .sh-rm-body {
+  margin-top: var(--s-2);
+}
+
+/* The chapters follow the width the page gives them, not the window's (the sidebar and rail take some). */
+@container roadmap (max-width: 520px) {
+  .sh-rm-chapter {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+  .sh-rm-chapter::before {
+    left: 11px;
+  }
+  .sh-rm-chapter-side {
+    grid-column: 2;
+    grid-row: 1;
+    justify-items: start;
+    padding: 0;
+    text-align: left;
+  }
+  .sh-rm-chapter-dot {
+    grid-row: 1 / span 2;
+    grid-column: 1;
+    margin-top: 0;
+  }
+  .sh-rm-chapter-card {
+    grid-column: 2;
+  }
+}

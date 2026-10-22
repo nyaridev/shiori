@@ -2,6 +2,7 @@
 // green, the words that changed inside a changed line marked, and the unchanged stretches between hunks folded.
 import { Fragment } from "react";
 import { type DiffLine, diffWords, type FileDiff, type Part } from "../../../shared/diff.ts";
+import { ScrollArea } from "../../ui/index.ts";
 
 /** Pairs each removed line with the added line in the same place of a change, to mark the words that differ. */
 function paired(lines: DiffLine[]): Map<DiffLine, Part[]> {
@@ -62,8 +63,7 @@ function Skipped({ count }: { count: number }) {
 export function DiffView({ diff, empty = "Nothing changed." }: { diff: FileDiff; empty?: string }) {
   if (!diff.hunks.length) return <p className="sh-diff-empty">{empty}</p>;
   return (
-    // biome-ignore lint/a11y/noNoninteractiveTabindex: a region that scrolls must be reachable by keyboard.
-    <section className="sh-diff" tabIndex={0} aria-label="Changes">
+    <ScrollArea axis="x" label="Changes" className="sh-diff">
       <table>
         <tbody>
           {diff.hunks.map((hunk) => {
@@ -96,7 +96,7 @@ export function DiffView({ diff, empty = "Nothing changed." }: { diff: FileDiff;
           <Skipped count={diff.skippedAfter} />
         </tbody>
       </table>
-    </section>
+    </ScrollArea>
   );
 }
 

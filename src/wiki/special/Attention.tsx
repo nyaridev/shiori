@@ -1,7 +1,8 @@
 // Special:Attention: what's waiting for this viewer. Pages that changed since they last opened them (seen.ts),
-// their comments the agent has answered, and open questions they haven't answered yet, the soonest due first.
+// their comments the agent has answered, and the first open questions they haven't answered yet, the soonest due
+// first, with the way to answer them all (Special:Questions' Answer view, ADR-0009).
 import { Link } from "react-router";
-import type { PageEntry, QuestionEntry, Thread } from "../../../shared/api.ts";
+import type { PageEntry, Thread } from "../../../shared/api.ts";
 import { isPageComment } from "../../../shared/quote.ts";
 import { canComment, useGuest } from "../../guest/GuestContext.ts";
 import { api } from "../../lib/api.ts";
@@ -9,30 +10,21 @@ import { useLive } from "../../lib/live.ts";
 import { ago } from "../../lib/time.ts";
 import { useResource } from "../../lib/useResource.ts";
 import { Badge } from "../../ui/index.ts";
-import { pageHref } from "../PageHead.tsx";
+import { pageHref, specialHref } from "../PageHead.tsx";
 import { PageIcon } from "../PageIcon.tsx";
 import { dayLabel } from "../questions/QuestionCard.tsx";
+import { useQuestions } from "../questions/useQuestions.ts";
 import { changedPages, useSeenPages } from "../seen.ts";
 
-const byDue = (a: QuestionEntry, b: QuestionEntry) => (a.due ?? "9999").localeCompare(b.due ?? "9999");
+/** How many waiting questions this page lists before pointing to the Answer view. */
+const FIRST = 10;
 
-export function Attention({
-  wikiId,
-  pages,
-  questions,
-}: {
-  wikiId: string;
-  pages: PageEntry[];
-  questions: QuestionEntry[];
-}) {
+export function Attention({ wikiId, pages }: { wikiId: string; pages: PageEntry[] }) {
   const guest = useGuest();
   const threads = useResource(`threads:${wikiId}`, () => api.threads(wikiId));
-  const answers = useResource(`answers:${wikiId}`, () => api.answers(wikiId));
+  const waiting = useQuestions(wikiId, canComment(guest) ? { mine: "waiting", limit: FIRST } : null);
   useLive((e) => {
-    if (e.type === "threads" && e.wiki === wikiId) {
-      threads.reload();
-      answers.reload();
-    }
+    if (e.type === "threads" && e.wiki === wikiId) threads.reload();
   });
   const seen = useSeenPages(wikiId);
   const titles = new Map(pages.map((p) => [p.path, p]));
@@ -42,14 +34,10 @@ export function Attention({
   const replied = (threads.data ?? []).filter(
     (t) => t.status === "open" && mine(t) && t.messages.length > 1 && t.messages.at(-1)?.author === "agent",
   );
-  const answered = new Set(
-    (answers.data ?? []).filter((a) => (guest ? a.mine : a.author === "user")).map((a) => `${a.page}#${a.question}`),
-  );
-  const unanswered = canComment(guest)
-    ? questions.filter((q) => q.status === "open" && !answered.has(`${q.page.path}#${q.id}`)).sort(byDue)
-    : [];
+  const unanswered = waiting.data?.items ?? [];
+  const left = waiting.data ? waiting.data.counts.waiting.question + waiting.data.counts.waiting.suggestion : 0;
 
-  if (!changed.length && !replied.length && !unanswered.length && threads.data && answers.data)
+  if (!changed.length && !replied.length && !unanswered.length && threads.data && (waiting.data || !canComment(guest)))
     return <p className="sh-special-empty">You're all caught up. Nothing changed and nothing is waiting for you.</p>;
 
   return (
@@ -96,7 +84,9 @@ export function Attention({
       )}
       {unanswered.length > 0 && (
         <section className="sh-special-group">
-          <h2 className="sh-special-heading">Waiting for your answer</h2>
+          <h2 className="sh-special-heading">
+            Waiting for your answer <span className="sh-special-count">{left}</span>
+          </h2>
           <ul className="sh-special-list">
             {unanswered.map((q) => (
               <li key={`${q.page.path}#${q.id}`} className="sh-special-row">
@@ -117,6 +107,11 @@ export function Attention({
               </li>
             ))}
           </ul>
+          <p className="sh-special-more">
+            <Link to={`${specialHref(wikiId, "questions")}?view=answer`} className="sh-special-link">
+              {left > unanswered.length ? `Answer all ${left} on one page` : "Answer them on one page"}
+            </Link>
+          </p>
         </section>
       )}
     </>

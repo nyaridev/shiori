@@ -67,11 +67,13 @@
   font-weight: 600;
   cursor: pointer;
 }
-.sh-error-details pre {
+.sh-error-stack {
+  height: auto;
   max-height: 220px;
+}
+.sh-error-details pre {
   margin: 0;
   padding: 0 var(--s-3) var(--s-3);
-  overflow: auto;
   color: var(--text-soft);
   font-family: var(--font-mono);
   font-size: var(--t-xs);

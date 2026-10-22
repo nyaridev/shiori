@@ -11,6 +11,7 @@ export { Glider } from "./Glider.tsx";
 export { HoverCard } from "./HoverCard.tsx";
 export { ICON_NAMES, Icon, type IconName } from "./Icon.tsx";
 export { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "./Menu.tsx";
+export { Pagination, pageWindow } from "./Pagination.tsx";
 export { Popover, PopoverAnchor, PopoverClose, PopoverContent, PopoverTrigger } from "./Popover.tsx";
 export { PageScrollbar, ScrollArea } from "./Scrollbar.tsx";
 export { Select } from "./Select.tsx";

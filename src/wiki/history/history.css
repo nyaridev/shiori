@@ -19,16 +19,22 @@
 .sh-history-list {
   position: sticky;
   top: calc(var(--head) + var(--s-3));
-  display: grid;
+}
+.sh-history-scroll {
+  height: auto;
   max-height: calc(100vh - var(--head) - var(--s-6));
+}
+.sh-history-versions {
+  display: grid;
   margin: 0;
   padding: 0;
-  overflow-y: auto;
   list-style: none;
 }
 @container history (max-width: 760px) {
   .sh-history-list {
     position: static;
+  }
+  .sh-history-scroll {
     max-height: 320px;
   }
 }
@@ -160,14 +166,9 @@ a.sh-history-hash:hover {
 
 /* A diff: two gutters of line numbers, the sign, the line. */
 .sh-diff {
-  overflow-x: auto;
   border: var(--bw) solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
-}
-.sh-diff:focus-visible {
-  outline: none;
-  box-shadow: var(--focus);
 }
 .sh-diff table {
   width: 100%;

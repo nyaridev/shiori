@@ -5,7 +5,7 @@
 // for the agent. Options show how many people picked them. Once the agent writes the decision into the page, the
 // card shows it. Everything but the question and the decision is `data-noquote`: answers and counts change, and
 // comments anchor to the page's own words.
-import { useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import type { Answer, Question } from "../../../shared/api.ts";
 import { authorName, canComment, useGuest } from "../../guest/GuestContext.ts";
 import { ago } from "../../lib/time.ts";
@@ -29,18 +29,60 @@ function dueTone(day: string): BadgeTone {
   return left < 0 ? "bad" : left < 2 * DAY ? "warn" : "neutral";
 }
 
+/** A question on its page: its answers and how to send one come from the page. */
 export function QuestionCard({ question }: { question: Question }) {
   const ctx = usePage();
+  return (
+    <QuestionCardView
+      question={question}
+      answers={ctx?.answers.filter((a) => a.question === question.id) ?? []}
+      onAnswer={ctx ? (choice, body) => ctx.answer(question.id, choice, body) : undefined}
+      onHide={ctx?.hideAnswer}
+      readOnly={ctx?.readOnly}
+    />
+  );
+}
+
+interface ViewProps {
+  question: Question;
+  answers: Answer[];
+  /** Sends the viewer's answer; none where there's nowhere to send it. */
+  onAnswer?: (choice: string | null, body: string) => Promise<unknown>;
+  /** The owner hides a guest's answer, or shows it again. */
+  onHide?: (id: number, hidden: boolean) => Promise<unknown>;
+  readOnly?: boolean;
+  /** A line above the question: where it's from, on a list of questions from many pages. */
+  from?: ReactNode;
+  /** After an answer was sent. */
+  onSent?: () => void;
+  /** Starts with the form open on the viewer's answer (changing it from a list). */
+  startEditing?: boolean;
+  /** Left editing without sending. */
+  onCancel?: () => void;
+}
+
+/** The card itself, for any list: the page's, or the wiki-wide one (Special:Questions). */
+export function QuestionCardView({
+  question,
+  answers,
+  onAnswer,
+  onHide,
+  readOnly,
+  from,
+  onSent,
+  startEditing,
+  onCancel,
+}: ViewProps) {
   const guest = useGuest();
-  const answers = ctx?.answers.filter((a) => a.question === question.id) ?? [];
   const mine: Answer | undefined = answers.find((a) => (guest ? a.mine : a.author === "user"));
-  const [editing, setEditing] = useState(false);
-  const [choice, setChoice] = useState<string | null>(null);
-  const [note, setNote] = useState("");
+  const [editing, setEditing] = useState(!!startEditing && !!mine);
+  const [choice, setChoice] = useState<string | null>(startEditing ? (mine?.choice ?? null) : null);
+  const [note, setNote] = useState(startEditing ? (mine?.body ?? "") : "");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const decided = question.status === "resolved";
-  const canSend = !!ctx && (choice !== null || note.trim().length > 0) && state !== "sending";
-  const writes = canComment(guest) && !ctx?.readOnly;
+  const canSend = !!onAnswer && (choice !== null || note.trim().length > 0) && state !== "sending";
+  const writes = canComment(guest) && !readOnly;
+  const textId = useId();
   const showForm = !decided && writes && (!mine || editing);
   // How many people picked each option (what the owner hid doesn't count).
   // Everyone else's answers; yours shows above, with its state.
@@ -55,14 +97,15 @@ export function QuestionCard({ question }: { question: Question }) {
   };
 
   const send = async () => {
-    if (!ctx || !canSend) return;
+    if (!onAnswer || !canSend) return;
     setState("sending");
     try {
-      await ctx.answer(question.id, choice, note.trim());
+      await onAnswer(choice, note.trim());
       setChoice(null);
       setNote("");
       setEditing(false);
       setState("sent");
+      onSent?.();
     } catch {
       setState("failed");
     }
@@ -71,10 +114,16 @@ export function QuestionCard({ question }: { question: Question }) {
   return (
     <section
       className="sh-question"
-      id={`question-${question.id}`}
+      id={from ? undefined : `question-${question.id}`}
       data-kind={question.kind}
       data-decided={decided || undefined}
+      aria-labelledby={textId}
     >
+      {from && (
+        <p className="sh-question-from" data-noquote="">
+          {from}
+        </p>
+      )}
       <header className="sh-question-head">
         <span className="sh-question-kicker" data-noquote="">
           <PageIcon
@@ -97,7 +146,9 @@ export function QuestionCard({ question }: { question: Question }) {
           )}
         </span>
       </header>
-      <p className="sh-question-text">{question.text}</p>
+      <p className="sh-question-text" id={textId}>
+        {question.text}
+      </p>
 
       {decided && question.answer && <p className="sh-question-answer">{question.answer}</p>}
 
@@ -165,7 +216,14 @@ export function QuestionCard({ question }: { question: Question }) {
             </span>
             <span className="sh-question-buttons">
               {editing && (
-                <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setEditing(false);
+                    onCancel?.();
+                  }}
+                >
                   Cancel
                 </Button>
               )}
@@ -201,13 +259,13 @@ export function QuestionCard({ question }: { question: Question }) {
                 {a.updatedAt && a.updatedAt !== a.createdAt && " · changed"}
                 {a.hidden && " · hidden from guests"}
               </time>
-              {!guest && a.author === "guest" && ctx && (
+              {!guest && a.author === "guest" && onHide && (
                 <IconButton
                   icon={a.hidden ? "eye" : "eyeOff"}
                   label={a.hidden ? "Show to guests again" : "Hide from guests and the inbox"}
                   size="sm"
                   className="sh-question-hide"
-                  onClick={() => void ctx.hideAnswer(a.id, !a.hidden)}
+                  onClick={() => void onHide(a.id, !a.hidden)}
                 />
               )}
             </li>

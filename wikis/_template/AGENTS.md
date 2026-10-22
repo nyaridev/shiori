@@ -74,6 +74,10 @@ their content with the project's own, rename or delete what doesn't fit, and add
   then the body. Build the body as a portal, like a wiki's main page: `::::boxes` of titled `:::box`es, with the
   live blocks (`::recent-changes`, `::open-questions`, `::discussions`, `::open-tasks`, `::directory`) and the
   project's own links and text. Pick what fits this project, so its home is its own.
+- **Panel pages.** `panel: true` makes a page a dashboard like the home page: no page head, a banner with its
+  `title`, `summary`, `status` and numbers (its roadmap's, then its `infobox` rows), wide, comments in a drawer.
+  Build its body from elements (a `::::roadmap`, `::::boxes`), not long text. The Roadmap is one: keep it at the top
+  level (`pages/roadmap.md`) and pinned, not inside a section.
 - **Icons.** Every page gets an icon, and the same thing always gets the same one:
   1. Pick from Shiori's drawn set by name: `icon: compass`. Toolbox → Icons (`/w/{{id}}/_/icons`) shows them all;
      `:icon[name]` puts one in text, tables and cards, and a box takes `icon="name"`. The set takes this wiki's
@@ -88,7 +92,7 @@ their content with the project's own, rename or delete what doesn't fit, and add
   table of contents. Each `##` section shows as its own panel with the heading as its title, so give every part of
   a page a `##`, and use `###` inside one; text before the first `##` stays an open intro.
 - Links: write wikilinks. `[[Goals]]` finds a page by path, file name or title, from anywhere; `[[plan/goals|our
-  goals]]` sets the text and `[[Roadmap#Milestones]]` links a section. In tables, escape the bar: `[[goals\|Goals]]`.
+  goals]]` sets the text and `[[Goals#Targets]]` links a section. In tables, escape the bar: `[[goals\|Goals]]`.
   A wikilink to a page that doesn't exist yet is a red link: use it on purpose for pages worth writing later
   (Special:Wanted pages lists them). If `pnpm wiki check` says a name matches several pages, write its path.
   Markdown links also work: `[Combat](combat)` is relative to the page's folder, `[Combat](/systems/combat)` starts
@@ -122,6 +126,7 @@ Toolbox → Elements (`/w/{{id}}/_/elements`), and at `/dev/ui`.
 | Key | `:kbd[E]` |
 | Stats | `:::stats` with `- Label: value \| +8% change` lines (number tiles) |
 | Timeline | `:::timeline` with `- [x] When: what` lines; ticked is done, the first open one is "now" |
+| Roadmap | `::::roadmap` around `:::milestone[Name]{version="0.2" when="Weeks 2–3" goal="…" icon="puzzle"}` blocks, each with text and `- [ ]` tasks; `status="done\|now\|next\|later"` (else its tasks decide). Drawn as chapters, release by release |
 | Cards | `:::cards` with `- :icon[target] [Title](page) — description` lines (a grid of links) |
 | Gallery | `:::gallery` with one `![Caption](/assets/x.png "caption")` per line (opens in the image viewer) |
 | Progress | `:progress[Label]{value="60"}`, or `{value="3" max="8"}`; works in tables |

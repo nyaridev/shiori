@@ -1,7 +1,7 @@
 // Diagrams: a ```mermaid fence (server/markdown/code.ts) drawn with Mermaid, in the wiki's colors and fonts. Mermaid is
 // big, so it loads the first time a page has a diagram. It draws again when the theme or day/night changes.
 import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { Callout } from "../../ui/index.ts";
+import { Callout, ScrollArea } from "../../ui/index.ts";
 import "./diagram.css";
 
 type Mermaid = typeof import("mermaid").default;
@@ -164,9 +164,11 @@ export function DiagramEl({ children }: { children?: ReactNode }) {
           <pre className="sh-diagram-error">{state.error}</pre>
         </Callout>
       ) : state.svg ? (
-        // Mermaid's own markup, drawn with its strict security level: no scripts, links or HTML labels.
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: an SVG Mermaid made from the page's diagram text.
-        <div className="sh-diagram-svg" dangerouslySetInnerHTML={{ __html: state.svg }} />
+        <ScrollArea axis="x" label="Diagram">
+          {/* Mermaid's own markup, drawn with its strict security level: no scripts, links or HTML labels. */}
+          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: an SVG Mermaid made from the page's diagram text. */}
+          <div className="sh-diagram-svg" dangerouslySetInnerHTML={{ __html: state.svg }} />
+        </ScrollArea>
       ) : (
         <div className="sh-diagram-loading">Drawing the diagram…</div>
       )}

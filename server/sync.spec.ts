@@ -142,7 +142,8 @@ describe("pnpm wiki sync", () => {
     // A sync with nothing new commits nothing.
     expect(syncWiki(b).steps).toEqual(["Pulled.", "Nothing new to commit."]);
     expect(existsSync(join(b, "sync", "desk-0001.json"))).toBe(true);
-  });
+    // About 30 real git commands: slow on Windows while the rest of the suite runs.
+  }, 30_000);
 
   it("only merges and writes in a folder that isn't in git", () => {
     const a = pc(join(tmp, "plain"), "desk");

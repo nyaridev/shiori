@@ -396,6 +396,7 @@ function SegmentedDemo() {
   const [v, setV] = useState<"open" | "closed" | "all">("open");
   return (
     <Segmented
+      label="Show"
       value={v}
       onChange={setV}
       options={[

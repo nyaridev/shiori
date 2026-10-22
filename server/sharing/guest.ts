@@ -25,6 +25,7 @@ import { designRoutes } from "../designRoutes.ts";
 import { PICTURE_MIME } from "../designs.ts";
 import { serveFile } from "../files.ts";
 import { historyOf, versionOf } from "../history.ts";
+import { listQuestions, questionQueryFrom, questionsWaiting } from "../questionList.ts";
 import type { Registry, Wiki } from "../registry.ts";
 import { filterFrom, notesOf, search, searchNotes } from "../search.ts";
 import {
@@ -482,6 +483,31 @@ export function buildGuestApp({
         .map((a) => answerFor(a, me)),
     });
   });
+
+  // Questions across the wiki (ADR-0009), as on the owner's server: this guest's own answers are "mine", and nothing
+  // the owner hid is there.
+  api.get("/wikis/:id/questions", (c) => {
+    const w = c.get("wiki");
+    const me = c.get("me");
+    const list = listQuestions(
+      data.corpusOf(w),
+      w.root,
+      questionQueryFrom((k) => c.req.query(k)),
+      { guest: me.id },
+    );
+    return c.json({
+      ...list,
+      items: list.items.map(({ mine, answerList, ...item }) => ({
+        ...item,
+        ...(mine ? { mine: answerFor(mine, me) } : {}),
+        ...(answerList ? { answerList: answerList.map((a) => answerFor(a, me)) } : {}),
+      })),
+    });
+  });
+
+  api.get("/wikis/:id/questions/waiting", (c) =>
+    c.json(questionsWaiting(data.corpusOf(c.get("wiki")), c.get("wiki").root, { guest: c.get("me").id })),
+  );
 
   const me = (c: Context<WikiEnv>) => ({ guest: c.get("me").id, name: c.get("me").name });
   /** A thread as guests may see it; a hidden one doesn't exist for them. */

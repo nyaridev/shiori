@@ -23,7 +23,7 @@ takes the index lock and never wakes the file watcher. It never commits, fetches
 CLI's. A change in a wiki's `.git` is its own live event (`git`), so a commit refreshes histories without rendering
 the pages again.
 
-**The badge** (`src/wiki/home/GitBadge.tsx`, `GET /api/wikis/:id/git`). The home page's bar shows the repo's name and
+**The badge** (`src/wiki/home/GitBadge.tsx`, `GET /api/wikis/:id/git`). A pill beside the home page's status pill shows the repo's name and
 opens the wiki's folder on its host (GitHub, GitLab, Bitbucket, Codeberg/Gitea links), with how many files aren't
 committed; a repo without a web remote says "Git · branch"; a folder outside git says "Not in git". Owner only:
 guests never learn where the repo is.

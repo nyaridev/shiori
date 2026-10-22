@@ -260,12 +260,15 @@
 }
 .sh-table-wrap {
   margin: var(--s-3) 0;
-  overflow-x: auto;
   border-radius: var(--r-md);
 }
-.sh-table-wrap:focus-visible {
-  outline: none;
-  box-shadow: var(--focus);
+/* Cells wrap as far as they can before the table scrolls, so its box is the page's width, not the table's. */
+.sh-table-wrap .sh-scroll-content {
+  width: auto;
+}
+/* A block inside a scroll area doesn't scroll itself. */
+.sh-scroll-content > pre {
+  overflow: visible;
 }
 .sh-prose table {
   width: 100%;
@@ -276,7 +279,7 @@
   overflow: hidden;
   font-size: var(--t-sm);
 }
-.sh-prose .sh-table-wrap > table {
+.sh-prose .sh-table-wrap table {
   margin: 0;
 }
 .sh-prose th,

@@ -51,7 +51,7 @@
 }
 
 /* Rail (PageRail.tsx): quiet, part of the page rather than a column of its own: no background or edge (a drawer, on
-   narrow screens and the home page, gets both back). */
+   narrow screens and wide pages, gets both back). */
 .sh-wiki-rail {
   border-left: var(--bw) solid transparent;
   background: var(--bg);
@@ -271,7 +271,7 @@
     position: fixed;
     top: 0;
     right: 0;
-    height: 100vh;
+    height: 100dvh;
     width: min(360px, 100vw);
     z-index: 20;
     background: var(--surface);
@@ -279,10 +279,16 @@
     box-shadow: var(--shadow-2);
     padding-top: var(--s-4);
     translate: 100% 0;
-    transition: translate 220ms var(--ease);
+    /* Closed, it's out of the way for the keyboard and screen readers too, once it has slid out. */
+    visibility: hidden;
+    transition:
+      translate 220ms var(--ease),
+      visibility 0s 220ms;
   }
   .sh-wiki-rail[data-open] {
     translate: 0 0;
+    visibility: visible;
+    transition: translate 220ms var(--ease);
   }
   .sh-wiki-rail-close {
     display: flex;
@@ -303,14 +309,19 @@
     position: fixed;
     left: 0;
     top: 0;
-    height: 100vh;
+    height: 100dvh;
     width: min(300px, 86vw);
     z-index: 25;
     translate: -100% 0;
-    transition: translate 220ms var(--ease);
+    visibility: hidden;
+    transition:
+      translate 220ms var(--ease),
+      visibility 0s 220ms;
   }
   .sh-wiki-sidebar[data-open] {
     translate: 0 0;
+    visibility: visible;
+    transition: translate 220ms var(--ease);
   }
   .sh-scrim {
     display: block;
@@ -325,21 +336,21 @@
   }
 }
 
-/* The home page: wide beside the sidebar, its banner and panels (home/) up to a comfortable width; the rail opens
-   from the header. */
-.sh-wiki[data-home] {
+/* The home page and panel pages: wide beside the sidebar, the banner and panels (home/) up to a comfortable width;
+   the rail opens from the header. */
+.sh-wiki[data-wide] {
   grid-template-columns: var(--sidebar) minmax(0, 1fr);
 }
-.sh-wiki[data-home] .sh-wiki-main {
+.sh-wiki[data-wide] .sh-wiki-main {
   max-width: none;
   padding: var(--s-5) var(--s-6) 30vh;
 }
-.sh-wiki-main[data-home] > *,
-.sh-wiki-main[data-home] .sh-page-body {
+.sh-wiki-main[data-wide] > *,
+.sh-wiki-main[data-wide] .sh-page-body {
   max-width: 1240px;
   margin-inline: auto;
 }
-.sh-wiki[data-home] .sh-wiki-rail {
+.sh-wiki[data-wide] .sh-wiki-rail {
   position: fixed;
   top: 0;
   right: 0;
@@ -353,19 +364,50 @@
   translate: 100% 0;
   transition: translate 220ms var(--ease);
 }
-.sh-wiki[data-home] .sh-wiki-rail[data-open] {
+.sh-wiki[data-wide] .sh-wiki-rail[data-open] {
   translate: 0 0;
 }
-.sh-wiki[data-home] .sh-wiki-rail-close {
+.sh-wiki[data-wide] .sh-wiki-rail-close {
   display: flex;
   justify-content: flex-end;
   margin-bottom: calc(-1 * var(--s-3));
 }
 @media (max-width: 860px) {
-  .sh-wiki[data-home] {
+  .sh-wiki[data-wide] {
     grid-template-columns: minmax(0, 1fr);
   }
-  .sh-wiki[data-home] .sh-wiki-main {
+  .sh-wiki[data-wide] .sh-wiki-main {
     padding: var(--s-4) var(--s-4) 30vh;
+  }
+}
+
+/* "Skip to the page" (WikiLayout.tsx): out of sight until the keyboard reaches it, then over the header's corner. */
+.sh-skip {
+  position: fixed;
+  top: var(--s-2);
+  left: var(--s-2);
+  z-index: 60;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: var(--t-sm);
+  font-weight: 650;
+  text-decoration: none;
+  translate: 0 calc(-100% - var(--s-4));
+}
+.sh-skip:focus-visible {
+  translate: 0 0;
+}
+main:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Touch: the contents' entries tall enough to tap. */
+@media (pointer: coarse) {
+  .sh-toc a {
+    padding-top: 7px;
+    padding-bottom: 7px;
   }
 }

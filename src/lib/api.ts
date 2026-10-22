@@ -10,6 +10,9 @@ import type {
   PageHistory,
   PageVersionDetail,
   Person,
+  QuestionPage,
+  QuestionQuery,
+  QuestionsWaiting,
   ReactionEmoji,
   SearchFilter,
   SearchHit,
@@ -74,6 +77,15 @@ export const api = {
     for (const [k, v] of Object.entries(filter)) if (v) params.set(k, v);
     return request<{ hits: SearchHit[]; notes: NoteHit[] }>(`/api/wikis/${enc(id)}/search?${params}`, { signal });
   },
+  /** One page of the wiki's questions and suggestions (ADR-0009). */
+  questions: (id: string, query: QuestionQuery, signal?: AbortSignal) => {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(query))
+      if (v !== undefined && v !== "" && v !== false) params.set(k, v === true ? "1" : String(v));
+    return request<QuestionPage>(`/api/wikis/${enc(id)}/questions?${params}`, { signal });
+  },
+  /** Per page, the open questions and suggestions this viewer hasn't answered. */
+  questionsWaiting: (id: string) => request<QuestionsWaiting>(`/api/wikis/${enc(id)}/questions/waiting`),
   /** A page's answers, or (without a page) every answer in the wiki. */
   answers: (id: string, page?: string) =>
     request<{ answers: Answer[] }>(

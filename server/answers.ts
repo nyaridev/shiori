@@ -103,3 +103,20 @@ export function answerCounts(root: string): Map<string, number> {
     (rows as unknown as { page: string; question: string; n: number }[]).map((r) => [`${r.page}#${r.question}`, r.n]),
   );
 }
+
+/** Everyone's answers to one question, oldest first. */
+export function answersTo(root: string, page: string, question: string): Answer[] {
+  const rows = dbFor(root)
+    .prepare("select * from answers where page = ? and question = ? order by id")
+    .all(page, question);
+  return (rows as unknown as AnswerRow[]).map(toAnswer);
+}
+
+/** One person's answers: the owner's, or a guest's by their id. */
+export function answersBy(root: string, by: "user" | { guest: string }): Answer[] {
+  const rows =
+    by === "user"
+      ? dbFor(root).prepare("select * from answers where author = 'user' order by id").all()
+      : dbFor(root).prepare("select * from answers where author = 'guest' and guest_id = ? order by id").all(by.guest);
+  return (rows as unknown as AnswerRow[]).map(toAnswer);
+}

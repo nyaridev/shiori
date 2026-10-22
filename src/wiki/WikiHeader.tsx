@@ -1,7 +1,7 @@
 // The bar above every wiki page, across the whole window. Left: back to the deck (the owner only) and the project:
 // its icon (else its cover), name and tagline, linking home. Middle: search. Right: whether the wiki is live and who is
-// on it (ADR-0005), share, the UI primitives (the owner only), and day or night at the far right. The page list and the
-// comments open from here wherever they're drawers: the comments on the home page, and both on narrow screens.
+// on it (ADR-0005), share, the UI primitives (the owner only), and day or night at the far right. The page list and the comments open from here wherever they're drawers: the comments on the
+// home page, and both on narrow screens.
 import { Link, useNavigate } from "react-router";
 import type { Person, WikiDetail } from "../../shared/api.ts";
 import { useGuest } from "../guest/GuestContext.ts";
@@ -19,15 +19,15 @@ import { ReadingProgress } from "./ReadingProgress.tsx";
 
 export function WikiHeader({
   wiki,
-  home,
+  wide,
   people,
   onPages,
   onSearch,
   onComments,
 }: {
   wiki: WikiDetail;
-  /** The home page: its rail is a drawer. */
-  home: boolean;
+  /** The home page or a panel page: its rail is a drawer. */
+  wide: boolean;
   people: Person[];
   onPages: () => void;
   onSearch: () => void;
@@ -38,7 +38,7 @@ export function WikiHeader({
   const guest = useGuest();
   const guestsHere = people.filter((p) => p.role === "guest").length;
   return (
-    <header className="sh-wiki-head" data-home={home || undefined}>
+    <header className="sh-wiki-head" data-wide={wide || undefined}>
       <div className="sh-head-start">
         <IconButton filled icon="menu" label="Pages" className="sh-head-menu" onClick={onPages} />
         {!guest && (
@@ -107,7 +107,7 @@ export function WikiHeader({
         )}
         <ModeSwitch own={wiki.theme.mode} />
       </div>
-      {!home && <ReadingProgress />}
+      {!wide && <ReadingProgress />}
     </header>
   );
 }

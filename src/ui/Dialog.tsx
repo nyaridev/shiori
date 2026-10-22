@@ -1,6 +1,7 @@
 import { Dialog as R } from "radix-ui";
 import type { ReactNode } from "react";
 import { IconButton } from "./Button.tsx";
+import { ScrollArea } from "./Scrollbar.tsx";
 
 export const Dialog = R.Root;
 export const DialogTrigger = R.Trigger;
@@ -34,12 +35,22 @@ export function DialogContent({
             </R.Close>
           </header>
         )}
-        {description ? (
-          <R.Description className="sh-dialog-description">{description}</R.Description>
+        {size === "palette" || size === "viewer" ? (
+          <>
+            <R.Description className="sh-sr-only">{description ?? title}</R.Description>
+            {children}
+          </>
         ) : (
-          <R.Description className="sh-sr-only">{title}</R.Description>
+          // Under the title, the rest scrolls when the window is too short for it (a phone on its side).
+          <ScrollArea className="sh-dialog-scroll" viewClassName="sh-dialog-body">
+            {description ? (
+              <R.Description className="sh-dialog-description">{description}</R.Description>
+            ) : (
+              <R.Description className="sh-sr-only">{title}</R.Description>
+            )}
+            {children}
+          </ScrollArea>
         )}
-        {children}
       </R.Content>
     </R.Portal>
   );

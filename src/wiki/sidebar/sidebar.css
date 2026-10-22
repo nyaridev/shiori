@@ -167,10 +167,12 @@ a.sh-nav-link.active > svg {
 .sh-side-dock .sh-side-heading {
   margin-bottom: 0;
 }
-.sh-side-dock .sh-collapse .sh-nav {
+.sh-nav-scroll {
+  height: auto;
+}
+.sh-side-dock .sh-nav-scroll {
   max-height: 30vh;
   margin-top: var(--s-1);
-  overflow-y: auto;
 }
 .sh-side-note {
   margin-left: var(--s-2);
@@ -380,5 +382,13 @@ a.sh-nav-link.active > svg {
   .sh-side-tabpanel[data-from],
   .sh-nav-pending {
     animation: none;
+  }
+}
+
+/* Touch: rows a finger can hit without catching the next one. */
+@media (pointer: coarse) {
+  .sh-nav-link {
+    padding-top: 9px;
+    padding-bottom: 9px;
   }
 }

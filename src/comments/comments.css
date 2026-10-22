@@ -348,7 +348,3 @@
 .sh-discussion .sh-thread.is-active {
   border-color: var(--accent);
 }
-.sh-discussion-count {
-  margin-left: var(--s-2);
-  color: var(--text-soft);
-}

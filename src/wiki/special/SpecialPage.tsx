@@ -3,14 +3,14 @@
 // the files.
 import { type ReactNode, useEffect, useState } from "react";
 import { Link } from "react-router";
-import type { PageEntry, QuestionEntry, TaskEntry, WantedPage, WikiDetail, WikiIndex } from "../../../shared/api.ts";
+import type { PageEntry, TaskEntry, WantedPage, WikiDetail, WikiIndex } from "../../../shared/api.ts";
 import { DesignsGallery } from "../../designs/DesignsGallery.tsx";
-import { Badge, CheckMark, Segmented } from "../../ui/index.ts";
+import { CheckMark, Segmented } from "../../ui/index.ts";
 import { PageCard, PageChip } from "../PageFoot.tsx";
 import { Crumbs, pageHref, specialHref } from "../PageHead.tsx";
-import { dayLabel } from "../questions/QuestionCard.tsx";
 import { StatusBadge } from "../StatusBadge.tsx";
 import { Attention } from "./Attention.tsx";
+import { Decisions, Questions } from "./Questions.tsx";
 import { SPECIALS } from "./specials.ts";
 import { Elements, Fields, Icons, Kits, Specials } from "./Toolbox.tsx";
 import "./special.css";
@@ -200,6 +200,7 @@ function Tasks({ wikiId, tasks }: { wikiId: string; tasks: TaskEntry[] }) {
     <>
       <div className="sh-tasks-bar">
         <Segmented
+          label="Show tasks"
           value={filter}
           onChange={setFilter}
           options={[
@@ -260,119 +261,6 @@ function Tasks({ wikiId, tasks }: { wikiId: string; tasks: TaskEntry[] }) {
           </section>
         );
       })}
-    </>
-  );
-}
-
-function Questions({ wikiId, questions }: { wikiId: string; questions: QuestionEntry[] }) {
-  if (!questions.length) {
-    return (
-      <p className="sh-special-empty">
-        No page asks a question or has a suggestion yet. Add `questions:` or `suggestions:` to a page's frontmatter.
-      </p>
-    );
-  }
-  // Open questions with a due day first, soonest at the top.
-  const byDue = (a: QuestionEntry, b: QuestionEntry) =>
-    (a.due ?? "9999").localeCompare(b.due ?? "9999") || a.text.localeCompare(b.text);
-  const open = questions.filter((q) => q.status === "open").sort(byDue);
-  const groups: [string, QuestionEntry[]][] = [
-    ["Open questions", open.filter((q) => q.kind === "question")],
-    ["Suggestions", open.filter((q) => q.kind === "suggestion")],
-    ["Decided", questions.filter((q) => q.status === "resolved")],
-  ];
-  return (
-    <>
-      {groups
-        .filter(([, list]) => list.length)
-        .map(([label, list]) => (
-          <section key={label} className="sh-special-group">
-            <h2 className="sh-special-heading">{label}</h2>
-            <ul className="sh-special-list">
-              {list.map((q) => (
-                <li key={`${q.page.path}#${q.id}`} className="sh-special-row">
-                  <Link to={`${pageHref(wikiId, q.page.path)}#question-${q.id}`} className="sh-special-link">
-                    {q.text}
-                  </Link>
-                  {q.status === "resolved" ? (
-                    <span className="sh-special-answer">→ {q.answer ?? "decided"}</span>
-                  ) : (
-                    <span className="sh-special-count">
-                      {q.answers} answer{q.answers === 1 ? "" : "s"}
-                    </span>
-                  )}
-                  {q.status === "open" && q.due && <Badge>Decide by {dayLabel(q.due)}</Badge>}
-                  {q.kind === "suggestion" && q.status === "resolved" && <Badge tone="good">Suggestion</Badge>}
-                  <span className="sh-special-summary">
-                    <PageIcon icon={q.page.icon} fallback="page" className="sh-icon-gap" />
-                    {q.page.title}
-                    {q.options.length > 0 && ` · ${q.options.join(" / ")}`}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-    </>
-  );
-}
-
-/** When a decision was made: its `decided` day, else when its page last changed. */
-const decidedOn = (q: QuestionEntry, pages: Map<string, PageEntry>) =>
-  q.decided ?? pages.get(q.page.path)?.updatedAt?.slice(0, 10) ?? "";
-
-/** The decided questions as a timeline, newest first, by month. */
-function Decisions({ wikiId, questions, pages }: { wikiId: string; questions: QuestionEntry[]; pages: PageEntry[] }) {
-  const byPath = new Map(pages.map((p) => [p.path, p]));
-  const decided = questions
-    .filter((q) => q.status === "resolved")
-    .sort((a, b) => decidedOn(b, byPath).localeCompare(decidedOn(a, byPath)));
-  if (!decided.length)
-    return (
-      <p className="sh-special-empty">
-        Nothing is decided yet. When the agent decides a question, it sets `status: resolved`, `answer` and `decided`.
-      </p>
-    );
-  const months = new Map<string, QuestionEntry[]>();
-  for (const q of decided) {
-    const day = decidedOn(q, byPath);
-    const month = day
-      ? new Date(`${day.slice(0, 7)}-01T00:00:00`).toLocaleDateString(undefined, { month: "long", year: "numeric" })
-      : "Undated";
-    months.set(month, [...(months.get(month) ?? []), q]);
-  }
-  return (
-    <>
-      {[...months].map(([month, list]) => (
-        <section key={month} className="sh-special-group">
-          <h2 className="sh-special-heading">{month}</h2>
-          <ol className="sh-decisions">
-            {list.map((q) => {
-              const day = decidedOn(q, byPath);
-              return (
-                <li key={`${q.page.path}#${q.id}`} className="sh-decision">
-                  {day && (
-                    <time className="sh-decision-day" dateTime={day}>
-                      {dayLabel(day)}
-                    </time>
-                  )}
-                  <div className="sh-decision-body">
-                    <Link to={`${pageHref(wikiId, q.page.path)}#question-${q.id}`} className="sh-special-link">
-                      {q.text}
-                    </Link>
-                    <p className="sh-decision-answer">{q.answer ?? "Decided"}</p>
-                    {q.kind === "suggestion" && <Badge tone="good">Suggestion</Badge>}
-                    <span className="sh-special-summary">
-                      <PageIcon icon={q.page.icon} fallback="page" className="sh-icon-gap" />
-                      {q.page.title}
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </section>
-      ))}
     </>
   );
 }
@@ -466,15 +354,15 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
     head = known;
     body =
       name === "attention" ? (
-        <Attention wikiId={wiki.id} pages={pages} questions={index?.questions ?? []} />
+        <Attention wikiId={wiki.id} pages={pages} />
       ) : name === "recent" ? (
         <Recent wikiId={wiki.id} pages={pages} />
       ) : name === "tasks" ? (
         <Tasks wikiId={wiki.id} tasks={index?.tasks ?? []} />
       ) : name === "questions" ? (
-        <Questions wikiId={wiki.id} questions={index?.questions ?? []} />
+        <Questions wikiId={wiki.id} />
       ) : name === "decisions" ? (
-        <Decisions wikiId={wiki.id} questions={index?.questions ?? []} pages={pages} />
+        <Decisions wikiId={wiki.id} />
       ) : name === "wanted" ? (
         <Wanted wikiId={wiki.id} wanted={index?.wanted ?? []} />
       ) : name === "pages" ? (
@@ -498,8 +386,8 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
     head = { icon: "question", title: "No such special page", summary: `There's no special page called “${route}”.` };
     body = <Specials wikiId={wiki.id} />;
   }
-  // The toolbox and designs read their own data, not the page index.
-  const ready = !!index || known?.group === "toolbox" || name === "designs" || !known;
+  // The toolbox, designs and question lists read their own data, not the page index.
+  const ready = !!index || known?.group === "toolbox" || ["designs", "questions", "decisions"].includes(name) || !known;
 
   useEffect(() => {
     document.title = `${head.title} · ${wiki.title}`;
@@ -514,7 +402,7 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
     ...(arg && name === "designs" ? [{ path: "_/designs", title: "Designs", icon: "pencil", isPage: true }] : []),
   ];
   return (
-    <main className="sh-wiki-main sh-special" data-path={`_/${route}`}>
+    <main id="sh-main" tabIndex={-1} className="sh-wiki-main sh-special" data-path={`_/${route}`}>
       <header className="sh-page-head">
         <Crumbs wikiId={wiki.id} trail={trail} />
         <p className="sh-special-kicker">Special page</p>

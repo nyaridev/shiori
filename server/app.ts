@@ -16,6 +16,7 @@ import { serveFile } from "./files.ts";
 import { forgetGit, gitInfo } from "./git.ts";
 import { historyOf, versionOf } from "./history.ts";
 import type { Live } from "./live.ts";
+import { listQuestions, questionQueryFrom, questionsWaiting } from "./questionList.ts";
 import { type Registry, toCard, type Wiki } from "./registry.ts";
 import { filterFrom, notesOf, search, searchNotes } from "./search.ts";
 import { cleanName } from "./sharing/guest.ts";
@@ -204,6 +205,26 @@ export function buildApp({
     const w = dev ? { id: "_dev", root: join(registry.appRoot, "docs") } : wikiOr404(c);
     if (w instanceof Response) return w;
     return serveFile(c, w.root, c.req.path.slice(`/api/wikis/${w.id}/files/`.length), { cache: !dev });
+  });
+
+  // Questions and suggestions across the wiki (ADR-0009), a page of them at a time; and what waits for the owner.
+  app.get("/api/wikis/:id/questions", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    return c.json(
+      listQuestions(
+        corpusOf(w),
+        w.root,
+        questionQueryFrom((k) => c.req.query(k)),
+        "user",
+      ),
+    );
+  });
+
+  app.get("/api/wikis/:id/questions/waiting", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    return c.json(questionsWaiting(corpusOf(w), w.root, "user"));
   });
 
   app.get("/api/wikis/:id/answers", (c) => {

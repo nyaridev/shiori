@@ -1,7 +1,7 @@
 // Code blocks. The server colors them (server/markdown/code.ts) with CSS variables, which code.css maps onto the
 // wiki's tokens; here each block gets its language and a copy button.
 import { type ReactNode, useRef, useState } from "react";
-import { IconButton, Tooltip } from "../../ui/index.ts";
+import { IconButton, ScrollArea, Tooltip } from "../../ui/index.ts";
 import "./code.css";
 
 /** What a fence's language is called on the block. */
@@ -76,10 +76,12 @@ export function CodeBlock({
           <IconButton icon={copied ? "check" : "copy"} label="Copy code" size="sm" onClick={copy} />
         </Tooltip>
       </figcaption>
-      {/* The server makes the block focusable so it scrolls from the keyboard. */}
-      <pre ref={ref} className="sh-code" {...rest}>
-        {children}
-      </pre>
+      {/* Scrolls sideways under its own scrollbar; Tab reaches it, so the keyboard scrolls it too. */}
+      <ScrollArea axis="x" label={`${lang ? (LABELS[lang] ?? lang) : "Text"} code`} className="sh-code-scroll">
+        <pre ref={ref} className="sh-code" {...rest} tabIndex={undefined}>
+          {children}
+        </pre>
+      </ScrollArea>
     </figure>
   );
 }

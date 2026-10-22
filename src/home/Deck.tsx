@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import type { WikiCard } from "../../shared/api.ts";
 import { api } from "../lib/api.ts";
 import { useLive } from "../lib/live.ts";
@@ -124,6 +124,23 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
         disabled={opening}
       />
       <div className="deck-vignette" />
+      {/* For screen readers: which wiki is in the middle as the deck turns, and every wiki as a link. The cards
+          themselves are pictures of these. */}
+      <p className="sh-sr-only" aria-live="polite">
+        {current && `${current.title}, ${(center % n) + 1} of ${n}. Enter opens it.`}
+      </p>
+      <nav className="sh-sr-only" aria-label="Wikis">
+        <ul>
+          {wikis.slice(0, n).map((w) => (
+            <li key={w.id}>
+              <Link to={`/w/${w.id}`} tabIndex={-1}>
+                {w.title}
+                {w.tagline && `: ${w.tagline}`}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
       <section ref={stage} className="deck-stage" aria-label="Wikis: drag, scroll or use the arrow keys, Enter opens">
         {slots.map((card, i) => (
@@ -134,6 +151,7 @@ function DeckStage({ wikis, start }: { wikis: WikiCard[]; start: number }) {
               slotEls.current[i] = el;
             }}
             className="deck-card"
+            aria-hidden="true"
             data-slot={i}
             data-dim={(query.trim() && matchScore(card, query) === 0) || undefined}
             aria-current={card.id === current.id || undefined}

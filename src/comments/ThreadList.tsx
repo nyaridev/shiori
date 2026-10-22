@@ -88,6 +88,7 @@ export function ThreadList({
       count={openCount}
       tools={
         <Segmented
+          label="Show comments"
           value={filter}
           onChange={setFilter}
           options={[

@@ -33,8 +33,8 @@ function Rail({ list, startActive = null }: { list: Thread[]; startActive?: numb
   return <ThreadList threads={threads(list)} anchors={new Map()} active={active} onActivate={setActive} />;
 }
 
-// Radix tabs switch on mouse down, like a real click.
-const pick = (name: RegExp) => fireEvent.mouseDown(screen.getByRole("tab", { name }), { button: 0 });
+// The filter is a radio group (Segmented): a click picks.
+const pick = (name: RegExp) => fireEvent.click(screen.getByRole("radio", { name }));
 
 afterEach(cleanup);
 
@@ -45,7 +45,7 @@ describe("the comments rail", () => {
     fireEvent.change(screen.getByPlaceholderText("Reply…"), { target: { value: "half a reply" } });
 
     pick(/Closed/);
-    expect(screen.getByRole("tab", { name: /Closed/ }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("radio", { name: /Closed/ }).getAttribute("aria-checked")).toBe("true");
     expect(screen.getByText("Fixed typo")).toBeTruthy();
     expect(screen.queryByPlaceholderText("Reply…")).toBeNull();
 
@@ -55,7 +55,7 @@ describe("the comments rail", () => {
 
   it("shows a closed comment opened from the page under Closed", () => {
     render(<Rail list={[thread(3, "open", "Still open"), thread(4, "resolved", "Done one")]} startActive={4} />);
-    expect(screen.getByRole("tab", { name: /Closed/ }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("radio", { name: /Closed/ }).getAttribute("aria-checked")).toBe("true");
     expect(screen.getByText("Done one")).toBeTruthy();
   });
 });

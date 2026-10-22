@@ -2,11 +2,11 @@
 // detail and index. Cached in memory and dropped when files change; every change also bumps a version, which guests
 // poll instead of server-sent events.
 import type { PageData, PageLink, WikiDetail, WikiIndex } from "../shared/api.ts";
-import { answerCounts } from "./answers.ts";
 import { buildCorpus, type Corpus } from "./corpus.ts";
 import { iconSet } from "./icons.ts";
 import type { Live } from "./live.ts";
 import { buildNav, listPages, type PageFile, pageFinder } from "./pages.ts";
+import { questionTotals } from "./questionList.ts";
 import { toCard, type Wiki } from "./registry.ts";
 import { renderElements } from "./toolbox.ts";
 
@@ -87,15 +87,7 @@ export function createWikiData(live: Live) {
     },
     index: (w: Wiki): WikiIndex => {
       const corpus = corpusOf(w);
-      const counts = answerCounts(w.root);
-      const questions = [...corpus.pages.values()].flatMap((p) =>
-        p.questions.map((q) => ({
-          ...q,
-          page: { path: p.path, title: p.title, icon: p.icon, isPage: true },
-          answers: counts.get(`${p.path}#${q.id}`) ?? 0,
-        })),
-      );
-      return { pages: corpus.index, wanted: corpus.wanted, questions, tasks: corpus.tasks };
+      return { pages: corpus.index, wanted: corpus.wanted, questions: questionTotals(corpus), tasks: corpus.tasks };
     },
     /**
      * Changes since the server started: `pages` for any page or wiki file, `threads` for one wiki's comments,

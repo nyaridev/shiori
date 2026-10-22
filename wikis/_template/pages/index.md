@@ -23,7 +23,8 @@ answers, and updates the page.
 :::
 
 :::box[Start here]{icon="compass"}
-- :page[Plan] — goals, the roadmap, and this week
+- :page[Plan] — goals and this week
+- :page[Roadmap] — where we are, and what comes next
 - :page[Audience & market] — who it's for
 - :page[Inspiration] — the mood board
 - :page[Ideas] — everything worth trying

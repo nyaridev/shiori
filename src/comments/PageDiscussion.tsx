@@ -1,11 +1,12 @@
-// Changes to the whole page, as a panel at its bottom: ask for one without selecting text, with pictures if they help
-// (a screenshot, a sketch, a reference), and follow the page's change requests. They're comments on the whole page;
-// comments on selected text stay in the rail beside it.
+// Changes to the whole page, as a panel at its bottom (folded until opened): ask for one without selecting text, with
+// pictures if they help (a screenshot, a sketch, a reference), and follow the page's change requests. They're comments
+// on the whole page; comments on selected text stay in the rail beside it.
 import { type ClipboardEvent, useEffect, useRef, useState } from "react";
 import { isPageComment, PAGE_QUOTE } from "../../shared/quote.ts";
 import { canComment, useGuest } from "../guest/GuestContext.ts";
 import { api } from "../lib/api.ts";
 import { Button, IconButton, Textarea } from "../ui/index.ts";
+import { FootFold } from "../wiki/FootFold.tsx";
 import { ThreadCard } from "./ThreadList.tsx";
 import type { Threads } from "./useThreads.ts";
 
@@ -95,11 +96,14 @@ export function PageDiscussion({ threads }: { threads: Threads }) {
   };
 
   return (
-    <section className="sh-foot-block sh-discussion" id="changes" aria-labelledby="sh-changes-title">
-      <h2 id="sh-changes-title" className="sh-sections-title">
-        Changes
-        {openCount > 0 && <span className="sh-discussion-count">{openCount} open</span>}
-      </h2>
+    <FootFold
+      id="changes"
+      className="sh-discussion"
+      title="Changes"
+      count={openCount ? `${openCount} open` : onPage.length ? `${onPage.length} resolved` : undefined}
+      tone={openCount ? "accent" : undefined}
+      holds={onPage.map((t) => `comment-${t.id}`)}
+    >
       {writes && (
         <div className="sh-discussion-compose">
           <Textarea
@@ -178,6 +182,6 @@ export function PageDiscussion({ threads }: { threads: Threads }) {
           {showClosed ? "Hide resolved" : `Show ${onPage.length - openCount} resolved`}
         </Button>
       )}
-    </section>
+    </FootFold>
   );
 }

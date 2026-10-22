@@ -127,13 +127,14 @@ html:has(.sh-wiki-head) {
   white-space: nowrap;
 }
 
-/* Buttons for drawers: the page list (home page, narrow screens), comments (home page, medium screens), search. */
+/* Buttons for drawers: the page list (home page, narrow screens), comments (home and panel pages, medium screens),
+   search. */
 .sh-wiki-head .sh-head-menu,
 .sh-wiki-head .sh-head-narrow,
 .sh-wiki-head .sh-head-rail {
   display: none;
 }
-.sh-wiki-head[data-home] .sh-head-rail {
+.sh-wiki-head[data-wide] .sh-head-rail {
   display: inline-flex;
 }
 @media (max-width: 1180px) {

@@ -24,6 +24,7 @@ import {
   HoverCard,
   Icon,
   Kbd,
+  ScrollArea,
   type TabItem,
   Tabs,
 } from "../../ui/index.ts";
@@ -115,11 +116,22 @@ function headingWith(Tag: "h2" | "h3") {
 
 /** A table that scrolls sideways inside its panel when it's wider than the page (phones). */
 export const TableEl = ({ children, ...rest }: Props<object>) => (
-  // biome-ignore lint/a11y/noNoninteractiveTabindex: a region that scrolls must be reachable by keyboard.
-  <section className="sh-table-wrap" tabIndex={0} aria-label="Table">
+  <ScrollArea axis="x" label="Table" className="sh-table-wrap">
     <table {...rest}>{children}</table>
-  </section>
+  </ScrollArea>
 );
+
+/** A formula on lines of its own (server/markdown/math.ts) scrolls sideways when it's wider than the page. */
+export const DivEl = ({ children, className, ...rest }: Props<{ className?: string }>) =>
+  className === "sh-math-block" ? (
+    <ScrollArea axis="x" label="Formula" className="sh-math-block" {...rest}>
+      {children}
+    </ScrollArea>
+  ) : (
+    <div className={className} {...rest}>
+      {children}
+    </div>
+  );
 
 export const H2El = headingWith("h2");
 export const H3El = headingWith("h3");

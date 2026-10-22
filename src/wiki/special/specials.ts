@@ -42,7 +42,7 @@ export const SPECIALS = [
     icon: "question",
     title: "Questions and suggestions",
     summary:
-      "Every question the pages ask and every suggestion the agent made for them, open ones first, with how many answers each has.",
+      "Every question the pages ask and every suggestion the agent made for them, with how many answers each has; answer the open ones all on one page.",
   },
   {
     route: "decisions",

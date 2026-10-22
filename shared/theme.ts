@@ -158,6 +158,8 @@ function readable(color: string, text: string, backgrounds: string[], min: numbe
 
 /** The contrast that text in a color aims for: WCAG AA (4.5) with room for tinted backgrounds. */
 export const INK = 5;
+/** Muted text is never on the tinted panels, so plain AA. */
+export const MUTED_INK = 4.5;
 
 /**
  * The accent as a fill (buttons, the open page, checked boxes) and the text on it. A mid-tone fill reads poorly under
@@ -224,6 +226,8 @@ export function themeVars(theme: Theme, mode: Mode = theme.mode): Record<string,
   // (3:1), since it's also a fill.
   const backgrounds = [colors.bg, colors.surface, colors.raised];
   vars["--accent-ink"] = readable(colors.accent, colors.text, backgrounds, INK);
+  // Quieter text (dates, counts, hints) still reads: AA on each background, whatever muted shade the theme picked.
+  vars["--muted"] = readable(colors.muted, colors.text, backgrounds, MUTED_INK);
   for (const [tone, color] of Object.entries(TONES[mode]))
     vars[`--tone-${tone}`] = readable(color, colors.text, backgrounds, INK);
   for (const [tone, color] of Object.entries(DOTS[mode])) vars[`--dot-${tone}`] = color;

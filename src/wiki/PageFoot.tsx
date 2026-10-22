@@ -1,9 +1,11 @@
-// The bottom of a page: the questions and suggestions it doesn't place itself, cards for the pages under it, what's
-// new (home), its related pages, and last its Changes panel, where people ask for changes to the whole page.
+// The bottom of a page: cards for the pages under it, what's new (home), its related pages, and last, together, what
+// waits for an answer: the questions and suggestions it doesn't place itself and its Changes panel, where people ask
+// for changes to the whole page. Those three are folded (FootFold.tsx) until opened or linked to.
 import { Link } from "react-router";
 import type { PageData, PageEntry, PageLink, Question } from "../../shared/api.ts";
 import { PageDiscussion } from "../comments/PageDiscussion.tsx";
 import { ago } from "../lib/time.ts";
+import { FootFold } from "./FootFold.tsx";
 import { usePage } from "./PageContext.ts";
 import { pageHref, specialHref } from "./PageHead.tsx";
 import { PageIcon } from "./PageIcon.tsx";
@@ -81,20 +83,24 @@ function RecentlyUpdated({ wikiId, index }: { wikiId: string; index: PageEntry[]
   );
 }
 
-/** A page's questions or suggestions that it doesn't place itself, open ones first. */
-function Decisions({ id, title, list }: { id: string; title: string; list: Question[] }) {
+/** A page's questions or suggestions that it doesn't place itself, open ones first, folded until asked for. */
+function Decisions({ id, title, tone, list }: { id: string; title: string; tone: "warn" | "good"; list: Question[] }) {
   if (!list.length) return null;
+  const open = list.filter((q) => q.status === "open").length;
   return (
-    <section className="sh-foot-block" id={id} aria-labelledby={`sh-${id}-title`}>
-      <h2 id={`sh-${id}-title`} className="sh-sections-title">
-        {title}
-      </h2>
+    <FootFold
+      id={id}
+      title={title}
+      count={open ? `${open} open` : `${list.length} decided`}
+      tone={open ? tone : undefined}
+      holds={list.map((q) => `question-${q.id}`)}
+    >
       <div className="sh-question-list">
         {list.map((q) => (
           <QuestionCard key={q.id} question={q} />
         ))}
       </div>
-    </section>
+    </FootFold>
   );
 }
 
@@ -106,8 +112,6 @@ export function PageFoot({ wikiId, page, index }: { wikiId: string; page: PageDa
     .sort((a, b) => Number(a.status === "resolved") - Number(b.status === "resolved"));
   return (
     <footer className="sh-page-foot">
-      <Decisions id="questions" title="Questions" list={unplaced.filter((q) => q.kind === "question")} />
-      <Decisions id="suggestions" title="Suggestions" list={unplaced.filter((q) => q.kind === "suggestion")} />
       {page.children.length > 0 && !page.placed.children && (
         <section className="sh-sections" aria-label={home ? "Sections" : "In this section"}>
           <h2 className="sh-sections-title">{home ? "Sections" : "In this section"}</h2>
@@ -127,6 +131,14 @@ export function PageFoot({ wikiId, page, index }: { wikiId: string; page: PageDa
           <Related wikiId={wikiId} page={page} />
         </section>
       )}
+      {/* What waits for an answer, together at the end: questions, suggestions, change requests. */}
+      <Decisions id="questions" title="Questions" tone="warn" list={unplaced.filter((q) => q.kind === "question")} />
+      <Decisions
+        id="suggestions"
+        title="Suggestions"
+        tone="good"
+        list={unplaced.filter((q) => q.kind === "suggestion")}
+      />
       {ctx && <PageDiscussion threads={ctx.threads} />}
     </footer>
   );

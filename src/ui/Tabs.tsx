@@ -1,4 +1,4 @@
-import { Tabs as R } from "radix-ui";
+import { Tabs as R, RadioGroup } from "radix-ui";
 import type { ReactNode } from "react";
 import { Glider } from "./Glider.tsx";
 
@@ -30,26 +30,35 @@ export function Tabs({ items, defaultValue }: { items: TabItem[]; defaultValue?:
   );
 }
 
-/** Segmented control: tabs without panels. The picked one's background slides over to it. */
+/**
+ * Segmented control: one choice of a few, like radio buttons (arrow keys move between them). The picked one's
+ * background slides over to it. `label` names the choice for screen readers ("Show", "View").
+ */
 export function Segmented<T extends string>({
   value,
   onChange,
   options,
+  label,
 }: {
   value: T;
   onChange: (v: T) => void;
   options: { value: T; label: ReactNode }[];
+  label?: string;
 }) {
   return (
-    <R.Root value={value} onValueChange={(v) => onChange(v as T)}>
-      <R.List className="sh-segmented sh-glide-host">
-        <Glider follow="current" select='.sh-segmented-item[data-state="active"]' className="sh-segmented-thumb" />
-        {options.map((o) => (
-          <R.Trigger key={o.value} value={o.value} className="sh-segmented-item">
-            {o.label}
-          </R.Trigger>
-        ))}
-      </R.List>
-    </R.Root>
+    <RadioGroup.Root
+      value={value}
+      onValueChange={(v) => onChange(v as T)}
+      orientation="horizontal"
+      aria-label={label}
+      className="sh-segmented sh-glide-host"
+    >
+      <Glider follow="current" select='.sh-segmented-item[data-state="checked"]' className="sh-segmented-thumb" />
+      {options.map((o) => (
+        <RadioGroup.Item key={o.value} value={o.value} className="sh-segmented-item">
+          {o.label}
+        </RadioGroup.Item>
+      ))}
+    </RadioGroup.Root>
   );
 }

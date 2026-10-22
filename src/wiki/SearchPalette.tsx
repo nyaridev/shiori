@@ -47,7 +47,8 @@ function reveal(path: string, id: string | undefined) {
   const look = () => {
     const main = document.querySelector<HTMLElement>(`.sh-wiki-main[data-path="${CSS.escape(path)}"]`);
     const target = id ? main?.querySelector<HTMLElement>(`#${CSS.escape(id)}`) : main;
-    if (!target) {
+    // A target in a folded block (FootFold.tsx) waits for the link to open it.
+    if (!target || target.closest("[hidden]")) {
       if (tries++ < 120) requestAnimationFrame(look);
       return;
     }

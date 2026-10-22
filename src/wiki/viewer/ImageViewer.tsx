@@ -9,7 +9,7 @@ import { api } from "../../lib/api.ts";
 import { picture } from "../../lib/base.ts";
 import { useLive } from "../../lib/live.ts";
 import { useResource } from "../../lib/useResource.ts";
-import { Dialog, DialogContent, IconButton } from "../../ui/index.ts";
+import { Dialog, DialogContent, IconButton, ScrollArea } from "../../ui/index.ts";
 import { pageHref } from "../PageHead.tsx";
 import "./viewer.css";
 import { PageIcon } from "../PageIcon.tsx";
@@ -128,7 +128,7 @@ export function ImageViewer({
               )}
             </p>
             {list.length > 0 && (
-              <nav className="sh-viewer-strip" aria-label="Pictures in this wiki">
+              <ScrollArea as="nav" axis="x" className="sh-viewer-strip" aria-label="Pictures in this wiki">
                 {list.map((g, gi) => {
                   const first = offset;
                   offset += g.images.length;
@@ -167,7 +167,7 @@ export function ImageViewer({
                     </section>
                   );
                 })}
-              </nav>
+              </ScrollArea>
             )}
           </div>
         )}

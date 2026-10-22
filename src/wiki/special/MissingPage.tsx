@@ -13,7 +13,7 @@ export function MissingPage({ wikiId, path, index }: { wikiId: string; path: str
     document.title = `${title} (not written yet)`;
   }, [title]);
   return (
-    <main className="sh-wiki-main" data-path={path}>
+    <main id="sh-main" tabIndex={-1} className="sh-wiki-main" data-path={path}>
       <header className="sh-page-head">
         <p className="sh-special-kicker">Not written yet</p>
         <h1 className="sh-page-title">

@@ -1,6 +1,8 @@
 // Type anywhere on the deck and a search line fades in above the middle card. Just an underline, no icons. While
 // it's empty it's invisible and can't be clicked. Typing spins the deck to the best match; Enter opens it, Esc clears.
-import { useEffect, useRef } from "react";
+// A touch screen has nothing to type on until a field has focus, so there a small button at the bottom opens it.
+import { useEffect, useRef, useState } from "react";
+import { Icon } from "../ui/index.ts";
 import "./search.css";
 
 interface Props {
@@ -35,29 +37,53 @@ export function Search({ query, onChange, found, onSubmit, disabled }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const visible = query !== "" && !disabled;
+  // Opened by the touch button: shown while it has focus, even empty.
+  const [opened, setOpened] = useState(false);
+  const visible = (query !== "" || opened) && !disabled;
   useEffect(() => {
     if (!visible) input.current?.blur();
   }, [visible]);
 
   return (
-    <div className="deck-search" data-visible={visible || undefined} data-missing={(visible && !found) || undefined}>
-      <input
-        ref={input}
-        value={query}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") onSubmit();
-          else if (e.key === "Escape") onChange("");
-          else return;
-          e.preventDefault();
-        }}
-        tabIndex={visible ? 0 : -1}
-        aria-label="Search wikis"
-        aria-hidden={!visible}
-        spellCheck={false}
-        autoComplete="off"
-      />
-    </div>
+    <>
+      <div
+        className="deck-search"
+        data-visible={visible || undefined}
+        data-missing={(visible && query !== "" && !found) || undefined}
+      >
+        <input
+          ref={input}
+          value={query}
+          onBlur={() => setOpened(false)}
+          enterKeyHint="go"
+          placeholder={opened ? "Search wikis" : undefined}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onSubmit();
+            else if (e.key === "Escape") onChange("");
+            else return;
+            e.preventDefault();
+          }}
+          tabIndex={visible ? 0 : -1}
+          aria-label="Search wikis"
+          aria-hidden={!visible}
+          spellCheck={false}
+          autoComplete="off"
+        />
+      </div>
+      {!visible && !disabled && (
+        <button
+          type="button"
+          className="deck-search-open"
+          aria-label="Search wikis"
+          onClick={() => {
+            setOpened(true);
+            input.current?.focus();
+          }}
+        >
+          <Icon name="search" size={20} />
+        </button>
+      )}
+    </>
   );
 }

@@ -407,14 +407,54 @@ Numbers at a glance: channel stats, shop sales, playtest results. Each `- Label:
 - [ ] May: **Public launch**
 :::
 
-A roadmap. Ticked items are done, the first open one is marked *Now*, and the rest are next. Items without a task
-box are plain entries (a history, a changelog).
+A short roadmap. Ticked items are done, the first open one is marked *Now*, and the rest are next. Items without a
+task box are plain entries (a history, a changelog).
 
 ```md
 :::timeline
 - [x] January: Idea and research
 - [ ] March: Playtest with friends
 :::
+```
+
+## Roadmap
+
+::::roadmap
+:::milestone[Prototype]{version="0.1" when="March" icon="puzzle" goal="five friends played it"}
+The one core idea, rough but playable.
+
+- [x] Movement and one enemy
+- [ ] Five friends play it
+:::
+
+:::milestone[Demo]{version="0.5" when="May" icon="sparkles" goal="the demo is on the store page"}
+- [ ] Three levels
+- [ ] A trailer
+:::
+
+:::milestone[Full game]{version="1.0" status="later" icon="target"}
+Everything else, once the demo says it's worth it.
+:::
+::::
+
+A page's roadmap: milestones by version, release or goal, each with what it is and its tasks, and the current one
+put forward. It's drawn as chapters down the page, release by release: the version on the left, finished ones folded,
+the current one marked. A milestone takes a `[Name]` and any of `version`, `when`, `goal` (when it's done), `icon` and
+`status` (`done`, `now`, `next`, `later`). Without a `status`, its tasks decide: all ticked is done, the first one
+that isn't is now, the rest are next. Its tasks count in Tasks and To do like any others.
+
+```md
+::::roadmap
+:::milestone[Prototype]{version="0.1" when="March" goal="five friends played it"}
+The one core idea, rough but playable.
+
+- [x] Movement and one enemy
+- [ ] Five friends play it
+:::
+
+:::milestone[Full game]{version="1.0" status="later"}
+:::
+::::
 ```
 
 ## Cards

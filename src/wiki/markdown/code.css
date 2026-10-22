@@ -42,7 +42,6 @@
   background: none;
   color: var(--code-foreground);
 }
-.sh-prose .sh-code-block pre.sh-code:focus-visible {
-  outline: 2px solid var(--accent-line);
-  outline-offset: -2px;
+.sh-code-scroll {
+  border-radius: 0 0 var(--r-md) var(--r-md);
 }

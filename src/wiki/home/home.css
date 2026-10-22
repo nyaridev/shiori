@@ -213,11 +213,22 @@ a.sh-block-page:hover {
   margin-bottom: var(--s-4);
   break-inside: avoid;
 }
+/* The margin under the last box of a column is dropped at the column's end, so a wide box keeps its own gap above. */
 .sh-boxes[data-flow] .sh-box[data-wide] {
   column-span: all;
 }
+.sh-boxes[data-flow] .sh-box[data-wide]:not(:first-child) {
+  margin-top: var(--s-4);
+}
 
 /* The banner's parts: where it stands, the name, the numbers, the ways in. */
+.sh-home-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+}
 .sh-home-pill {
   display: inline-flex;
   align-items: center;
@@ -232,6 +243,9 @@ a.sh-block-page:hover {
   font-weight: 650;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+.sh-home-pills .sh-home-pill {
+  margin: 0;
 }
 .sh-home-pill .sh-badge {
   height: auto;
@@ -372,6 +386,9 @@ a.sh-home-stat:hover {
   justify-items: start;
   gap: var(--s-2);
 }
+.sh-hero-banner .sh-home-pills {
+  justify-content: flex-start;
+}
 .sh-hero-banner .sh-home-title {
   justify-content: flex-start;
   font-size: clamp(2rem, 4vw, 3rem);
@@ -431,27 +448,19 @@ a.sh-home-stat:hover {
   gap: var(--s-2);
   margin-left: auto;
 }
+/* The git pill (GitBadge.tsx): the status pill's look, the repo's name as it's spelled. */
 .sh-git-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-2);
-  height: 30px;
-  padding: 0 var(--s-3);
-  border: var(--bw) solid var(--border-strong);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: var(--t-xs);
-  font-weight: 650;
+  gap: 6px;
   text-decoration: none;
   white-space: nowrap;
 }
 .sh-git-badge .sh-glyph {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 a.sh-git-badge:hover {
-  background: var(--raised);
+  background: color-mix(in oklab, var(--raised) 85%, transparent);
+  color: var(--text);
 }
 .sh-git-badge:focus-visible {
   outline: none;
@@ -470,6 +479,14 @@ a.sh-git-badge:hover {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.sh-git-name[data-repo] {
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+a.sh-git-badge:hover .sh-git-name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .sh-git-changes {
   min-width: 18px;
   padding: 1px 6px;
@@ -487,4 +504,46 @@ a.sh-git-badge:hover {
   color: var(--text);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* Touch: list links tall enough to tap. */
+@media (pointer: coarse) {
+  .sh-block-link {
+    padding: 5px 0;
+  }
+}
+
+/* A panel page's banner (PanelHero.tsx): without a picture, a wash of the accent; the current milestone stands out. */
+.sh-panel-hero .sh-hero-banner-art[data-plain] {
+  min-height: 220px;
+  background:
+    radial-gradient(90% 120% at 100% 0%, color-mix(in oklab, var(--accent) 30%, transparent) 0%, transparent 60%),
+    radial-gradient(70% 90% at 0% 100%, color-mix(in oklab, var(--accent) 14%, transparent) 0%, transparent 70%),
+    linear-gradient(160deg, color-mix(in oklab, var(--accent) 10%, var(--surface)), var(--surface));
+}
+.sh-panel-hero .sh-hero-banner-stats {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.sh-panel-hero .sh-home-stat[data-now] {
+  border-color: var(--accent-line);
+}
+.sh-panel-hero .sh-home-stat-value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
+.sh-panel-hero .sh-home-stat-value p {
+  margin: 0;
+}
+.sh-panel-version {
+  padding: 1px 7px;
+  border: var(--bw) solid var(--border);
+  border-radius: 999px;
+  background: var(--raised);
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  font-weight: 600;
 }

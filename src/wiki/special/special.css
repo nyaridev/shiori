@@ -367,3 +367,103 @@
   outline: none;
   box-shadow: var(--focus);
 }
+
+/* Special:Questions (Questions.tsx, ADR-0009): the view switch, a bar of filters and search, then a page of the list
+   with where it is above it and the pager under it. */
+.sh-q-views {
+  margin-bottom: var(--s-4);
+}
+.sh-q-views .sh-segmented-item {
+  padding: 6px 14px;
+  font-size: var(--t-sm);
+}
+.sh-q-views-count,
+.sh-q-tab-count {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.sh-q-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  margin-bottom: var(--s-3);
+}
+.sh-q-search {
+  flex: 1 1 220px;
+  max-width: 360px;
+}
+.sh-q-summary,
+.sh-q-progress {
+  margin: 0 0 var(--s-2);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+}
+.sh-q-summary {
+  /* Where a new page of the list scrolls to: under the header, with the filters above it still in view. */
+  scroll-margin-top: calc(var(--head, 0px) + 72px);
+}
+.sh-q-summary:focus {
+  box-shadow: none;
+}
+.sh-q-progress {
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+}
+.sh-q-paged[aria-busy] > :not(.sh-pager) {
+  opacity: 0.55;
+  transition: opacity var(--fast) var(--ease) 150ms;
+}
+.sh-q-queue {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-q-from {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-soft);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  text-decoration: none;
+}
+.sh-q-from:hover {
+  color: var(--accent-ink);
+}
+.sh-q-recent {
+  margin-top: var(--s-6);
+}
+.sh-q-mine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-2);
+  flex-basis: 100%;
+  padding-left: 22px;
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+}
+.sh-q-recent-row .sh-special-link {
+  flex: 1 1 260px;
+}
+.sh-q-recent-edit {
+  padding: var(--s-1) 0;
+}
+.sh-special-more {
+  margin: var(--s-3) 0 0;
+  padding-left: var(--s-2);
+}
+
+/* Touch: list links tall enough to tap. */
+@media (pointer: coarse) {
+  .sh-special-link {
+    min-height: 32px;
+  }
+}

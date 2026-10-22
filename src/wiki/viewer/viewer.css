@@ -57,11 +57,11 @@
 
 /* The strip: the wiki's pictures in reading order, a group per page. */
 .sh-viewer-strip {
+  padding-bottom: var(--s-2);
+}
+.sh-viewer-strip .sh-scroll-content {
   display: flex;
   gap: var(--s-3);
-  padding-bottom: var(--s-2);
-  overflow-x: auto;
-  scrollbar-width: thin;
 }
 .sh-viewer-group {
   display: grid;

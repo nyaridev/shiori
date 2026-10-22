@@ -370,6 +370,7 @@ export function renderPage(
     type: fm.type,
     infobox,
     banner: picture(fm.banner, "banner"),
+    ...(fm.panel ? { panel: true } : {}),
     file: page.file,
     backlinks: [],
     related: [...kinds].map(([kind, pages]) => ({ kind, pages })),

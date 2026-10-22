@@ -77,6 +77,8 @@ export interface PageData {
   infobox?: Infobox;
   /** URL of a wide picture behind the page head. */
   banner?: string;
+  /** A panel page (`panel: true`): a banner instead of the page head, wide like the home page. */
+  panel?: boolean;
   /** The page file, from the wiki root (`pages/plan/goals.md`). */
   file?: string;
   /** Pages that link to this one. */
@@ -159,6 +161,70 @@ export interface QuestionEntry extends Question {
   answers: number;
 }
 
+/**
+ * Which questions a list asks the server for (`GET /api/wikis/:id/questions`, ADR-0009). Lists are cut into pages on
+ * the server, so a wiki with thousands of questions sends only the ones on screen.
+ */
+export interface QuestionQuery {
+  /** Default `open`. */
+  status?: "open" | "decided" | "all";
+  kind?: Question["kind"];
+  /**
+   * For the viewer: `waiting` is open ones they haven't answered, plus those they answered at or after `since` (so a
+   * card they just answered stays where it was); `answered` is the ones they answered, except those.
+   */
+  mine?: "waiting" | "answered";
+  /** The server's time when the viewer opened the list (`QuestionPage.at`). */
+  since?: string;
+  /** Words that must all be in the question, its options, its decision or its page's title. */
+  q?: string;
+  /** `due`: soonest due first, then reading order (the default); `decided`: newest decision first; `answered`: the
+   * viewer's newest answer first; `updated`: the most recently changed pages first. */
+  sort?: "due" | "decided" | "answered" | "updated";
+  offset?: number;
+  /** At most `QUESTION_PAGE_MAX`. */
+  limit?: number;
+  /** Every answer to each question, for cards. */
+  full?: boolean;
+}
+
+export const QUESTION_PAGE_MAX = 50;
+
+export interface QuestionItem extends QuestionEntry {
+  /** The viewer's own answer. */
+  mine?: Answer;
+  /** Everyone's answers (with `full`), oldest first. */
+  answerList?: Answer[];
+  /** When it was decided: its `decided` day, else the day its page last changed. */
+  decidedOn?: string;
+}
+
+/** How many questions there are of each kind, for tabs; narrowed by the search, not by the other filters. */
+export interface QuestionCounts {
+  open: { question: number; suggestion: number };
+  decided: number;
+  /** Open ones the viewer hasn't answered. */
+  waiting: { question: number; suggestion: number };
+  /** The viewer's answered ones (`mine: answered`). */
+  answered: number;
+}
+
+/** One page of a question list. */
+export interface QuestionPage {
+  items: QuestionItem[];
+  /** How many match, on every page. */
+  total: number;
+  offset: number;
+  counts: QuestionCounts;
+  /** The server's time, for `since`. */
+  at: string;
+}
+
+/** What waits for the viewer on each page (the sidebar's dots): open questions and suggestions they haven't answered. */
+export interface QuestionsWaiting {
+  pages: Record<string, { questions: number; suggestions: number }>;
+}
+
 /** A page that red links point to but nobody has written yet, and the pages that link to it. */
 export interface WantedPage {
   path: string;
@@ -179,7 +245,8 @@ export interface TaskEntry {
 export interface WikiIndex {
   pages: PageEntry[];
   wanted: WantedPage[];
-  questions: QuestionEntry[];
+  /** How many questions there are; the questions themselves come a page at a time (`QuestionQuery`). */
+  questions: { open: number; suggestions: number; decided: number };
   tasks: TaskEntry[];
 }
 

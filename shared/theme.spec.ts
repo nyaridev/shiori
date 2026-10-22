@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contrast, DEFAULT_THEME, INK, PALETTES, themeColors, themeSchema, themeVars } from "./theme.ts";
+import { contrast, DEFAULT_THEME, INK, MUTED_INK, PALETTES, themeColors, themeSchema, themeVars } from "./theme.ts";
 
 describe("themes", () => {
   it("fills every token from the palette and presets", () => {
@@ -83,6 +83,17 @@ describe("colors that must read", () => {
       for (const ink of ["--accent-ink", "--tone-good", "--tone-warn", "--tone-bad"])
         for (const bg of ["--bg", "--surface", "--raised"])
           expect(contrast(vars[ink], vars[bg]), `${ink} on ${bg}`).toBeGreaterThanOrEqual(INK - 0.05);
+    }
+  });
+
+  it("keeps muted text readable, even when a theme picks a faint shade", () => {
+    for (const mode of ["dark", "light"] as const) {
+      const faint = themeSchema.parse({ mode, colors: { muted: mode === "dark" ? "#3a3a3a" : "#d8d8d8" } });
+      for (const theme of [faint, themeSchema.parse({ mode })]) {
+        const vars = themeVars(theme, mode);
+        for (const bg of ["--bg", "--surface", "--raised"])
+          expect(contrast(vars["--muted"], vars[bg]), `muted on ${bg}`).toBeGreaterThanOrEqual(MUTED_INK);
+      }
     }
   });
 

@@ -76,6 +76,8 @@ const MIGRATIONS = [
   `alter table messages add column images text not null default '[]';`,
   // Removing a thread (the host's, or its author's): it stays, marked, and nobody sees it any more.
   `alter table threads add column removed_at text;`,
+  // One person's answers, for the question lists (ADR-0009): a wiki can have thousands.
+  `create index answers_author on answers(author, guest_id);`,
 ];
 
 /** Gives rows made before uids (or restored from an old backup) theirs, and an `updated_at`. */

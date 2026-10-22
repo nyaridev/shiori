@@ -144,6 +144,18 @@ describe("page relations", () => {
     expect(combat?.next).toBeNull();
     expect(renderPage(w, pages, "")?.children.map((c) => c.path)).toEqual(["systems"]);
   });
+
+  it("marks a panel page, and only that one", () => {
+    const root = join(app, "wikis", "alpha");
+    wiki(root, "alpha");
+    writeFileSync(join(root, "pages", "roadmap.md"), "---\ntitle: Roadmap\npanel: true\n---\nWhere we are.");
+    const { wikis } = discover(app);
+    const pages = listPages(wikis[0]);
+    const roadmap = renderPage(wikis[0], pages, "roadmap");
+    expect(roadmap?.panel).toBe(true);
+    expect(roadmap?.problems).toEqual([]);
+    expect(renderPage(wikis[0], pages, "systems")?.panel).toBeUndefined();
+  });
 });
 
 describe("corpus", () => {

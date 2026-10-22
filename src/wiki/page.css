@@ -356,6 +356,75 @@ a.sh-tag:hover {
   margin: 0;
 }
 
+/* Folded foot blocks (FootFold.tsx): questions, suggestions, Changes, as bars stacked close together. */
+.sh-foot-fold {
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+.sh-foot-fold + .sh-foot-fold {
+  margin-top: calc(var(--s-2) - var(--s-6));
+}
+.sh-foot-fold-title {
+  margin: 0;
+}
+.sh-foot-fold-title > button {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-family: var(--font-heading);
+  font-size: var(--t-md);
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+.sh-foot-fold-title > button:hover {
+  background: var(--hover);
+}
+.sh-foot-fold-title > button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-foot-fold-chevron {
+  display: inline-flex;
+  color: var(--muted);
+  transition: rotate var(--fast) var(--ease);
+}
+.sh-foot-fold[data-open] .sh-foot-fold-chevron {
+  rotate: 90deg;
+}
+.sh-foot-fold-count {
+  margin-left: auto;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: var(--t-xs);
+  font-weight: 650;
+}
+.sh-foot-fold-count[data-tone="warn"] {
+  color: var(--tone-warn);
+}
+.sh-foot-fold-count[data-tone="good"] {
+  color: var(--tone-good);
+}
+.sh-foot-fold-count[data-tone="accent"] {
+  color: var(--accent-ink);
+}
+.sh-foot-fold-body {
+  padding: var(--s-1) var(--s-4) var(--s-4);
+  border-top: var(--bw) solid var(--border);
+}
+.sh-foot-fold-body > :first-child {
+  margin-top: var(--s-3);
+}
+
 /* Foot blocks: recently updated, what links here. */
 .sh-foot-block .sh-sections-title {
   display: flex;
@@ -397,6 +466,8 @@ a.sh-tag:hover {
 }
 .sh-recent-list {
   display: grid;
+  /* A row's summary is cut to fit; without this the column grows to the longest one instead. */
+  grid-template-columns: minmax(0, 1fr);
   margin: 0;
   padding: 0;
   list-style: none;

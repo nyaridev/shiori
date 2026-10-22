@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
 import { DesignPage } from "../designs/DesignPage.tsx";
 import { api } from "../lib/api.ts";
@@ -14,6 +14,7 @@ import { rememberViewed } from "./sidebar/recent.ts";
 import { Sidebar } from "./sidebar/Sidebar.tsx";
 import { MissingPage } from "./special/MissingPage.tsx";
 import { SpecialPage } from "./special/SpecialPage.tsx";
+import { useDrawer } from "./useDrawer.ts";
 import { ImageViewer } from "./viewer/ImageViewer.tsx";
 import { ViewerContext } from "./viewer/ViewerContext.ts";
 import { WikiHeader } from "./WikiHeader.tsx";
@@ -53,8 +54,9 @@ export function WikiLayout() {
   });
   useTheme(wiki.data?.theme);
   const people = usePresence(wikiId, path);
-  // The home page is wide: the sidebar stays, the rail is a drawer.
+  // The home page and panel pages are wide: the sidebar stays, the rail is a drawer.
   const home = path === "" && !page.error;
+  const wide = home || (special === null && !page.error && !!page.data?.panel);
 
   // Remembered for the sidebar's Recently viewed.
   useEffect(() => {
@@ -65,6 +67,18 @@ export function WikiLayout() {
   const [railOpen, setRailOpen] = useState(false);
   const openRail = useCallback(() => setRailOpen(true), []);
   const [searchOpen, setSearchOpen] = useState(false);
+  // On narrow screens both are drawers over the page.
+  const nav = useRef<HTMLElement>(null);
+  useDrawer(
+    () => nav.current,
+    navOpen,
+    () => setNavOpen(false),
+  );
+  useDrawer(
+    () => document.querySelector<HTMLElement>(".sh-wiki-rail"),
+    railOpen,
+    () => setRailOpen(false),
+  );
   // The picture the image viewer shows, if it's open.
   const [viewing, setViewing] = useState<string | null>(null);
   const viewer = useMemo(() => ({ open: setViewing }), []);
@@ -103,10 +117,14 @@ export function WikiLayout() {
   return (
     <WikiIndexContext.Provider value={pages}>
       <ViewerContext.Provider value={viewer}>
-        <div className="sh-wiki" data-enter={fromDeck || undefined} data-home={home || undefined}>
+        <div className="sh-wiki" data-enter={fromDeck || undefined} data-wide={wide || undefined}>
+          {/* The first stop for the keyboard: past the header and the page list, straight to what's being read. */}
+          <a href="#sh-main" className="sh-skip">
+            Skip to the page
+          </a>
           {wiki.data && (
             <>
-              <aside className="sh-wiki-sidebar" data-open={navOpen || undefined}>
+              <aside ref={nav} className="sh-wiki-sidebar" data-open={navOpen || undefined}>
                 <Sidebar
                   wiki={wiki.data}
                   path={path}
@@ -119,7 +137,7 @@ export function WikiLayout() {
               )}
               <WikiHeader
                 wiki={wiki.data}
-                home={home}
+                wide={wide}
                 people={people}
                 onPages={() => setNavOpen(true)}
                 onSearch={() => setSearchOpen(true)}

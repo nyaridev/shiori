@@ -17,14 +17,20 @@ interface ElementSpec {
   /** The attribute that the `[label]` fills in when it isn't given. */
   label?: string;
   /** Reshapes the node's content; may return more properties for the element (a value worked out from the input). */
-  // biome-ignore lint/suspicious/noConfusingVoidType: most transforms only reshape the node and return nothing.
-  transform?: (node: Directive, problem: (message: string) => void) => Record<string, string> | undefined | void;
+  transform?: (
+    node: Directive,
+    problem: (message: string) => void,
+    parent: Parent,
+    // biome-ignore lint/suspicious/noConfusingVoidType: most transforms only reshape the node and return nothing.
+  ) => Record<string, string> | undefined | void;
 }
 
 export const CALLOUT_TONES = ["note", "tip", "warning", "danger"] as const;
 export const BADGE_TONES = ["neutral", "accent", "good", "warn", "bad"] as const;
 /** A tab can stand out in a color: green for suggestions, amber for what's open, red for problems. */
 export const TAB_TONES = ["accent", "good", "warn", "bad"] as const;
+/** Where a roadmap's milestone stands. */
+export const MILESTONE_STATUSES = ["done", "now", "next", "later"] as const;
 
 export const ELEMENTS: Record<string, ElementSpec> = {
   callout: {
@@ -49,6 +55,15 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   // Planning: numbers, roadmaps, link hubs, mood boards, progress.
   stats: { type: "containerDirective", tag: "sh-stats", attrs: {}, transform: statTiles },
   timeline: { type: "containerDirective", tag: "sh-timeline", attrs: {}, transform: milestones },
+  // A roadmap of milestones (versions, releases or goals), each with its tasks; each viewer picks how it's drawn.
+  roadmap: { type: "containerDirective", tag: "sh-roadmap", attrs: {}, transform: roadmapMilestones },
+  milestone: {
+    type: "containerDirective",
+    tag: "sh-roadmap-milestone",
+    attrs: { title: null, status: MILESTONE_STATUSES, version: null, when: null, goal: null, icon: null },
+    label: "title",
+    transform: milestoneTasks,
+  },
   cards: { type: "containerDirective", tag: "sh-cards", attrs: {}, transform: linkCards },
   gallery: { type: "containerDirective", tag: "sh-gallery", attrs: {}, transform: galleryShots },
   progress: {
@@ -152,7 +167,7 @@ export function remarkElements(problems: string[], lineOffset = 0) {
         props[spec.label] ??= textOf(node);
         node.children = [];
       }
-      const extra = spec.transform?.(node, problem);
+      const extra = spec.transform?.(node, problem, parent);
       node.data = { hName: spec.tag, hProperties: { ...props, ...(extra ?? {}) } };
     });
   };
@@ -220,6 +235,54 @@ function onlyTabs(node: Directive, problem: (message: string) => void) {
   const strays = (node.children as RootContent[]).filter((c) => !(c.type === "containerDirective" && c.name === "tab"));
   if (strays.length) problem('tabs: put all content inside ":::tab[Label]" blocks (and use "::::tabs" outside)');
   node.children = node.children.filter((c) => !strays.includes(c as RootContent)) as never;
+}
+
+/**
+ * Roadmap: only `:::milestone` blocks. A milestone without a `status` gets one from its tasks: all ticked is done, the
+ * first one that isn't is now (unless another one says it is), the rest are next.
+ */
+function roadmapMilestones(node: Directive, problem: (message: string) => void) {
+  const all = node.children as RootContent[];
+  const list = all.filter((c): c is ContainerDirective => c.type === "containerDirective" && c.name === "milestone");
+  if (list.length < all.length) {
+    problem('roadmap: put all content inside ":::milestone[Name]" blocks (and use "::::roadmap" outside)');
+  }
+  if (!list.length) problem('roadmap: add milestones, as ":::milestone[Prototype]{version="0.1"}"');
+  const nows = list.filter((m) => m.attributes?.status === "now").length;
+  if (nows > 1) problem("roadmap: only one milestone can be now");
+  let reachedNow = nows > 0;
+  for (const m of list) {
+    if (m.attributes?.status) continue;
+    const { done, total } = countTasks(m);
+    let status = "next";
+    if (total > 0 && done === total) status = "done";
+    else if (!reachedNow) {
+      status = "now";
+      reachedNow = true;
+    }
+    m.attributes = { ...m.attributes, status };
+  }
+  node.children = list;
+}
+
+/** A milestone's tasks, ticked and all, for its progress. */
+function milestoneTasks(node: Directive, problem: (message: string) => void, parent: Parent) {
+  if (!(parent.type === "containerDirective" && (parent as ContainerDirective).name === "roadmap")) {
+    problem('milestone: put it inside a "::::roadmap" block');
+  }
+  const { done, total } = countTasks(node);
+  return { done: String(done), total: String(total) };
+}
+
+function countTasks(node: Node) {
+  let done = 0;
+  let total = 0;
+  visit(node, "listItem", (item: ListItem) => {
+    if (typeof item.checked !== "boolean") return;
+    total++;
+    if (item.checked) done++;
+  });
+  return { done, total };
 }
 
 function onlyBoxes(node: Directive, problem: (message: string) => void) {

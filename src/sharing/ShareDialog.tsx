@@ -176,7 +176,7 @@ function NewLink({
     <section className="sh-share-new" aria-label="New link">
       <div className="sh-share-field">
         <span className="sh-share-label">People with the link</span>
-        <Segmented value={kind} onChange={setKind} options={KINDS} />
+        <Segmented label="What guests can do" value={kind} onChange={setKind} options={KINDS} />
       </div>
       <div className="sh-share-grid">
         <div className="sh-share-field">

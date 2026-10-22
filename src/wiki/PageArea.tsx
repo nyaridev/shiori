@@ -1,5 +1,6 @@
 // One page of a wiki: its head, the article (where comments anchor), its foot, and the rail (PageRail.tsx) with the
-// contents and comment threads. The home page has a banner instead of the head and its boxes in columns; its rail is a drawer.
+// contents and comment threads. The home page has a banner instead of the head and its boxes in columns; its rail is a
+// drawer. A panel page (`panel: true`) is laid out the same way, with a banner of its own (PanelHero.tsx).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import type { PageData, PageEntry, WikiDetail } from "../../shared/api.ts";
@@ -8,8 +9,10 @@ import { type Anchors, CommentLayer } from "../comments/CommentLayer.tsx";
 import { scrollToRange } from "../comments/ThreadList.tsx";
 import { useThreads } from "../comments/useThreads.ts";
 import { Callout } from "../ui/index.ts";
+import { openFoot } from "./FootFold.tsx";
 import { HomeBoxesContext } from "./home/blocks.tsx";
 import { HomeHero } from "./home/HomeHero.tsx";
+import { PanelHero } from "./home/PanelHero.tsx";
 import { LayoutView } from "./layout/LayoutView.tsx";
 import { Markdown } from "./markdown/Markdown.tsx";
 import { sectioned } from "./markdown/sections.ts";
@@ -63,6 +66,7 @@ export function PageArea({
     // Comments on the whole page sit in the Changes panel at the bottom.
     if (thread && isPageComment(thread.quote)) {
       shownLink.current = hash;
+      openFoot("changes");
       document.getElementById("changes")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
@@ -87,12 +91,23 @@ export function PageArea({
   // Each `##` section shows as a panel (a layout places them itself).
   const body = useMemo(() => sectioned(page.hast), [page.hast]);
   const home = path === "";
+  // A panel page is laid out like the home page, with a banner of its own.
+  const panel = !home && !!page.panel;
   const onProblems = () => setShowProblems((s) => !s);
   return (
     <PageContext.Provider value={context}>
-      <main className="sh-wiki-main" data-path={path} data-home={home || undefined}>
+      <main
+        id="sh-main"
+        tabIndex={-1}
+        className="sh-wiki-main"
+        data-path={path}
+        data-wide={home || panel || undefined}
+        data-panel={panel || undefined}
+      >
         {home ? (
           <HomeHero wiki={wiki} page={page} problems={problems.length} onProblems={onProblems} />
+        ) : panel ? (
+          <PanelHero wiki={wiki} page={page} problems={problems.length} onProblems={onProblems} />
         ) : (
           <PageHead wiki={wiki} page={page} problems={problems.length} onProblems={onProblems} changed={changed} />
         )}
@@ -113,7 +128,7 @@ export function PageArea({
             </div>
           ) : (
             <div ref={article} className="sh-prose" data-article="">
-              <PageInfobox page={page} />
+              {!panel && <PageInfobox page={page} />}
               <HomeBoxesContext.Provider value={home}>
                 <Markdown hast={body} />
               </HomeBoxesContext.Provider>

@@ -1,5 +1,6 @@
-// Where the wiki is kept (ADR-0008), on the home page's bar: its repo online (a click opens the wiki's folder there),
-// a repo with no remote, or not in git at all. The owner only; guests never learn where the repo is.
+// Where the wiki is kept (ADR-0008), a pill of its own beside the home page's status pill: its repo online (a click
+// opens the wiki's folder there), a repo with no remote, or not in git at all. The owner only; guests never learn
+// where the repo is.
 import type { GitInfo } from "../../../shared/api.ts";
 import { api } from "../../lib/api.ts";
 import { useLive } from "../../lib/live.ts";
@@ -36,24 +37,31 @@ export function GitBadge({ wikiId }: { wikiId: string }) {
   const inner = (
     <>
       <PageIcon icon="branch" />
-      <span className="sh-git-name">{text}</span>
+      <span className="sh-git-name" data-repo={!!git.data.remote || undefined}>
+        {text}
+      </span>
       {!!git.data.changes && (
         <span className="sh-git-changes" title={`${git.data.changes} not committed`}>
           {git.data.changes}
         </span>
       )}
-      {git.data.remote && <Icon name="arrowRight" size={13} />}
+      {git.data.remote && <Icon name="arrowRight" size={12} />}
     </>
   );
   return (
     <Tooltip content={hint}>
       {git.data.remote ? (
-        <a className="sh-git-badge" href={git.data.remote.folderUrl} target="_blank" rel="noreferrer noopener">
+        <a
+          className="sh-home-pill sh-git-badge"
+          href={git.data.remote.folderUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
           {inner}
         </a>
       ) : (
         // biome-ignore lint/a11y/noNoninteractiveTabindex: the tooltip says what it means, so it's reachable by keyboard.
-        <span className="sh-git-badge" data-off={!git.data.repo || undefined} tabIndex={0}>
+        <span className="sh-home-pill sh-git-badge" data-off={!git.data.repo || undefined} tabIndex={0}>
           {inner}
         </span>
       )}

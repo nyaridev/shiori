@@ -9,7 +9,7 @@ import { isGuest } from "../../lib/base.ts";
 import { useLive } from "../../lib/live.ts";
 import { ago } from "../../lib/time.ts";
 import { useResource } from "../../lib/useResource.ts";
-import { Callout, Icon, Segmented } from "../../ui/index.ts";
+import { Callout, Icon, ScrollArea, Segmented } from "../../ui/index.ts";
 import { Markdown } from "../markdown/Markdown.tsx";
 import { sectioned } from "../markdown/sections.ts";
 import { PageContext, type PageInfo } from "../PageContext.ts";
@@ -47,43 +47,45 @@ function Versions({
   view: View;
 }) {
   return (
-    <ol className="sh-history-list" aria-label="Versions">
-      {history.uncommitted && (
-        <li>
-          <Link
-            to={historyHref(wikiId, path, WORKING)}
-            className="sh-history-item"
-            data-working=""
-            aria-current={current === WORKING ? "true" : undefined}
-          >
-            <span className="sh-history-dot" aria-hidden="true" />
-            <span className="sh-history-subject">{history.tracked ? "Not committed yet" : "Never committed"}</span>
-            <span className="sh-history-meta">Changes in the file on this PC</span>
-          </Link>
-        </li>
-      )}
-      {history.versions.map((v, i) => (
-        <li key={v.hash}>
-          <Link
-            to={historyHref(wikiId, path, v.hash, view)}
-            className="sh-history-item"
-            aria-current={current === v.hash ? "true" : undefined}
-          >
-            <span className="sh-history-dot" aria-hidden="true" />
-            <span className="sh-history-subject">{v.subject || "(no message)"}</span>
-            <span className="sh-history-meta">
-              <span>{v.author}</span>
-              <time dateTime={v.date} title={when(v.date)}>
-                {ago(v.date)}
-              </time>
-              <Churn added={v.added} removed={v.removed} />
-              {i === history.versions.length - 1 && !history.more && <span>Created</span>}
-            </span>
-          </Link>
-        </li>
-      ))}
-      {history.more && <li className="sh-history-more">Older versions aren't listed.</li>}
-    </ol>
+    <ScrollArea className="sh-history-list" viewClassName="sh-history-scroll">
+      <ol className="sh-history-versions" aria-label="Versions">
+        {history.uncommitted && (
+          <li>
+            <Link
+              to={historyHref(wikiId, path, WORKING)}
+              className="sh-history-item"
+              data-working=""
+              aria-current={current === WORKING ? "true" : undefined}
+            >
+              <span className="sh-history-dot" aria-hidden="true" />
+              <span className="sh-history-subject">{history.tracked ? "Not committed yet" : "Never committed"}</span>
+              <span className="sh-history-meta">Changes in the file on this PC</span>
+            </Link>
+          </li>
+        )}
+        {history.versions.map((v, i) => (
+          <li key={v.hash}>
+            <Link
+              to={historyHref(wikiId, path, v.hash, view)}
+              className="sh-history-item"
+              aria-current={current === v.hash ? "true" : undefined}
+            >
+              <span className="sh-history-dot" aria-hidden="true" />
+              <span className="sh-history-subject">{v.subject || "(no message)"}</span>
+              <span className="sh-history-meta">
+                <span>{v.author}</span>
+                <time dateTime={v.date} title={when(v.date)}>
+                  {ago(v.date)}
+                </time>
+                <Churn added={v.added} removed={v.removed} />
+                {i === history.versions.length - 1 && !history.more && <span>Created</span>}
+              </span>
+            </Link>
+          </li>
+        ))}
+        {history.more && <li className="sh-history-more">Older versions aren't listed.</li>}
+      </ol>
+    </ScrollArea>
   );
 }
 
@@ -175,6 +177,7 @@ function Version({
         </div>
         {version && (
           <Segmented<View>
+            label="Show"
             value={shown}
             onChange={onView}
             options={[
@@ -237,7 +240,7 @@ export function HistoryPage({ wiki, path }: { wiki: WikiDetail; path: string }) 
   const trail = [...(page.data?.trail ?? []), ...(page.data ? [{ ...page.data, isPage: true }] : [])];
   const count = h ? h.versions.length + (h.more ? "+" : "") : null;
   return (
-    <main className="sh-wiki-main sh-special sh-history" data-path={`_/history/${path}`}>
+    <main id="sh-main" tabIndex={-1} className="sh-wiki-main sh-special sh-history" data-path={`_/history/${path}`}>
       <header className="sh-page-head">
         <Crumbs wikiId={wiki.id} trail={trail} />
         <p className="sh-special-kicker">History</p>

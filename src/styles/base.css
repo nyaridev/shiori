@@ -52,15 +52,42 @@ select {
   background: color-mix(in oklab, var(--accent) 34%, transparent);
 }
 
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-/* The page and scroll areas draw their own scrollbar over the content (ui/Scrollbar.tsx), so one showing up never
-   takes width from the layout. Other scrollers (code blocks) keep the thin native one. */
+/* The page and every box that scrolls draw their own scrollbar over the content (ui/Scrollbar.tsx), so one showing
+   up never takes room from the layout. */
 html,
 .sh-scroll-view {
   scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+.sh-scroll-view::-webkit-scrollbar {
+  display: none;
+}
+/* Anything else that scrolls (a text field, a menu, something a library draws) gets a native scrollbar in the same
+   look: a rounded thumb in the text's color over no track. Browsers that style scrollbars this way ignore it when
+   `scrollbar-color` is set, so that's only for the others (Firefox). */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--text) 26%, transparent) padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  border-width: 2px;
+  background-color: color-mix(in oklab, var(--text) 46%, transparent);
+}
+::-webkit-scrollbar-corner,
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--text) 30%, transparent) transparent;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

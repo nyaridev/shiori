@@ -9,8 +9,11 @@ export interface Resource<T> {
   reload: () => void;
 }
 
-/** Loads `load()` whenever `key` changes. A null key loads nothing. Data primed in the cache shows at once. */
-export function useResource<T>(key: string | null, load: () => Promise<T>): Resource<T> {
+/**
+ * Loads `load()` whenever `key` changes. A null key loads nothing. Data primed in the cache shows at once. With
+ * `keep`, the last key's data stays on screen while a new key loads (pages of a list), and `loading` says so.
+ */
+export function useResource<T>(key: string | null, load: () => Promise<T>, opts?: { keep?: boolean }): Resource<T> {
   const [state, setState] = useState<{ key: string | null; data?: T; error: Error | null }>(() => {
     const primed = key === null ? undefined : peek<T>(key);
     return primed === undefined ? { key: null, error: null } : { key, data: primed, error: null };
@@ -34,5 +37,6 @@ export function useResource<T>(key: string | null, load: () => Promise<T>): Reso
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
   const current = state.key === key;
-  return { data: current ? state.data : undefined, error: current ? state.error : null, loading: !current, reload };
+  const data = current || opts?.keep ? state.data : undefined;
+  return { data, error: current ? state.error : null, loading: !current, reload };
 }

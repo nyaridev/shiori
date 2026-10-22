@@ -9,7 +9,7 @@ tags: [plan]
 infobox:
   Owner: "You"
   Started: "Week 1"
-  Aiming for: "[Version one](roadmap) by the end of the quarter"
+  Aiming for: "[Version one](/roadmap) by the end of the quarter"
   Progress: ':progress{value="25"}'
 questions:
   - id: q1
@@ -48,7 +48,7 @@ calendar. This page tracks where things stand right now.
 - [ ] Pick the prototype's one core feature
 
 :::callout{tone="note"}
-Keep this list short. Anything that isn't for this week goes in the [Roadmap](roadmap) or the
+Keep this list short. Anything that isn't for this week goes in the [Roadmap](/roadmap) or the
 [Ideas](/notes/ideas) backlog.
 :::
 

@@ -11,7 +11,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Icon, Input } from "../../ui/index.ts";
+import { Icon, Input, ScrollArea } from "../../ui/index.ts";
 import {
   compareCells,
   formatStat,
@@ -121,8 +121,7 @@ export function DataTableEl({
           )}
         </div>
       )}
-      {/* biome-ignore lint/a11y/noNoninteractiveTabindex: a region that scrolls must be reachable by keyboard. */}
-      <section className="sh-table-wrap" tabIndex={0} aria-label={caption ?? "Table"}>
+      <ScrollArea axis="x" label={caption ?? "Table"} className="sh-table-wrap">
         <table>
           <thead>
             <tr>
@@ -188,7 +187,7 @@ export function DataTableEl({
             </tfoot>
           )}
         </table>
-      </section>
+      </ScrollArea>
     </figure>
   );
 }

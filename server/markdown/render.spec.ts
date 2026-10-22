@@ -147,6 +147,53 @@ describe("renderMarkdown", () => {
     expect(find(steps[2], "strong")).toHaveLength(1);
   });
 
+  it("gives roadmap milestones a status from their tasks, unless they say one, and counts the tasks", () => {
+    const md = [
+      "::::roadmap",
+      ':::milestone[Research]{version="0.1"}',
+      "- [x] Read\n- [x] Ask",
+      ":::",
+      ':::milestone[Prototype]{when="May" goal="five people tried it"}',
+      "What it is.\n\n- [x] Build\n- [ ] Test",
+      ":::",
+      ":::milestone[Launch]",
+      "- [ ] Post",
+      ":::",
+      ':::milestone[Sequel]{status="later"}',
+      ":::",
+      "::::",
+    ].join("\n");
+    const { hast, problems } = renderMarkdown(md, ctx);
+    expect(problems).toEqual([]);
+    expect(find(hast, "sh-roadmap-milestone").map((m) => m.properties)).toEqual([
+      { title: "Research", version: "0.1", status: "done", done: "2", total: "2" },
+      { title: "Prototype", when: "May", goal: "five people tried it", status: "now", done: "1", total: "2" },
+      { title: "Launch", status: "next", done: "0", total: "1" },
+      { title: "Sequel", status: "later", done: "0", total: "0" },
+    ]);
+  });
+
+  it("reports a roadmap with stray content, two nows, or a milestone outside one", () => {
+    const md = [
+      "::::roadmap",
+      "Loose text",
+      ':::milestone[A]{status="now"}',
+      ":::",
+      ':::milestone[B]{status="now"}',
+      ":::",
+      "::::",
+      "",
+      ":::milestone[Alone]",
+      ":::",
+    ].join("\n");
+    const { problems } = renderMarkdown(md, ctx);
+    expect(problems).toEqual([
+      'line 1: roadmap: put all content inside ":::milestone[Name]" blocks (and use "::::roadmap" outside)',
+      "line 1: roadmap: only one milestone can be now",
+      'line 9: milestone: put it inside a "::::roadmap" block',
+    ]);
+  });
+
   it("makes link cards with an icon, a resolved title link and a description", () => {
     const { hast, problems } = renderMarkdown(
       ":::cards\n- ⚔️ [Combat](combat) — how fights work\n- No link here\n:::",

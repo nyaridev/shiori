@@ -3,6 +3,7 @@ import { type Components, toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { useMemo } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import * as home from "../home/blocks.tsx";
+import { RoadmapEl, RoadmapMilestoneEl } from "../roadmap/Roadmap.tsx";
 import { CodeBlock } from "./code.tsx";
 import { DataTableEl } from "./DataTable.tsx";
 import { DiagramEl } from "./Diagram.tsx";
@@ -19,6 +20,7 @@ const components = {
   pre: CodeBlock,
   h2: el.H2El,
   table: el.TableEl,
+  div: el.DivEl,
   h3: el.H3El,
   input: el.TaskBox,
   "sh-callout": el.CalloutEl,
@@ -37,6 +39,8 @@ const components = {
   "sh-stat": el.StatEl,
   "sh-timeline": el.TimelineEl,
   "sh-milestone": el.MilestoneEl,
+  "sh-roadmap": RoadmapEl,
+  "sh-roadmap-milestone": RoadmapMilestoneEl,
   "sh-cards": el.CardsEl,
   "sh-card": el.CardEl,
   "sh-card-title": el.CardTitleEl,

@@ -22,6 +22,7 @@ import { useResource } from "../../lib/useResource.ts";
 import { Icon } from "../../ui/index.ts";
 import { pageHref, specialHref } from "../PageHead.tsx";
 import { PageIcon } from "../PageIcon.tsx";
+import { useQuestions } from "../questions/useQuestions.ts";
 import { useWikiIndex } from "../WikiIndexContext.ts";
 import "./home.css";
 
@@ -123,12 +124,14 @@ export function RecentChangesEl({ count }: Props<{ count?: string }>) {
 
 export function OpenQuestionsEl({ count }: Props<{ count?: string }>) {
   const wiki = useWikiIndex();
+  // The newest pages' questions, a few: the server sorts and cuts the list (ADR-0009).
+  const list = useQuestions(
+    wiki?.wikiId ?? "",
+    wiki ? { kind: "question", sort: "updated", limit: howMany(count, 5) } : null,
+  );
   if (!wiki) return <Placeholder>The decisions the pages ask for, newest pages first, show here.</Placeholder>;
-  const updated = (path: string) => wiki.byPath.get(path)?.updatedAt ?? "";
-  const open = wiki.index.questions
-    .filter((q) => q.status === "open" && q.kind === "question")
-    .sort((a, b) => updated(b.page.path).localeCompare(updated(a.page.path)))
-    .slice(0, howMany(count, 5));
+  if (!list.data) return <Empty>Loading…</Empty>;
+  const open = list.data.items;
   if (!open.length) return <Empty>Nothing to decide right now.</Empty>;
   return (
     <>

@@ -4,10 +4,13 @@
   max-width: 100%;
   margin: var(--s-4) 0;
   padding: var(--s-4);
-  overflow-x: auto;
   border: var(--bw) solid var(--border);
   border-radius: var(--r-lg);
   background: var(--surface);
+}
+/* The drawing shrinks to the box first (Diagram.tsx), so the content is the box's width, not the drawing's. */
+.sh-diagram .sh-scroll-content {
+  width: auto;
 }
 .sh-diagram-svg {
   display: flex;
@@ -43,8 +46,8 @@
 }
 .sh-math-block {
   margin: var(--s-4) 0;
-  overflow-x: auto;
-  overflow-y: hidden;
+}
+.sh-math-block .sh-scroll-view {
   padding: var(--s-1) 0;
 }
 .sh-math-block .katex-display {

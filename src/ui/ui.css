@@ -364,16 +364,16 @@
   position: fixed;
   top: 50%;
   left: 50%;
+  display: flex;
+  flex-direction: column;
   width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
   translate: -50% -50%;
-  padding: var(--s-5);
   z-index: 41;
   animation: sh-pop 180ms var(--ease);
 }
 .sh-dialog[data-size="lg"] {
   width: min(600px, calc(100vw - 32px));
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
 }
 .sh-dialog[data-size="wide"] {
   width: min(1100px, calc(100vw - 32px));
@@ -514,8 +514,15 @@
 .sh-segmented-item {
   transition: color var(--fast) var(--ease);
 }
-.sh-segmented-item[data-state="active"] {
+.sh-segmented-item[data-state="checked"] {
   color: var(--text);
+}
+/* Touch: targets a finger can hit. */
+@media (pointer: coarse) {
+  .sh-segmented-item {
+    min-height: 36px;
+    padding: 6px 12px;
+  }
 }
 .sh-segmented-thumb {
   border-radius: calc(var(--r-md) - 3px);
@@ -597,6 +604,102 @@
   cursor: not-allowed;
 }
 
+/* Pagination (Pagination.tsx): the numbers where there's room, "Page [3] of 40" where there isn't. */
+.sh-pager {
+  container: pager / inline-size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-1);
+  margin: var(--s-5) 0 var(--s-2);
+  font-size: var(--t-sm);
+}
+.sh-pager-pages {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-pager-step,
+.sh-pager-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-1);
+  min-width: 36px;
+  height: 36px;
+  padding: 0 var(--s-2);
+  border: var(--bw) solid transparent;
+  border-radius: var(--r-md);
+  background: none;
+  font-variant-numeric: tabular-nums;
+  font-weight: 560;
+  cursor: pointer;
+  transition:
+    background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+.sh-pager-step {
+  padding: 0 var(--s-3);
+  color: var(--text-soft);
+}
+.sh-pager-step:hover:not(:disabled),
+.sh-pager-page:hover:not([aria-current]) {
+  background: var(--hover);
+  color: var(--text);
+}
+.sh-pager-step:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.sh-pager-page[aria-current] {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  cursor: default;
+}
+.sh-pager-gap {
+  min-width: 24px;
+  color: var(--muted);
+  text-align: center;
+}
+.sh-pager-jump {
+  display: none;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+.sh-pager-field {
+  min-width: 3ch;
+  height: 32px;
+  padding: 0 var(--s-1);
+  border: var(--bw) solid var(--border-field);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  field-sizing: content;
+}
+.sh-pager-field:focus-visible {
+  border-color: var(--accent-line);
+}
+@container pager (max-width: 560px) {
+  .sh-pager-pages,
+  .sh-pager-word {
+    display: none;
+  }
+  .sh-pager-jump {
+    display: block;
+    margin: 0 var(--s-2);
+  }
+  .sh-pager-step {
+    min-width: 44px;
+    height: 44px;
+    border-color: var(--border);
+  }
+}
+
 /* Overlay scrollbars (Scrollbar.tsx). */
 :where(.sh-scroll) {
   display: flex;
@@ -611,6 +714,41 @@
   height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+/* Sideways: the content is as wide as it needs (so its size says how far it scrolls), at least the box's width. A
+   page scrolled down past it keeps scrolling the page. */
+.sh-scroll[data-axis="x"] {
+  display: block;
+  /* Its width comes from where it sits, never from what it scrolls: a wide table or a long line of code inside a
+     grid or flex box would otherwise stretch that box past the screen. */
+  contain: inline-size;
+}
+.sh-scroll[data-axis="x"] > .sh-scroll-frame > .sh-scroll-view {
+  height: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+}
+.sh-scroll[data-axis="x"] > .sh-scroll-frame > .sh-scroll-view > .sh-scroll-content {
+  width: max-content;
+  min-width: 100%;
+}
+/* More to see past an edge: it fades out there. */
+.sh-scroll[data-axis="x"] > .sh-scroll-frame[data-more-end] > .sh-scroll-view {
+  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+}
+.sh-scroll[data-axis="x"] > .sh-scroll-frame[data-more-start] > .sh-scroll-view {
+  mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent);
+}
+.sh-scroll[data-axis="x"] > .sh-scroll-frame[data-more-start][data-more-end] > .sh-scroll-view {
+  mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+}
+/* A box that scrolls, reached with Tab: the ring inside its edge, where nothing cuts it off. */
+.sh-scroll-view:focus-visible {
+  outline: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px var(--accent-line);
 }
 .sh-scrollbar {
   position: absolute;
@@ -654,7 +792,59 @@
   width: 8px;
   background: color-mix(in oklab, var(--text) 46%, transparent);
 }
+.sh-scrollbar[data-axis="x"] {
+  top: auto;
+  right: 2px;
+  bottom: 0;
+  left: 2px;
+  width: auto;
+  height: 12px;
+}
+.sh-scrollbar[data-axis="x"] .sh-scrollbar-thumb {
+  top: auto;
+  right: auto;
+  bottom: 3px;
+  left: 0;
+  width: auto;
+  height: 6px;
+  transition:
+    height 150ms var(--ease),
+    bottom 150ms var(--ease),
+    background 150ms var(--ease);
+}
+.sh-scrollbar[data-axis="x"]:hover .sh-scrollbar-thumb,
+.sh-scrollbar[data-axis="x"][data-dragging] .sh-scrollbar-thumb {
+  right: auto;
+  bottom: 2px;
+  height: 8px;
+}
+/* A finger needs a wider thumb to grab. */
+@media (pointer: coarse) {
+  .sh-scrollbar:not([data-axis="x"]) .sh-scrollbar-thumb {
+    width: 8px;
+  }
+}
 
+/* Dialogs (Dialog.tsx), after the scroll areas they're made of. */
+.sh-dialog:not([data-size="viewer"]) > .sh-dialog-head {
+  padding: var(--s-5) var(--s-5) 0;
+}
+/* The body scrolls inside the dialog's height, its scrollbar at the dialog's edge. Flex all the way down, so the
+   height it may take is the room the title leaves. */
+.sh-dialog-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.sh-dialog-scroll > .sh-scroll-frame {
+  display: flex;
+  flex-direction: column;
+}
+.sh-dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  padding: 0 var(--s-5) var(--s-5);
+}
 @keyframes sh-pop {
   from {
     opacity: 0;
