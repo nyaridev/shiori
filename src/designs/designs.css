@@ -282,6 +282,40 @@
   gap: var(--s-2);
   margin: 0;
 }
+/* A layout's design panel on a page that names no design yet: an invitation to draw one. */
+.sh-design-block-none {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-5) var(--s-4);
+  border: var(--bw) dashed var(--border-strong);
+  border-radius: var(--r-lg);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  text-decoration: none;
+  transition:
+    border-color var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.sh-design-block-none-icon {
+  flex: none;
+  font-size: 1.6em;
+}
+.sh-design-block-none > span {
+  display: grid;
+  gap: 2px;
+}
+.sh-design-block-none strong {
+  color: var(--text);
+}
+.sh-design-block-none:hover {
+  border-color: var(--accent-line);
+  color: var(--text-soft);
+}
+.sh-design-block-none:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
 .sh-design-block-board {
   display: block;
   overflow: hidden;

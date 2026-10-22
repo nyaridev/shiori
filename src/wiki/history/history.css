@@ -1,0 +1,264 @@
+/* A page's history (HistoryPage.tsx, ADR-0008): the versions down the side, the one picked beside them. The page's
+   own width decides, since the sidebar and the rail take some of the window. */
+.sh-history {
+  container: history / inline-size;
+}
+.sh-history-body {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: var(--s-5);
+  align-items: start;
+}
+@container history (max-width: 760px) {
+  .sh-history-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The versions: a timeline, newest on top. */
+.sh-history-list {
+  position: sticky;
+  top: calc(var(--head) + var(--s-3));
+  display: grid;
+  max-height: calc(100vh - var(--head) - var(--s-6));
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+@container history (max-width: 760px) {
+  .sh-history-list {
+    position: static;
+    max-height: 320px;
+  }
+}
+.sh-history-item {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: var(--s-2) var(--s-3) var(--s-2) calc(var(--s-5) + 2px);
+  border-radius: var(--r-md);
+  color: var(--text);
+  text-decoration: none;
+}
+.sh-history-item:hover {
+  background: var(--hover);
+}
+.sh-history-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-history-item[aria-current] {
+  background: var(--accent-soft);
+}
+/* The line through the dots. */
+.sh-history-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 13px;
+  width: 2px;
+  background: var(--border);
+}
+li:first-child > .sh-history-item::before {
+  top: 50%;
+}
+li:last-child > .sh-history-item::before {
+  bottom: 50%;
+}
+li:only-child > .sh-history-item::before {
+  display: none;
+}
+.sh-history-dot {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+}
+.sh-history-item[aria-current] .sh-history-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.sh-history-item[data-working] .sh-history-dot {
+  border-style: dashed;
+  border-color: var(--tone-warn);
+}
+.sh-history-subject {
+  overflow: hidden;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sh-history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--s-2);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-history-more {
+  padding: var(--s-2) var(--s-3);
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.sh-churn {
+  display: inline-flex;
+  gap: var(--s-1);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.sh-churn [data-kind="add"] {
+  color: var(--tone-good);
+}
+.sh-churn [data-kind="del"] {
+  color: var(--tone-bad);
+}
+
+/* The version picked. */
+.sh-history-version {
+  display: grid;
+  gap: var(--s-4);
+  min-width: 0;
+}
+.sh-history-version-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.sh-history-version-title {
+  margin: 0 0 var(--s-1);
+  color: var(--text);
+  font-size: var(--t-lg);
+}
+.sh-history-hash {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 var(--s-1);
+  border-radius: var(--r-sm);
+  background: var(--raised);
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  text-decoration: none;
+}
+a.sh-history-hash:hover {
+  color: var(--accent-ink);
+}
+
+/* A diff: two gutters of line numbers, the sign, the line. */
+.sh-diff {
+  overflow-x: auto;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sh-diff:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-diff table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  line-height: 1.6;
+}
+.sh-diff td {
+  padding: 0 var(--s-2);
+  vertical-align: top;
+}
+.sh-diff-no {
+  width: 1%;
+  min-width: 3.5ch;
+  color: var(--muted);
+  text-align: right;
+  user-select: none;
+  white-space: nowrap;
+}
+.sh-diff-sign {
+  width: 1%;
+  padding: 0 var(--s-1) !important;
+  user-select: none;
+}
+.sh-diff-text {
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.sh-diff-line[data-kind="add"] {
+  background: color-mix(in oklab, var(--tone-good) 13%, transparent);
+}
+.sh-diff-line[data-kind="del"] {
+  background: color-mix(in oklab, var(--tone-bad) 13%, transparent);
+}
+.sh-diff-line[data-kind="add"] .sh-diff-sign {
+  color: var(--tone-good);
+}
+.sh-diff-line[data-kind="del"] .sh-diff-sign {
+  color: var(--tone-bad);
+}
+.sh-diff-word {
+  border-radius: 3px;
+  color: inherit;
+}
+.sh-diff-line[data-kind="add"] .sh-diff-word {
+  background: color-mix(in oklab, var(--tone-good) 32%, transparent);
+}
+.sh-diff-line[data-kind="del"] .sh-diff-word {
+  background: color-mix(in oklab, var(--tone-bad) 32%, transparent);
+}
+.sh-diff-skip td {
+  padding: var(--s-1) var(--s-3);
+  border-block: var(--bw) solid var(--border);
+  background: var(--raised);
+  color: var(--muted);
+  font-family: var(--font-body);
+}
+.sh-diff-skip:first-child td {
+  border-top: 0;
+}
+.sh-diff-skip:last-child td {
+  border-bottom: 0;
+}
+.sh-diff-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* The page as it was. */
+.sh-history-then {
+  container: then / inline-size;
+  min-width: 0;
+  padding: var(--s-5);
+  border: var(--bw) dashed var(--border-strong);
+  border-radius: var(--r-lg);
+}
+.sh-history-then-title {
+  display: flex;
+  align-items: center;
+  margin: 0 0 var(--s-2);
+  font-family: var(--font-heading);
+  font-size: var(--t-2xl);
+}
+/* Too narrow to read beside a floating fact box: it goes above the text. */
+@container then (max-width: 620px) {
+  .sh-history-then .sh-page-infobox {
+    float: none;
+    width: auto;
+    max-width: none;
+    margin: 0 0 var(--s-4);
+  }
+}

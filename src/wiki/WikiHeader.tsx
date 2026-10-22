@@ -1,7 +1,7 @@
 // The bar above every wiki page, across the whole window. Left: back to the deck (the owner only) and the project:
 // its icon (else its cover), name and tagline, linking home. Middle: search. Right: whether the wiki is live and who is
 // on it (ADR-0005), share, the UI primitives (the owner only), and day or night at the far right. The page list and the
-// comments open from here wherever they're drawers: on the home page and on narrow screens.
+// comments open from here wherever they're drawers: the comments on the home page, and both on narrow screens.
 import { Link, useNavigate } from "react-router";
 import type { Person, WikiDetail } from "../../shared/api.ts";
 import { useGuest } from "../guest/GuestContext.ts";
@@ -15,6 +15,7 @@ import { pageHref } from "./PageHead.tsx";
 import { PageIcon } from "./PageIcon.tsx";
 import { shortcutLabel } from "./SearchPalette.tsx";
 import "./header.css";
+import { ReadingProgress } from "./ReadingProgress.tsx";
 
 export function WikiHeader({
   wiki,
@@ -25,7 +26,7 @@ export function WikiHeader({
   onComments,
 }: {
   wiki: WikiDetail;
-  /** The home page: the sidebar and the rail are drawers. */
+  /** The home page: its rail is a drawer. */
   home: boolean;
   people: Person[];
   onPages: () => void;
@@ -91,7 +92,13 @@ export function WikiHeader({
         )}
         {!guest && (
           <Tooltip content="UI primitives" side="bottom">
-            <IconButton filled icon="primitives" label="UI primitives" onClick={() => navigate("/dev/ui")} />
+            <IconButton
+              filled
+              icon="primitives"
+              label="UI primitives"
+              className="sh-head-dev"
+              onClick={() => navigate("/dev/ui")}
+            />
           </Tooltip>
         )}
         <IconButton filled icon="search" label="Search" className="sh-head-narrow" onClick={onSearch} />
@@ -100,6 +107,7 @@ export function WikiHeader({
         )}
         <ModeSwitch own={wiki.theme.mode} />
       </div>
+      {!home && <ReadingProgress />}
     </header>
   );
 }

@@ -1,20 +1,26 @@
-/* Question cards (QuestionCard.tsx). */
+/* Question and suggestion cards (QuestionCard.tsx): one card in the card's tone, amber for a question about what's
+   there, green for the agent's suggestion to add or improve something. A decided one turns neutral. */
 .sh-question {
+  --q-tone: var(--tone-warn);
   display: grid;
   gap: var(--s-2);
   margin: var(--s-4) 0;
   padding: var(--s-3) var(--s-4) var(--s-4);
-  border: var(--bw) solid color-mix(in oklab, var(--tone-warn) 40%, var(--border));
+  /* Deeper and more saturated than the panels around it: an open decision stands out. */
+  border: var(--bw) solid color-mix(in oklab, var(--q-tone) 72%, var(--border));
   border-radius: var(--r-lg);
-  background: color-mix(in oklab, var(--tone-warn) 5%, var(--surface));
+  background: color-mix(in oklab, var(--q-tone) 14%, var(--surface));
   scroll-margin-top: var(--s-6);
 }
 .sh-question-list .sh-question {
   margin: 0;
 }
+.sh-question[data-kind="suggestion"] {
+  --q-tone: var(--tone-good);
+}
 .sh-question[data-decided] {
-  border-color: color-mix(in oklab, var(--tone-good) 40%, var(--border));
-  background: color-mix(in oklab, var(--tone-good) 5%, var(--surface));
+  border-color: var(--border-strong);
+  background: var(--surface);
 }
 .sh-question-head {
   display: flex;
@@ -23,11 +29,14 @@
   gap: var(--s-2);
 }
 .sh-question-kicker {
-  color: var(--text-soft);
+  color: color-mix(in oklab, var(--q-tone) 70%, var(--text));
   font-size: var(--t-xs);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+.sh-question[data-decided] .sh-question-kicker {
+  color: color-mix(in oklab, var(--tone-good) 70%, var(--text));
 }
 .sh-question .sh-question-text {
   margin: 0;
@@ -60,10 +69,10 @@
 }
 .sh-question-option {
   padding: 5px var(--s-3);
-  border: var(--bw) solid var(--border-strong);
+  border: var(--bw) solid color-mix(in oklab, var(--q-tone) 60%, var(--border-strong));
   border-radius: var(--r-md);
-  background: var(--bg);
-  color: var(--text-soft);
+  background: color-mix(in oklab, var(--q-tone) 20%, var(--surface));
+  color: var(--text);
   font: inherit;
   font-size: var(--t-sm);
   font-weight: 560;
@@ -73,8 +82,8 @@
     background var(--fast) var(--ease);
 }
 .sh-question-option:hover {
-  border-color: var(--accent-line);
-  color: var(--text);
+  border-color: var(--q-tone);
+  background: color-mix(in oklab, var(--q-tone) 30%, var(--surface));
 }
 .sh-question-option[aria-pressed="true"] {
   border-color: var(--accent);
@@ -88,7 +97,8 @@
   gap: var(--s-3);
 }
 .sh-question-hint {
-  color: var(--muted);
+  /* A shade brighter than muted: the card's tint takes some contrast away. */
+  color: color-mix(in oklab, var(--muted) 80%, var(--text));
   font-size: var(--t-xs);
 }
 .sh-question .sh-question-answers {
@@ -121,7 +131,7 @@
   font-weight: 600;
 }
 .sh-question-answers time {
-  color: var(--muted);
+  color: color-mix(in oklab, var(--muted) 80%, var(--text));
   font-size: var(--t-xs);
 }
 .sh-question-hide {
@@ -130,4 +140,74 @@
 .sh-question-answers li[data-hidden] > :not(time, .sh-question-hide) {
   opacity: 0.5;
   text-decoration: line-through;
+}
+.sh-question-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  justify-content: flex-end;
+}
+.sh-question-buttons {
+  display: flex;
+  gap: var(--s-1);
+}
+/* How many people picked an option: a small count beside it. */
+.sh-question-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 18px;
+  margin-left: var(--s-2);
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--text) 12%, transparent);
+  color: var(--text);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  line-height: 1;
+}
+.sh-question-option[aria-pressed="true"] .sh-question-count {
+  background: color-mix(in oklab, var(--accent) 30%, transparent);
+}
+/* Your own answer, once sent: what it says and whether the agent has decided yet. */
+.sh-question-mine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font-size: var(--t-sm);
+}
+.sh-question-mine-text,
+.sh-question-mine-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+.sh-question-tally {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-sm);
+}
+.sh-question-tally li {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 3px var(--s-1) 3px var(--s-3);
+  border: var(--bw) solid var(--border-field);
+  border-radius: var(--r-md);
+  color: var(--text-soft);
+}
+.sh-question-tally li[data-mine] {
+  border-color: var(--accent-line);
+  color: var(--text);
 }

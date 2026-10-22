@@ -21,6 +21,11 @@ export function createWikiData(live: Live) {
   const waiting = new Set<{ wiki: string; done: () => void }>();
   live.subscribe((e) => {
     if (e.type === "shares" || e.type === "presence") return;
+    // A commit or a pull changes when pages were updated (ADR-0008); it's read again the next time it's asked for.
+    if (e.type === "git") {
+      corpusCache.delete(e.wiki);
+      return;
+    }
     if (e.type === "threads") threadsVersion.set(e.wiki, (threadsVersion.get(e.wiki) ?? 0) + 1);
     else if (e.type === "designs") designsVersion.set(e.wiki, (designsVersion.get(e.wiki) ?? 0) + 1);
     else {

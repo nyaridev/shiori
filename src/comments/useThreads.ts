@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import type { Thread, ThreadStatus } from "../../shared/api.ts";
+import type { ReactionEmoji, Thread, ThreadStatus } from "../../shared/api.ts";
 import type { Quote } from "../../shared/quote.ts";
 import { api } from "../lib/api.ts";
 import { useLive } from "../lib/live.ts";
@@ -16,8 +16,8 @@ export function useThreads(wikiId: string, page: string) {
   });
 
   const create = useCallback(
-    async (quote: Quote, body: string) => {
-      const t = await api.createThread(wikiId, page, quote, body);
+    async (quote: Quote, body: string, images: string[] = []) => {
+      const t = await api.createThread(wikiId, page, quote, body, images);
       reload();
       return t;
     },
@@ -47,6 +47,24 @@ export function useThreads(wikiId: string, page: string) {
     [wikiId, reload],
   );
 
-  return { threads: res.data ?? NONE, create, reply, setStatus, hide };
+  /** Removes a thread (the host any, a guest their own); it's gone for everyone. */
+  const remove = useCallback(
+    async (id: number) => {
+      await api.removeThread(wikiId, id);
+      reload();
+    },
+    [wikiId, reload],
+  );
+
+  /** This viewer's reaction on a message, added or taken back. */
+  const react = useCallback(
+    async (message: number, emoji: ReactionEmoji, on: boolean) => {
+      await api.react(wikiId, message, emoji, on);
+      reload();
+    },
+    [wikiId, reload],
+  );
+
+  return { wikiId, threads: res.data ?? NONE, create, reply, setStatus, hide, react, remove };
 }
 export type Threads = ReturnType<typeof useThreads>;

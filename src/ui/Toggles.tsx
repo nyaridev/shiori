@@ -1,6 +1,17 @@
 import { Checkbox as RCheckbox, Switch as RSwitch } from "radix-ui";
 import { type ReactNode, useId } from "react";
-import { Icon } from "./Icon.tsx";
+
+/**
+ * The tick in a checkbox: one bold stroke with round ends and joins, like Shiori's drawn icons, in the box's text
+ * color. Sized by the box (1em by default).
+ */
+export function CheckMark({ size = "1em" }: { size?: number | string }) {
+  return (
+    <svg className="sh-checkmark" viewBox="0 0 16 16" width={size} height={size} aria-hidden="true">
+      <path d="M3.4 8.6 6.6 11.6 12.6 4.6" />
+    </svg>
+  );
+}
 
 interface ToggleProps {
   checked: boolean;
@@ -33,7 +44,7 @@ export function Checkbox({ checked, onChange, disabled, children }: ToggleProps)
         disabled={disabled}
       >
         <RCheckbox.Indicator>
-          <Icon name="check" size={13} />
+          <CheckMark size={14} />
         </RCheckbox.Indicator>
       </RCheckbox.Root>
       {children && <label htmlFor={id}>{children}</label>}

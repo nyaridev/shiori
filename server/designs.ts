@@ -33,6 +33,12 @@ const PICTURE_TYPES: Record<string, { ext: string; magic: (b: Buffer) => boolean
 /** The picture types people may add. Never SVG: it can carry scripts. */
 export const PICTURE_MIME = Object.keys(PICTURE_TYPES);
 
+/** The file extension for a picture people add, when its type is allowed and its bytes really are that type. */
+export function pictureExt(type: string, data: Buffer): string | null {
+  const kind = PICTURE_TYPES[type];
+  return kind?.magic(data) ? kind.ext : null;
+}
+
 const authorSchema = z.strictObject({
   kind: z.enum(["owner", "guest"]),
   name: z.string(),
@@ -159,20 +165,14 @@ export function saveBoard(wiki: Wiki, d: Design, png: Buffer): Design | string {
 
 /** Adds a reference picture. Answers why not when it isn't an allowed picture, is too big, or there are too many. */
 export function addPicture(wiki: Wiki, d: Design, type: string, data: Buffer, caption: string): Design | string {
-  const kind = PICTURE_TYPES[type];
-  const wrong = "add a PNG, JPEG, WebP or GIF picture";
-  if (!kind) return wrong;
-  if (!kind.magic(data)) return wrong;
+  const ext = pictureExt(type, data);
+  if (!ext) return "add a PNG, JPEG, WebP or GIF picture";
   if (data.length > DESIGN_LIMITS.picture) return "the picture is too big";
   if (d.images.length >= DESIGN_LIMITS.pictures) return `at most ${DESIGN_LIMITS.pictures} pictures`;
   const taken = new Set(d.images.map((i) => i.file));
   let n = d.images.length + 1;
-  while (
-    taken.has(`ref-${n}.${kind.ext}`) ||
-    existsSync(join(designDir(wiki, d.collection, d.id), `ref-${n}.${kind.ext}`))
-  )
-    n++;
-  const file = `ref-${n}.${kind.ext}`;
+  while (taken.has(`ref-${n}.${ext}`) || existsSync(join(designDir(wiki, d.collection, d.id), `ref-${n}.${ext}`))) n++;
+  const file = `ref-${n}.${ext}`;
   writeAtomic(join(designDir(wiki, d.collection, d.id), file), data);
   const next = {
     ...d,

@@ -11,8 +11,10 @@
   gap: var(--s-3);
   height: var(--head);
   padding: 0 var(--s-3);
+  /* A bar of its own, in the sidebar's surface: the two frame the page, and the page scrolls under it. */
   border-bottom: var(--bw) solid var(--border);
-  background: color-mix(in oklab, var(--bg) 86%, transparent);
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  box-shadow: 0 8px 24px -12px rgb(0 0 0 / 0.45);
   backdrop-filter: blur(12px);
 }
 /* Headings jumped to from the contents or search land below the header. */
@@ -101,7 +103,7 @@ html:has(.sh-wiki-head) {
   height: 34px;
   padding: 0 var(--s-2) 0 var(--s-3);
   border: var(--bw) solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--r-md);
   background: var(--surface);
   color: var(--muted);
   font: inherit;
@@ -131,7 +133,6 @@ html:has(.sh-wiki-head) {
 .sh-wiki-head .sh-head-rail {
   display: none;
 }
-.sh-wiki-head[data-home] .sh-head-menu,
 .sh-wiki-head[data-home] .sh-head-rail {
   display: inline-flex;
 }
@@ -163,6 +164,9 @@ html:has(.sh-wiki-head) {
   }
 }
 @media (max-width: 520px) {
+  /* A phone keeps what readers need: pages, back, the name, share, search, comments, day/night. */
+  .sh-wiki-head .sh-head-dev,
+  .sh-head-badge,
   .sh-head-cover {
     display: none;
   }
@@ -171,4 +175,23 @@ html:has(.sh-wiki-head) {
     height: 28px;
     font-size: 17px;
   }
+}
+
+/* Reading progress (ReadingProgress.tsx): along the header's bottom edge, filling as the page scrolls. */
+.sh-reading-progress {
+  position: absolute;
+  right: 0;
+  bottom: calc(-1 * var(--bw));
+  left: 0;
+  height: 2px;
+  pointer-events: none;
+}
+.sh-reading-progress[data-none] {
+  display: none;
+}
+.sh-reading-progress > div {
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
 }

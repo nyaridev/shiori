@@ -3,23 +3,58 @@
 .sh-layout {
   display: grid;
   grid-template-areas: var(--areas);
-  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
-  gap: var(--s-5);
+  grid-template-columns: var(--columns);
+  gap: var(--s-4);
   align-items: start;
 }
+/* Each area is a panel, like the home page's boxes: a title strip when the block has a title, then its body. */
 .sh-layout-area {
   grid-area: var(--area);
   min-width: 0;
+  overflow: hidden;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
 }
-/* The infobox floats beside the article on a plain page; in a layout it fills its area. */
+.sh-layout-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  padding: var(--s-2) var(--s-4);
+  border-bottom: var(--bw) solid var(--border);
+  background: color-mix(in oklab, var(--accent) 12%, var(--raised));
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-size: var(--t-md);
+  font-weight: 650;
+}
+.sh-layout-body {
+  padding: var(--s-4) var(--s-5) var(--s-5);
+}
+.sh-layout-body > :last-child {
+  margin-bottom: 0;
+}
+/* Sections inside a panel start closer: the panel already sets them apart. */
+.sh-layout-body h2 {
+  margin-top: var(--s-6);
+  font-size: var(--t-lg);
+}
+/* The infobox is a panel of its own, so its area is bare; on a plain page it floats beside the article. */
+.sh-layout-area[data-block="infobox"] {
+  overflow: visible;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.sh-layout-area[data-block="infobox"] > .sh-layout-body {
+  padding: 0;
+}
 .sh-layout-area[data-block="infobox"] .sh-page-infobox {
   float: none;
   width: auto;
   margin: 0;
-}
-.sh-prose .sh-layout-title {
-  margin: 0 0 var(--s-3);
-  font-size: var(--t-lg);
 }
 @media (max-width: 860px) {
   .sh-layout {
@@ -28,5 +63,8 @@
   }
   .sh-layout-area {
     grid-area: auto;
+  }
+  .sh-layout-body {
+    padding: var(--s-3) var(--s-4) var(--s-4);
   }
 }

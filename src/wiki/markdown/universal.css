@@ -97,7 +97,7 @@
   padding-left: var(--s-4);
 }
 .sh-inline-toc a {
-  color: var(--accent);
+  color: var(--accent-ink);
   font-size: var(--t-sm);
   text-decoration: none;
 }

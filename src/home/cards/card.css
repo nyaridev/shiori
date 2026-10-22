@@ -1,4 +1,4 @@
-/* The deck card. The deck sets --focus (0–1, how centered the card is) and --accent (the wiki's accent). */
+/* The deck card. The deck sets --card-focus (0–1, how centered the card is) and --accent (the wiki's accent). */
 .cc {
   position: absolute;
   inset: 0;
@@ -54,7 +54,7 @@
   height: 100%;
   overflow: visible;
   pointer-events: none;
-  opacity: calc(0.55 + var(--focus) * 0.45);
+  opacity: calc(0.55 + var(--card-focus) * 0.45);
   animation: cc-float 16s ease-in-out infinite alternate;
   transition: opacity 1.2s ease;
 }

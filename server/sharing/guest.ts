@@ -9,19 +9,34 @@ import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { getSignedCookie, setSignedCookie } from "hono/cookie";
 import { z } from "zod";
-import type { Answer, Authored, GuestSession, PageData, Thread, WikiDetail } from "../../shared/api.ts";
+import {
+  type Answer,
+  type Authored,
+  type GuestSession,
+  type Message,
+  type PageData,
+  REACTIONS,
+  type Thread,
+  type WikiDetail,
+} from "../../shared/api.ts";
 import { addAnswer, listAnswers } from "../answers.ts";
+import { ATTACHMENT_LIMITS, ATTACHMENT_NAME, attachmentsDir, hasAttachment, saveAttachment } from "../attachments.ts";
 import { designRoutes } from "../designRoutes.ts";
+import { PICTURE_MIME } from "../designs.ts";
 import { serveFile } from "../files.ts";
+import { historyOf, versionOf } from "../history.ts";
 import type { Registry, Wiki } from "../registry.ts";
-import { search } from "../search.ts";
+import { filterFrom, notesOf, search, searchNotes } from "../search.ts";
 import {
   addMessage,
   createThread,
   getThread,
   listThreads,
+  react,
+  removeThread,
   setStatus,
   startedBy,
+  threadOfMessage,
   visible,
   visibleThreads,
 } from "../threads.ts";
@@ -66,7 +81,8 @@ const quoteSchema = z.strictObject({
   suffix: z.string().max(LIMITS.context),
 });
 const pagePath = text(300);
-const newThreadSchema = z.strictObject({ page: pagePath, quote: quoteSchema, body: body(true) });
+const images = z.array(z.string().regex(ATTACHMENT_NAME)).max(ATTACHMENT_LIMITS.perMessage).default([]);
+const newThreadSchema = z.strictObject({ page: pagePath, quote: quoteSchema, body: body(true), images });
 const messageSchema = z.strictObject({ body: body(true) });
 // Guests resolve and reopen their own threads; "won't fix" is the owner's call.
 const statusSchema = z.strictObject({ status: z.enum(["open", "resolved"]) });
@@ -76,6 +92,7 @@ const newAnswerSchema = z.strictObject({
   choice: text(200).min(1).nullable().default(null),
   body: body(false).default(""),
 });
+const reactionSchema = z.strictObject({ emoji: z.enum(REACTIONS), on: z.boolean() });
 const joinSchema = z.strictObject({ name: z.string().max(200) });
 const hereSchema = z.strictObject({ page: pagePath.nullable() });
 
@@ -289,8 +306,26 @@ export function buildGuestApp({
     const { guestId, hidden: _, ...rest } = x;
     return { ...rest, name: x.author === "user" ? shares.host() : x.name, mine: !!guestId && guestId === me.id } as T;
   };
+  /** Reactions as guests see them: names, never guest ids, and which are this guest's own. */
+  const reactionsFor = (m: Message, me: Guest): Message =>
+    m.reactions
+      ? {
+          ...m,
+          reactions: m.reactions.map((r) => ({
+            emoji: r.emoji,
+            by: r.by.map(({ guestId, ...who }) => ({
+              ...who,
+              name: who.author === "user" ? shares.host() : who.name,
+              mine: !!guestId && guestId === me.id,
+            })),
+          })),
+        }
+      : m;
   /** Callers pass threads through `visible` first: what the owner hid never reaches guests. */
-  const threadFor = (t: Thread, me: Guest): Thread => ({ ...t, messages: t.messages.map((m) => authored(m, me)) });
+  const threadFor = (t: Thread, me: Guest): Thread => ({
+    ...t,
+    messages: t.messages.map((m) => reactionsFor(authored(m, me), me)),
+  });
   const answerFor = (a: Answer, me: Guest): Answer => authored(a, me);
 
   const api = new Hono<WikiEnv>();
@@ -313,9 +348,36 @@ export function buildGuestApp({
 
   api.get("/wikis/:id/images", (c) => c.json({ groups: data.corpusOf(c.get("wiki")).images }));
 
-  api.get("/wikis/:id/search", (c) =>
-    c.json({ hits: search(data.corpusOf(c.get("wiki")).search, (c.req.query("q") ?? "").slice(0, 200)) }),
-  );
+  // A page's history (ADR-0008), read-only, for every link: its commits and the page as it was. Only versions from
+  // the page's own history open, and nothing says where the repo is (no remote, no paths in it).
+  api.get("/wikis/:id/history", async (c) => {
+    const history = await historyOf(c.get("wiki"), data, c.req.query("path") ?? "");
+    return history ? c.json(history) : c.json({ error: "no such page" }, 404);
+  });
+
+  api.get("/wikis/:id/history/:version", async (c) => {
+    const version = await versionOf(c.get("wiki"), data, c.req.query("path") ?? "", c.req.param("version"));
+    return version ? c.json(version) : c.json({ error: "no such version" }, 404);
+  });
+
+  // Like the owner's search; comments and answers only as guests see them (nothing the owner hid).
+  api.get("/wikis/:id/search", (c) => {
+    const w = c.get("wiki");
+    const q = (c.req.query("q") ?? "").slice(0, 200);
+    const { pages, search: docs } = data.corpusOf(w);
+    const isOpen = (p: string, q: string) => pages.get(p)?.questions.find((x) => x.id === q)?.status === "open";
+    const answers = listAnswers(w.root).filter((a) => !a.hidden);
+    const notes = notesOf(visibleThreads(listThreads(w.root)), answers, isOpen);
+    return c.json({
+      hits: search(
+        docs,
+        q,
+        20,
+        filterFrom((k) => c.req.query(k)),
+      ),
+      notes: searchNotes(notes, q, (p) => pages.get(p)),
+    });
+  });
 
   api.get("/wikis/:id/files/*", async (c) => {
     const w = c.get("wiki");
@@ -433,9 +495,10 @@ export function buildGuestApp({
     const w = c.get("wiki");
     const parsed = newThreadSchema.safeParse(await json(c));
     if (!parsed.success) return c.json({ error: "bad request" }, 400);
-    const { page, quote, body: text } = parsed.data;
+    const { page, quote, body: text, images: files } = parsed.data;
     if (!data.corpusOf(w).pages.has(page)) return c.json({ error: "no such page" }, 404);
-    const t = createThread(w.root, page, quote, text, me(c));
+    if (!files.every((f) => hasAttachment(w.root, f))) return c.json({ error: "no such picture" }, 400);
+    const t = createThread(w.root, page, quote, text, me(c), files);
     shares.log(c.get("share"), c.get("me").name, `commented on ${page || "the home page"}`);
     return c.json(threadFor(t, c.get("me")), 201);
   });
@@ -464,6 +527,63 @@ export function buildGuestApp({
     setStatus(w.root, id, parsed.data.status);
     shares.log(c.get("share"), c.get("me").name, `${parsed.data.status === "open" ? "reopened" : "resolved"} #${id}`);
     return c.json(threadFor(shown(w, id) as Thread, c.get("me")));
+  });
+
+  // A guest removes a thread they started (their change request), and only theirs.
+  api.delete("/wikis/:id/threads/:tid", ...write, (c) => {
+    const w = c.get("wiki");
+    const id = Number(c.req.param("tid"));
+    const t = shown(w, id);
+    if (!t) return c.json({ error: "no such thread" }, 404);
+    if (startedBy(t) !== c.get("me").id) return c.json({ error: "only the person who started it can do that" }, 403);
+    removeThread(w.root, id);
+    shares.log(c.get("share"), c.get("me").name, `removed #${id}`);
+    return c.body(null, 204);
+  });
+
+  // Pictures for a guest's comment: a comment link, this site's Origin, the picture limit, and the guest's daily
+  // budget for pictures (shared with designs). They're named in the thread after.
+  const pictureBody = bodyLimit({
+    maxSize: ATTACHMENT_LIMITS.bytes,
+    onError: (c) => c.json({ error: "the picture is too big" }, 413),
+  });
+  api.post("/wikis/:id/attachments", sameOrigin, pictureBody, async (c) => {
+    const share = c.get("share");
+    if (share.kind !== "comment") return c.json({ error: "this link is view-only" }, 403);
+    const type = c.req.header("content-type") ?? "";
+    if (!PICTURE_MIME.includes(type)) return c.json({ error: "add a PNG, JPEG, WebP or GIF picture" }, 415);
+    const bytes = Buffer.from(await c.req.arrayBuffer());
+    if (!share.limits.designBytes(c.get("me").id, bytes.length, now())) {
+      c.header("retry-after", "3600");
+      return c.json({ error: "that's all the pictures for today" }, 429);
+    }
+    const saved = saveAttachment(c.get("wiki").root, type, bytes);
+    return typeof saved === "string" ? c.json({ error: saved }, 400) : c.json(saved, 201);
+  });
+
+  // A picture only when a message the guest can see carries it.
+  api.get("/wikis/:id/attachments/:file", async (c) => {
+    const w = c.get("wiki");
+    const file = c.req.param("file");
+    const seen = visibleThreads(listThreads(w.root)).some((t) => t.messages.some((m) => m.images?.includes(file)));
+    if (!ATTACHMENT_NAME.test(file) || !seen) return c.json({ error: "not found" }, 404);
+    const res = await serveFile(c, attachmentsDir(w.root), file, { cache: false });
+    if (res.status === 200 || res.status === 304) res.headers.set("cache-control", "private, no-cache");
+    return res;
+  });
+
+  // Reactions on a message the guest can see; hidden messages and threads don't exist for them.
+  api.post("/wikis/:id/messages/:mid/reactions", ...write, async (c) => {
+    const w = c.get("wiki");
+    const parsed = reactionSchema.safeParse(await json(c));
+    if (!parsed.success) return c.json({ error: "bad request" }, 400);
+    const mid = Number(c.req.param("mid"));
+    const tid = threadOfMessage(w.root, mid);
+    const t = tid === null ? null : shown(w, tid);
+    if (!t?.messages.some((m) => m.id === mid)) return c.json({ error: "no such message" }, 404);
+    react(w.root, mid, parsed.data.emoji, me(c), parsed.data.on);
+    if (parsed.data.on) shares.log(c.get("share"), c.get("me").name, `reacted ${parsed.data.emoji} on #${t.id}`);
+    return c.json(threadFor(shown(w, t.id) as Thread, c.get("me")));
   });
 
   api.post("/wikis/:id/answers", ...write, async (c) => {

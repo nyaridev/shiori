@@ -45,6 +45,10 @@ export function listAnswers(root: string, filter: { page?: string } = {}): Answe
   return (rows as unknown as AnswerRow[]).map(toAnswer);
 }
 
+/**
+ * Someone's answer to a question. Each person has one answer per question: answering again changes it (the owner's,
+ * or that guest's), so the agent reads what they think now.
+ */
 export function addAnswer(
   root: string,
   page: string,
@@ -55,6 +59,22 @@ export function addAnswer(
 ): Answer {
   const db = dbFor(root);
   const at = new Date().toISOString();
+  const [author, guestId, guestName] = authorColumns(by);
+  const mine = db
+    .prepare(
+      "select id from answers where page = ? and question = ? and author = ? and coalesce(guest_id, '') = ? order by id desc limit 1",
+    )
+    .get(page, question, author, guestId ?? "") as { id: number } | undefined;
+  if (mine) {
+    db.prepare("update answers set choice = ?, body = ?, guest_name = ?, updated_at = ? where id = ?").run(
+      choice,
+      body,
+      guestName,
+      at,
+      mine.id,
+    );
+    return toAnswer(db.prepare("select * from answers where id = ?").get(mine.id) as unknown as AnswerRow);
+  }
   const { lastInsertRowid } = db
     .prepare(
       "insert into answers (page, question, choice, body, author, guest_id, guest_name, created_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",

@@ -4,6 +4,7 @@
 import type { Element, Root } from "hast";
 import { visit } from "unist-util-visit";
 import type { ImageGroup, PageData, PageEntry, PageImage, PageLink, TaskEntry, WantedPage } from "../shared/api.ts";
+import { committedTimes } from "./git.ts";
 import { loadLayouts } from "./layouts.ts";
 import { textOf } from "./markdown/elements.ts";
 import { buildNav, type PageFile, readingOrder, renderPage } from "./pages.ts";
@@ -122,9 +123,15 @@ function imagesIn(page: PageData): PageImage[] {
 export function buildCorpus(wiki: Wiki, files: PageFile[]): Corpus {
   const pages = new Map<string, PageData>();
   const layouts = loadLayouts(wiki);
+  // A page with nothing uncommitted was updated when it was last committed (ADR-0008), or when its file was last
+  // written if that's earlier: a commit doesn't make a page that was already read new again.
+  const committed = committedTimes(wiki.root);
   for (const f of files) {
     const page = renderPage(wiki, files, f.path, layouts);
-    if (page) pages.set(f.path, page);
+    if (!page) continue;
+    const at = committed.get(f.file);
+    if (at && (!page.updatedAt || at < page.updatedAt)) page.updatedAt = at;
+    pages.set(f.path, page);
   }
 
   // Backlinks: who links to whom, from the article and its infobox.

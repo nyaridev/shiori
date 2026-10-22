@@ -4,7 +4,7 @@
 
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { Author, Authored, Thread, ThreadStatus } from "../shared/api.ts";
+import type { Author, Authored, Reaction, ReactionEmoji, Thread, ThreadStatus } from "../shared/api.ts";
 import type { Quote } from "../shared/quote.ts";
 import { newUid } from "./ids.ts";
 import { dataDir } from "./paths.ts";
@@ -70,6 +70,12 @@ const MIGRATIONS = [
    create unique index threads_uid on threads(uid);
    create unique index messages_uid on messages(uid);
    create unique index answers_uid on answers(uid);`,
+  // Reactions on messages: JSON, `[{ emoji, by: [{ author, name?, guestId? }] }]`.
+  `alter table messages add column reactions text not null default '[]';`,
+  // Pictures attached to a message (attachments.ts): JSON, a list of file names in `data/attachments/`.
+  `alter table messages add column images text not null default '[]';`,
+  // Removing a thread (the host's, or its author's): it stays, marked, and nobody sees it any more.
+  `alter table threads add column removed_at text;`,
 ];
 
 /** Gives rows made before uids (or restored from an old backup) theirs, and an `updated_at`. */
@@ -133,6 +139,7 @@ interface ThreadRow {
   status: ThreadStatus;
   created_at: string;
   resolved_at: string | null;
+  removed_at: string | null;
   uid: string;
   updated_at: string;
 }
@@ -145,9 +152,29 @@ interface MessageRow {
   body: string;
   created_at: string;
   hidden: number;
+  reactions: string;
+  images: string;
   uid: string;
   updated_at: string;
 }
+
+const reactionsOf = (raw: string): Reaction[] => {
+  try {
+    const list = JSON.parse(raw) as Reaction[];
+    return Array.isArray(list) ? list.filter((r) => r.by?.length) : [];
+  } catch {
+    return [];
+  }
+};
+
+const imagesOf = (raw: string): string[] => {
+  try {
+    const list = JSON.parse(raw) as unknown;
+    return Array.isArray(list) ? list.filter((f): f is string => typeof f === "string") : [];
+  } catch {
+    return [];
+  }
+};
 
 function hydrate(db: DatabaseSync, rows: ThreadRow[]): Thread[] {
   if (!rows.length) return [];
@@ -162,6 +189,7 @@ function hydrate(db: DatabaseSync, rows: ThreadRow[]): Thread[] {
     status: r.status,
     createdAt: r.created_at,
     resolvedAt: r.resolved_at,
+    ...(r.removed_at ? { removedAt: r.removed_at } : {}),
     uid: r.uid,
     updatedAt: r.updated_at,
     messages: messages
@@ -172,15 +200,21 @@ function hydrate(db: DatabaseSync, rows: ThreadRow[]): Thread[] {
         body: m.body,
         createdAt: m.created_at,
         ...(m.hidden ? { hidden: true } : {}),
+        ...(reactionsOf(m.reactions).length ? { reactions: reactionsOf(m.reactions) } : {}),
+        ...(imagesOf(m.images).length ? { images: imagesOf(m.images) } : {}),
         uid: m.uid,
         updatedAt: m.updated_at,
       })),
   }));
 }
 
-export function listThreads(root: string, filter: { page?: string; status?: ThreadStatus } = {}): Thread[] {
+/** A wiki's threads, oldest first. Removed ones only with `removed: true` (backups and sync carry them). */
+export function listThreads(
+  root: string,
+  filter: { page?: string; status?: ThreadStatus; removed?: boolean } = {},
+): Thread[] {
   const db = dbFor(root);
-  const where: string[] = [];
+  const where: string[] = filter.removed ? [] : ["removed_at is null"];
   const args: string[] = [];
   if (filter.page !== undefined) {
     where.push("page = ?");
@@ -201,16 +235,24 @@ export function getThread(root: string, id: number): Thread | null {
 }
 
 const INSERT_MESSAGE =
-  "insert into messages (thread_id, author, guest_id, guest_name, body, created_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?)";
+  "insert into messages (thread_id, author, guest_id, guest_name, body, images, created_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-export function createThread(root: string, page: string, quote: Quote, body: string, by: Writer = "user"): Thread {
+/** A new thread with its first message, and the pictures attached to it (file names the caller has checked). */
+export function createThread(
+  root: string,
+  page: string,
+  quote: Quote,
+  body: string,
+  by: Writer = "user",
+  images: string[] = [],
+): Thread {
   const db = dbFor(root);
   const at = now();
   db.exec("begin");
   const { lastInsertRowid } = db
     .prepare("insert into threads (page, quote, created_at, uid, updated_at) values (?, ?, ?, ?, ?)")
     .run(page, JSON.stringify(quote), at, newUid(), at);
-  db.prepare(INSERT_MESSAGE).run(lastInsertRowid, ...authorColumns(by), body, at, newUid(), at);
+  db.prepare(INSERT_MESSAGE).run(lastInsertRowid, ...authorColumns(by), body, JSON.stringify(images), at, newUid(), at);
   db.exec("commit");
   return getThread(root, Number(lastInsertRowid)) as Thread;
 }
@@ -219,7 +261,7 @@ export function addMessage(root: string, id: number, by: Writer, body: string): 
   const db = dbFor(root);
   if (!getThread(root, id)) return null;
   const at = now();
-  db.prepare(INSERT_MESSAGE).run(id, ...authorColumns(by), body, at, newUid(), at);
+  db.prepare(INSERT_MESSAGE).run(id, ...authorColumns(by), body, "[]", at, newUid(), at);
   return getThread(root, id);
 }
 
@@ -249,12 +291,64 @@ export function setHidden(root: string, messageId: number, hidden: boolean): Thr
   return getThread(root, row.thread_id);
 }
 
+/** Removes a thread: marked, never deleted, and gone from every list, the inbox and search. Null when it's missing. */
+export function removeThread(root: string, id: number): boolean {
+  const at = now();
+  const { changes } = dbFor(root)
+    .prepare("update threads set removed_at = ?, updated_at = ? where id = ? and removed_at is null")
+    .run(at, at, id);
+  return Number(changes) > 0;
+}
+
+/** The thread a message belongs to, if there's such a message. */
+export function threadOfMessage(root: string, messageId: number): number | null {
+  const row = dbFor(root).prepare("select thread_id from messages where id = ?").get(messageId) as
+    | { thread_id: number }
+    | undefined;
+  return row?.thread_id ?? null;
+}
+
+/** Who reacts: the owner, or a guest with their id and display name. Agents don't react. */
+export type Reacter = "user" | { guest: string; name: string };
+
+/**
+ * Adds or takes back someone's reaction on a message. Null when there's no such message; else its thread, with the
+ * message's `updated_at` moved so two PCs merge the newer set.
+ */
+export function react(root: string, messageId: number, emoji: ReactionEmoji, by: Reacter, on: boolean): Thread | null {
+  const db = dbFor(root);
+  const row = db.prepare("select thread_id, reactions from messages where id = ?").get(messageId) as
+    | { thread_id: number; reactions: string }
+    | undefined;
+  if (!row) return null;
+  const same = (r: { author: string; guestId?: string }) =>
+    typeof by === "string" ? r.author === "user" : r.author === "guest" && r.guestId === by.guest;
+  const list = reactionsOf(row.reactions).map((r) =>
+    r.emoji === emoji ? { ...r, by: r.by.filter((x) => !same(x)) } : r,
+  );
+  if (on) {
+    const who =
+      typeof by === "string"
+        ? { author: "user" as const }
+        : { author: "guest" as const, name: by.name, guestId: by.guest };
+    const at = list.find((r) => r.emoji === emoji);
+    if (at) at.by.push(who);
+    else list.push({ emoji, by: [who] });
+  }
+  db.prepare("update messages set reactions = ?, updated_at = ? where id = ?").run(
+    JSON.stringify(list.filter((r) => r.by.length)),
+    now(),
+    messageId,
+  );
+  return getThread(root, row.thread_id);
+}
+
 /**
  * A thread as guests and the inbox see it: without hidden messages, and gone when its first message (the comment
  * itself, with its quote) is hidden.
  */
 export function visible(t: Thread): Thread | null {
-  if (t.messages[0]?.hidden) return null;
+  if (t.removedAt || t.messages[0]?.hidden) return null;
   return t.messages.some((m) => m.hidden) ? { ...t, messages: t.messages.filter((m) => !m.hidden) } : t;
 }
 export const visibleThreads = (threads: Thread[]): Thread[] =>

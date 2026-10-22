@@ -1,5 +1,16 @@
-/* The wiki's sidebar (Sidebar.tsx). */
+/* The wiki's sidebar (Sidebar.tsx): the scrolling lists (the tree as tabs, SidebarTabs.tsx), then the dock at the
+   bottom. */
 .sh-sidebar {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.sh-sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.sh-sidebar-scroll .sh-scroll-view {
   padding: var(--s-3);
 }
 .sh-nav {
@@ -8,11 +19,28 @@
   padding: 0;
 }
 .sh-nav .sh-nav {
-  margin: 2px 0 var(--s-2) var(--s-3);
+  margin-left: var(--s-3);
   padding-left: var(--s-2);
   border-left: var(--bw) solid var(--border);
 }
+/* A group's pages: the space around them folds away with them. */
+.sh-nav-group > .sh-collapse {
+  margin: 2px 0 var(--s-2);
+  transition:
+    grid-template-rows 200ms var(--ease),
+    opacity 200ms var(--ease),
+    margin 200ms var(--ease);
+}
+.sh-nav-group > .sh-collapse[data-folded] {
+  margin: 0;
+  transition:
+    grid-template-rows 200ms var(--ease),
+    opacity 200ms var(--ease),
+    margin 200ms var(--ease),
+    visibility 0s 200ms;
+}
 .sh-nav-link {
+  transition: color var(--fast) var(--ease);
   display: flex;
   align-items: center;
   gap: 7px;
@@ -33,16 +61,15 @@
   color: var(--muted);
 }
 a.sh-nav-link:hover {
-  background: var(--hover);
   color: var(--text);
 }
+/* The open page: its name in the accent; its marker (an edge and a tint) is a glider that slides to it. */
 a.sh-nav-link.active {
-  background: var(--accent-soft);
-  color: var(--text);
+  color: var(--accent-ink);
   font-weight: 560;
 }
 a.sh-nav-link.active > svg {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .sh-nav-heading,
 .sh-nav-link[data-group] {
@@ -52,7 +79,6 @@ a.sh-nav-link.active > svg {
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
-.sh-nav-tree > li + li,
 .sh-nav-group {
   margin-top: var(--s-1);
 }
@@ -82,7 +108,10 @@ a.sh-nav-link.active > svg {
   background: none;
   color: var(--muted);
   cursor: pointer;
-  transition: rotate var(--fast) var(--ease);
+  transition:
+    rotate 220ms var(--glide),
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
 }
 .sh-fold:hover {
   background: var(--hover);
@@ -97,12 +126,9 @@ a.sh-nav-link.active > svg {
   rotate: -90deg;
 }
 
-/* Recently viewed, Tools, Toolbox: a heading that folds its list. */
+/* Tools, Toolbox, Recently viewed: a heading that folds its list. */
 .sh-side-section {
   margin-top: var(--s-4);
-}
-.sh-side-section:first-of-type {
-  margin-top: 0;
 }
 .sh-side-heading {
   display: flex;
@@ -122,11 +148,237 @@ a.sh-nav-link.active > svg {
   letter-spacing: 0.05em;
   text-align: left;
   text-transform: uppercase;
+  white-space: nowrap;
   cursor: pointer;
 }
 .sh-side-title:hover {
   color: var(--text);
 }
-.sh-nav-tree {
-  margin-top: var(--s-4);
+
+/* Recently viewed, docked under the scrolling lists in a box of its own; folded, only its heading shows. */
+.sh-side-dock {
+  flex: none;
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  border-top: var(--bw) solid var(--border);
+  background: color-mix(in oklab, var(--raised) 55%, var(--surface));
+  box-shadow: 0 -8px 20px -14px rgb(0 0 0 / 0.5);
+}
+.sh-side-dock .sh-side-heading {
+  margin-bottom: 0;
+}
+.sh-side-dock .sh-collapse .sh-nav {
+  max-height: 30vh;
+  margin-top: var(--s-1);
+  overflow-y: auto;
+}
+.sh-side-note {
+  margin-left: var(--s-2);
+  white-space: nowrap;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+/* A page that changed since the viewer last opened it (seen.ts). */
+.sh-nav-changed {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--accent);
+}
+/* What waits for the viewer on a page (pending.ts): amber for open questions, green for suggestions. */
+.sh-nav-pending {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--dot-warn);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--dot-warn) 24%, transparent);
+  /* Pops in where something starts waiting (sh-dot-in, below). */
+  animation: sh-dot-in 320ms var(--glide) both;
+}
+.sh-nav-pending[data-kind="suggestion"] {
+  background: var(--dot-good);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--dot-good) 24%, transparent);
+}
+/* Beside a "changed" dot, a little room between the two. */
+.sh-nav-pending + .sh-nav-changed {
+  margin-left: var(--s-2);
+}
+
+/* The tree as tabs (SidebarTabs.tsx): its sections as a block of icon tabs, the open one's pages under it. */
+.sh-side-tabs {
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+}
+.sh-side-tablist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: color-mix(in oklab, var(--raised) 60%, var(--surface));
+}
+.sh-side-tab {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 7px 2px 5px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sh-side-tab:hover {
+  background: color-mix(in oklab, var(--hover) 70%, transparent);
+  color: var(--text);
+}
+.sh-side-tab[aria-selected="true"] {
+  background: none;
+  color: var(--text);
+}
+.sh-side-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-side-tab-icon {
+  font-size: 20px;
+}
+.sh-side-tab-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sh-side-tab .sh-nav-pending {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  margin: 0;
+}
+
+.sh-side-tabpanel .sh-nav-link {
+  padding-block: 6px;
+}
+
+/* In a tab, its section's name and each group in it is a strip, as on a fandom wiki: a tinted bar with the accent at
+   its edge, which folds the pages under it. */
+.sh-side-strip,
+.sh-side-tabpanel .sh-nav-group > .sh-nav-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2px;
+  padding-right: 2px;
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--accent) 14%, var(--raised));
+}
+.sh-side-strip > .sh-nav-link,
+.sh-side-tabpanel .sh-nav-group > .sh-nav-row > .sh-nav-link {
+  flex: 1;
+  padding-block: 7px;
+  color: var(--text);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+/* A group inside a section: a quieter strip. */
+.sh-side-tabpanel .sh-nav-group > .sh-nav-row {
+  border-left-width: 2px;
+  background: color-mix(in oklab, var(--accent) 7%, var(--raised));
+}
+.sh-side-strip > a.sh-nav-link:hover,
+.sh-side-tabpanel .sh-nav-group > .sh-nav-row > a.sh-nav-link:hover {
+  background: none;
+  color: var(--accent-ink);
+}
+/* On a strip, the open page is the strip itself: its name in the accent, no second edge. */
+.sh-side-strip > a.sh-nav-link.active,
+.sh-side-tabpanel .sh-nav-group > .sh-nav-row > a.sh-nav-link.active {
+  background: none;
+  box-shadow: none;
+  color: var(--accent-ink);
+}
+/* The section's pages: set in under the strip, a thin line carrying its edge down beside them. */
+.sh-side-tabpanel > .sh-collapse > .sh-nav {
+  margin: var(--s-2) 0 var(--s-1) 1px;
+  padding-left: var(--s-2);
+  border-left: var(--bw) solid color-mix(in oklab, var(--accent) 35%, var(--border));
+}
+.sh-side-tabpanel > .sh-collapse > .sh-nav > li + li {
+  margin-top: 2px;
+}
+.sh-side-tabpanel .sh-nav .sh-nav {
+  margin-left: var(--s-2);
+  padding-left: 0;
+  border-left: 0;
+}
+
+/* The gliders (ui/Glider.tsx, in hosts marked sh-glide-host): one highlight that follows the pointer and one marker on the open page (in the lists,
+   the dock), one background under the open tab. */
+.sh-side-hover {
+  border-radius: var(--r-sm);
+  background: var(--hover);
+}
+/* The open page: a tinted pill, so it never doubles the accent edge of the strip above it. */
+.sh-side-current {
+  border-radius: var(--r-md);
+  background: color-mix(in oklab, var(--accent) 13%, transparent);
+  box-shadow: inset 0 0 0 var(--bw) var(--accent-line);
+}
+.sh-side-tab-glide {
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 var(--bw) var(--accent-line);
+}
+
+/* Another tab's list slides in from that tab's side. */
+.sh-side-tabpanel[data-from] {
+  animation: sh-side-from-after 240ms var(--ease) both;
+}
+.sh-side-tabpanel[data-from="before"] {
+  animation-name: sh-side-from-before;
+}
+@keyframes sh-side-from-after {
+  from {
+    opacity: 0;
+    translate: 14px 0;
+  }
+}
+@keyframes sh-side-from-before {
+  from {
+    opacity: 0;
+    translate: -14px 0;
+  }
+}
+/* A dot that starts waiting pops in. */
+@keyframes sh-dot-in {
+  from {
+    scale: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sh-side-tabpanel[data-from],
+  .sh-nav-pending {
+    animation: none;
+  }
 }

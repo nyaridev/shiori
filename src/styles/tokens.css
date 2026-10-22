@@ -5,9 +5,9 @@
 
   /* Base: a theme can change these */
   --bg: #0f1012;
-  --surface: #16171a;
-  --raised: #1e2024;
-  --border: #2b2e33;
+  --surface: #17181c;
+  --raised: #212328;
+  --border: #2f3238;
   --text: #e9e7e2;
   --muted: #8e9198;
   --accent: #e8b86d;
@@ -30,6 +30,10 @@
   --accent-soft: color-mix(in oklab, var(--accent) 16%, transparent);
   --accent-line: color-mix(in oklab, var(--accent) 45%, transparent);
   --accent-hover: color-mix(in oklab, var(--accent) 88%, var(--text));
+  /* The accent as text (links, the open page): a theme sets a shade that reads on its backgrounds (shared/theme.ts). */
+  --accent-ink: var(--accent);
+  /* Field outlines must stand out from the page (3:1), more than the borders that only divide. */
+  --border-field: color-mix(in oklab, var(--border) 55%, var(--text));
   --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-line);
   /* Page icons (src/icons/): filled shapes in the accent, a softer second tone, and details cut out in the background
      (themes keep the accent readable on it). */
@@ -37,13 +41,18 @@
   --icon-tint: color-mix(in oklab, var(--accent) 50%, var(--bg));
   --icon-detail: var(--bg);
 
-  --tone-note: color-mix(in oklab, var(--muted) 70%, var(--text));
-  --tone-tip: #6fbf8e;
+  /* Status colors. A theme sets good, warn and bad in shades that read as text on it (shared/theme.ts); these are
+     the dark defaults, and the callout names follow them. */
   --tone-good: #6fbf8e;
-  --tone-warning: #e0b04f;
   --tone-warn: #e0b04f;
-  --tone-danger: #e0705f;
   --tone-bad: #e0705f;
+  --tone-note: color-mix(in oklab, var(--muted) 70%, var(--text));
+  --tone-tip: var(--tone-good);
+  --tone-warning: var(--tone-warn);
+  --tone-danger: var(--tone-bad);
+  /* The tones as small fills (shared/theme.ts makes them brighter on light pages). */
+  --dot-good: var(--tone-good);
+  --dot-warn: var(--tone-warn);
   /* Drawing paper (designs, ADR-0006): white in every theme, since the drawing is made on it. */
   --paper: #ffffff;
 
@@ -62,6 +71,8 @@
   --t-xl: 1.375rem;
   --t-2xl: 2rem;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* Things that slide to a new place (ui/Glider.tsx): a little past the mark and back. */
+  --glide: cubic-bezier(0.3, 1.3, 0.5, 1);
   --fast: 120ms;
 }
 

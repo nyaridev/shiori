@@ -9,7 +9,8 @@ import { iconSet } from "../icons.ts";
 type Directive = ContainerDirective | LeafDirective | TextDirective;
 
 interface ElementSpec {
-  type: Directive["type"];
+  /** How it's written; a few elements can be either (`::table{src}` reads a file, `:::table` wraps a table). */
+  type: Directive["type"] | Directive["type"][];
   tag: string;
   /** Allowed attributes, with their allowed values when the list isn't open-ended. */
   attrs: Record<string, readonly string[] | null>;
@@ -22,6 +23,8 @@ interface ElementSpec {
 
 export const CALLOUT_TONES = ["note", "tip", "warning", "danger"] as const;
 export const BADGE_TONES = ["neutral", "accent", "good", "warn", "bad"] as const;
+/** A tab can stand out in a color: green for suggestions, amber for what's open, red for problems. */
+export const TAB_TONES = ["accent", "good", "warn", "bad"] as const;
 
 export const ELEMENTS: Record<string, ElementSpec> = {
   callout: {
@@ -38,7 +41,7 @@ export const ELEMENTS: Record<string, ElementSpec> = {
     transform: infoboxRows,
   },
   tabs: { type: "containerDirective", tag: "sh-tabs", attrs: {}, transform: onlyTabs },
-  tab: { type: "containerDirective", tag: "sh-tab", attrs: { label: null }, label: "label" },
+  tab: { type: "containerDirective", tag: "sh-tab", attrs: { label: null, tone: TAB_TONES }, label: "label" },
   columns: { type: "containerDirective", tag: "sh-columns", attrs: {}, transform: splitColumns },
   details: { type: "containerDirective", tag: "sh-details", attrs: { summary: null }, label: "summary" },
   badge: { type: "textDirective", tag: "sh-badge", attrs: { tone: BADGE_TONES } },
@@ -57,6 +60,7 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   // Universal elements (ADR-0002): page relations, structure, how-tos, decisions, sources, media.
   related: { type: "leafDirective", tag: "sh-related", attrs: { kind: null } },
   question: { type: "leafDirective", tag: "sh-question", attrs: { id: null }, transform: needsId },
+  suggestion: { type: "leafDirective", tag: "sh-suggestion", attrs: { id: null }, transform: needsId },
   children: { type: "leafDirective", tag: "sh-children", attrs: { layout: ["cards", "list"] } },
   toc: { type: "leafDirective", tag: "sh-toc", attrs: {} },
   status: { type: "textDirective", tag: "sh-status", attrs: {}, transform: checkStatus },
@@ -81,6 +85,14 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   "open-tasks": { type: "leafDirective", tag: "sh-open-tasks", attrs: { count: null }, transform: checkCount },
   discussions: { type: "leafDirective", tag: "sh-discussions", attrs: { count: null }, transform: checkCount },
   directory: { type: "leafDirective", tag: "sh-directory", attrs: {} },
+  // Data (ADR-0008): a table people sort and filter, from a file (`src`), the wiki's pages (`pages`), or the Markdown
+  // table inside it. markdown/tables.ts builds the rows.
+  table: {
+    type: ["leafDirective", "containerDirective"],
+    tag: "sh-table",
+    attrs: { src: null, pages: null, columns: null, sort: null, stats: null, caption: null },
+    label: "caption",
+  },
   // A collection's designs (ADR-0006), with the button that makes a new one.
   designs: { type: "leafDirective", tag: "sh-designs", attrs: { collection: null }, transform: needsCollection },
 };
@@ -100,14 +112,15 @@ export function remarkElements(problems: string[], lineOffset = 0) {
       const problem = (message: string) => problems.push(`line ${line}: ${message}`);
       const spec = ELEMENTS[node.name];
 
-      if (!spec || spec.type !== node.type) {
+      const types = spec ? [spec.type].flat() : [];
+      if (!spec || !types.includes(node.type)) {
         // `time:now` in prose parses as a text directive. Unknown ones go back to being text.
         if (node.type === "textDirective") {
           parent.children.splice(index, 1, { type: "text", value: `:${node.name}` }, ...(node.children as never[]));
           return [SKIP, index];
         }
         problem(
-          `unknown element "${COLONS[node.type]}${node.name}"${spec ? ` (use ${COLONS[spec.type]}${node.name})` : ""}`,
+          `unknown element "${COLONS[node.type]}${node.name}"${spec ? ` (use ${types.map((t) => `${COLONS[t]}${node.name}`).join(" or ")})` : ""}`,
         );
         node.data = { hName: "sh-unknown", hProperties: { name: `${COLONS[node.type]}${node.name}` } };
         return;
@@ -417,7 +430,10 @@ function embedSource(node: Directive, problem: (message: string) => void) {
   problem(`embed: "${url}" isn't a YouTube, Vimeo or Figma link`);
 }
 
-/** `::question{id=q1}` places a question from the page's frontmatter; the page checks the id exists. */
+/**
+ * `::question{id=q1}` and `::suggestion{id=s1}` place a question or a suggestion from the page's frontmatter; the page
+ * checks the id exists.
+ */
 function needsId(node: Directive, problem: (message: string) => void) {
-  if (!node.attributes?.id) problem("question: give the question's id, as ::question{id=q1}");
+  if (!node.attributes?.id) problem(`${node.name}: give its id, as ::${node.name}{id=${node.name[0]}1}`);
 }

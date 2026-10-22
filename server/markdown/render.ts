@@ -2,6 +2,7 @@ import type { Element, Root } from "hast";
 import rehypeSlug from "rehype-slug";
 import remarkDirective from "remark-directive";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import { unified } from "unified";
@@ -10,6 +11,8 @@ import type { TocEntry } from "../../shared/api.ts";
 import { rehypeCode } from "./code.ts";
 import { remarkElements, textOf } from "./elements.ts";
 import { type LinkContext, rehypeLinks } from "./links.ts";
+import { rehypeMath } from "./math.ts";
+import { remarkTables } from "./tables.ts";
 import { remarkWikilinks } from "./wikilinks.ts";
 
 export interface Rendered {
@@ -25,12 +28,16 @@ export function renderMarkdown(body: string, ctx: LinkContext, lineOffset = 0): 
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkDirective)
+    // `$$…$$` only: a lone `$` is a price, not math.
+    .use(remarkMath, { singleDollarTextMath: false })
     .use(remarkElements, problems, lineOffset)
+    .use(remarkTables, { pageDir: ctx.pageDir, ...ctx.tables }, problems, lineOffset)
     .use(remarkWikilinks, ctx.findPage ?? (() => ({ page: null, others: [] })), problems, lineOffset)
     .use(remarkRehype)
     .use(rehypeSlug)
     .use(rehypeLinks, ctx, problems, lineOffset)
-    .use(rehypeCode);
+    .use(rehypeMath, problems, lineOffset)
+    .use(rehypeCode, problems, lineOffset);
   const hast = processor.runSync(processor.parse(body)) as Root;
 
   const toc: TocEntry[] = [];

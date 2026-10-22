@@ -6,6 +6,22 @@ status: idea
 order: 2
 tags: [notes]
 type: "Backlog"
+questions:
+  - id: next-idea
+    text: "Which idea do we try next?"
+    options: [A behind-the-scenes series, A community challenge, A premium version]
+  - id: missing
+    text: "What idea is missing from this list?"
+suggestions:
+  - id: scoring
+    text: "Score ideas by effort and impact, so the backlog sorts itself?"
+    options: [Yes, Later, No]
+  - id: idea-owner
+    text: "Note who suggested each idea, so we can ask them more?"
+    options: [Yes, No]
+  - id: monthly-cleanup
+    text: "Review the backlog once a month and park what nobody mentions?"
+    options: [Yes, Later, No]
 ---
 
 Every idea gets a line here, however small. When one keeps coming back, it earns a page of its own and a place on the

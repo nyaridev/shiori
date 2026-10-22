@@ -2,6 +2,13 @@
 // `toolbox` lists what pages can use (Toolbox.tsx). Icons are names from Shiori's icon set (public/icons/).
 export const SPECIALS = [
   {
+    route: "attention",
+    group: "tools",
+    icon: "bookmark",
+    title: "Needs your attention",
+    summary: "What changed since you last looked, replies to your comments, and questions waiting for your answer.",
+  },
+  {
     route: "recent",
     group: "tools",
     icon: "clock",
@@ -22,13 +29,27 @@ export const SPECIALS = [
     title: "All pages",
     summary: "Every page in the wiki, from A to Z.",
   },
-  { route: "categories", group: "tools", icon: "tag", title: "Categories", summary: "Pages grouped by their tags." },
+  {
+    route: "categories",
+    group: "tools",
+    icon: "tag",
+    title: "Categories",
+    summary: "Pages grouped by their tags, their status and their type.",
+  },
   {
     route: "questions",
     group: "tools",
     icon: "question",
-    title: "Questions",
-    summary: "Every decision the pages ask for, open ones first, with how many answers each has.",
+    title: "Questions and suggestions",
+    summary:
+      "Every question the pages ask and every suggestion the agent made for them, open ones first, with how many answers each has.",
+  },
+  {
+    route: "decisions",
+    group: "tools",
+    icon: "scales",
+    title: "Decisions",
+    summary: "Every question the agent has decided, newest first: what was asked and what was chosen.",
   },
   {
     route: "wanted",

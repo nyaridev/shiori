@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -98,6 +98,25 @@ describe("dev mode", () => {
     expect(registry.classify(join(template, "pages", "index.md"))).toEqual({ wiki: "template", area: "pages" });
     expect(registry.classify(join(preview, "data", "wiki.db"))).toEqual({ wiki: "template", area: "data" });
     expect(registry.classify(join(app, "wikis", "alpha", "pages", "index.md")).area).toBe("ignore");
+  });
+
+  it("keeps a page added to the preview until the template changes", () => {
+    const template = join(app, "wikis", "_template");
+    mkdirSync(join(template, "pages"), { recursive: true });
+    writeFileSync(join(template, "wiki.json"), JSON.stringify({ schema: 1, id: "{{id}}", title: "{{title}}" }));
+    writeFileSync(join(template, "pages", "index.md"), "# {{title}}");
+    const preview = join(app, "preview");
+    const registry = createRegistry(app, { dev: true, preview });
+    const tried = join(preview, "pages", "tried.md");
+    writeFileSync(tried, "# Tried");
+
+    expect(registry.classify(tried)).toEqual({ wiki: "template", area: "pages" });
+    registry.invalidate();
+    expect(existsSync(tried)).toBe(true);
+
+    registry.classify(join(template, "pages", "index.md"));
+    registry.invalidate();
+    expect(existsSync(tried)).toBe(false);
   });
 });
 

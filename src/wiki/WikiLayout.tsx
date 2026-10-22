@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
 import { DesignPage } from "../designs/DesignPage.tsx";
 import { api } from "../lib/api.ts";
@@ -7,7 +7,7 @@ import { useLive } from "../lib/live.ts";
 import { useResource } from "../lib/useResource.ts";
 import { useTheme } from "../lib/useTheme.ts";
 import { usePresence } from "../presence/usePresence.ts";
-import { ScrollArea } from "../ui/index.ts";
+import { HistoryPage } from "./history/HistoryPage.tsx";
 import { PageArea } from "./PageArea.tsx";
 import { SearchPalette, typing } from "./SearchPalette.tsx";
 import { rememberViewed } from "./sidebar/recent.ts";
@@ -30,6 +30,8 @@ export function WikiLayout() {
   const special = path === "_" || path.startsWith("_/") ? path.slice(2) : null;
   // One design (ADR-0006): `_/designs/<collection>/<id>`.
   const design = /^designs\/([^/]+)\/([^/]+)$/.exec(special ?? "")?.slice(1) as [string, string] | undefined;
+  // A page's history (ADR-0008): `_/history/<page>`, or `_/history` for the home page.
+  const history = special === "history" ? "" : (/^history\/(.+)$/.exec(special ?? "")?.[1] ?? null);
 
   const wiki = useResource(`wiki:${wikiId}`, () => api.wiki(wikiId));
   const page = useResource(special === null ? `page:${wikiId}:${path}` : null, () => api.page(wikiId, path));
@@ -51,7 +53,7 @@ export function WikiLayout() {
   });
   useTheme(wiki.data?.theme);
   const people = usePresence(wikiId, path);
-  // Home mode: the home page is a wide portal, with the sidebar and the rail as drawers.
+  // The home page is wide: the sidebar stays, the rail is a drawer.
   const home = path === "" && !page.error;
 
   // Remembered for the sidebar's Recently viewed.
@@ -61,6 +63,7 @@ export function WikiLayout() {
 
   const [navOpen, setNavOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(false);
+  const openRail = useCallback(() => setRailOpen(true), []);
   const [searchOpen, setSearchOpen] = useState(false);
   // The picture the image viewer shows, if it's open.
   const [viewing, setViewing] = useState<string | null>(null);
@@ -103,14 +106,14 @@ export function WikiLayout() {
         <div className="sh-wiki" data-enter={fromDeck || undefined} data-home={home || undefined}>
           {wiki.data && (
             <>
-              <ScrollArea className="sh-wiki-sidebar" data-open={navOpen || undefined}>
+              <aside className="sh-wiki-sidebar" data-open={navOpen || undefined}>
                 <Sidebar
                   wiki={wiki.data}
                   path={path}
                   onNavigate={() => setNavOpen(false)}
                   onSearch={() => setSearchOpen(true)}
                 />
-              </ScrollArea>
+              </aside>
               {navOpen && (
                 <button type="button" className="sh-scrim" aria-label="Close menu" onClick={() => setNavOpen(false)} />
               )}
@@ -127,7 +130,8 @@ export function WikiLayout() {
           )}
           {page.error && wiki.data && <MissingPage wikiId={wikiId} path={path} index={index.data} />}
           {design && wiki.data && <DesignPage wiki={wiki.data} collection={design[0]} id={design[1]} />}
-          {special !== null && !design && wiki.data && (
+          {history !== null && wiki.data && <HistoryPage wiki={wiki.data} path={history} />}
+          {special !== null && !design && history === null && wiki.data && (
             <SpecialPage wiki={wiki.data} route={special} index={index.data} />
           )}
           {page.data && !page.error && wiki.data && (
@@ -139,6 +143,7 @@ export function WikiLayout() {
               index={index.data?.pages}
               problems={[...wiki.data.problems, ...page.data.problems]}
               railOpen={railOpen}
+              onOpenRail={openRail}
               onCloseRail={() => setRailOpen(false)}
             />
           )}

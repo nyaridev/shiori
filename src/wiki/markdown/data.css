@@ -1,0 +1,109 @@
+/* Data tables (DataTable.tsx, ADR-0008): a bar with the caption and the filter, headers that sort, a foot of stats. */
+.sh-data {
+  margin: var(--s-4) 0;
+}
+.sh-data > .sh-table-wrap {
+  margin: 0;
+}
+.sh-data-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-3);
+  margin-bottom: var(--s-2);
+}
+.sh-data-caption {
+  color: var(--text);
+  font-size: var(--t-md);
+  font-weight: 650;
+}
+.sh-data-filter {
+  display: flex;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: var(--s-2);
+  max-width: 420px;
+  margin-left: auto;
+  color: var(--muted);
+}
+.sh-data-filter .sh-field {
+  flex: 1;
+  height: 32px;
+  font-size: var(--t-sm);
+}
+.sh-data-count {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sh-prose .sh-data th {
+  padding: 0;
+}
+.sh-data-sort {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  width: 100%;
+  padding: 7px var(--s-3);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+.sh-data-sort:hover {
+  background: var(--hover);
+}
+.sh-data-sort:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-line);
+}
+.sh-data-sort .sh-icon {
+  flex: none;
+  opacity: 0;
+  transition:
+    transform var(--fast) var(--ease),
+    opacity var(--fast) var(--ease);
+}
+.sh-data-sort:hover .sh-icon {
+  opacity: 0.5;
+}
+.sh-data th[aria-sort="ascending"] .sh-icon {
+  opacity: 1;
+  transform: rotate(180deg);
+}
+.sh-data th[aria-sort="descending"] .sh-icon {
+  opacity: 1;
+}
+.sh-data th[aria-sort="ascending"],
+.sh-data th[aria-sort="descending"] {
+  color: var(--accent-ink);
+}
+/* Numbers line up at the right, as in a spreadsheet. */
+.sh-data [data-numeric] {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.sh-data th[data-numeric] .sh-data-sort {
+  flex-direction: row-reverse;
+}
+.sh-data-none td {
+  color: var(--muted);
+  text-align: center;
+}
+.sh-data tfoot td {
+  border-top: var(--bw) solid var(--border-strong);
+  border-bottom: 0;
+  background: var(--surface);
+  color: var(--text-soft);
+  font-weight: 600;
+}
+.sh-data-stat {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

@@ -1,11 +1,17 @@
 import type {
   Answer,
   DesignInfo,
+  GitInfo,
   GuestSession,
   ImageGroup,
   KitInfo,
+  NoteHit,
   PageData,
+  PageHistory,
+  PageVersionDetail,
   Person,
+  ReactionEmoji,
+  SearchFilter,
   SearchHit,
   ShareDuration,
   ShareInfo,
@@ -56,10 +62,23 @@ export const api = {
   page: (id: string, path: string) => request<PageData>(`/api/wikis/${enc(id)}/page?path=${enc(path)}`),
   index: (id: string) => request<WikiIndex>(`/api/wikis/${enc(id)}/pages`),
   images: (id: string) => request<{ groups: ImageGroup[] }>(`/api/wikis/${enc(id)}/images`).then((r) => r.groups),
-  search: (id: string, q: string, signal?: AbortSignal) =>
-    request<{ hits: SearchHit[] }>(`/api/wikis/${enc(id)}/search?q=${enc(q)}`, { signal }).then((r) => r.hits),
-  answers: (id: string, page: string) =>
-    request<{ answers: Answer[] }>(`/api/wikis/${enc(id)}/answers?page=${enc(page)}`).then((r) => r.answers),
+  /** Where the wiki is kept in git (ADR-0008); the owner only. */
+  git: (id: string) => request<GitInfo>(`/api/wikis/${enc(id)}/git`),
+  /** A page's commits, and one version of it (`working` for what isn't committed yet). */
+  history: (id: string, path: string) => request<PageHistory>(`/api/wikis/${enc(id)}/history?path=${enc(path)}`),
+  version: (id: string, path: string, version: string) =>
+    request<PageVersionDetail>(`/api/wikis/${enc(id)}/history/${enc(version)}?path=${enc(path)}`),
+  /** Pages that match (narrowed by the filter), and the comments and answers that do. */
+  search: (id: string, q: string, filter: SearchFilter, signal?: AbortSignal) => {
+    const params = new URLSearchParams({ q });
+    for (const [k, v] of Object.entries(filter)) if (v) params.set(k, v);
+    return request<{ hits: SearchHit[]; notes: NoteHit[] }>(`/api/wikis/${enc(id)}/search?${params}`, { signal });
+  },
+  /** A page's answers, or (without a page) every answer in the wiki. */
+  answers: (id: string, page?: string) =>
+    request<{ answers: Answer[] }>(
+      `/api/wikis/${enc(id)}/answers${page === undefined ? "" : `?page=${enc(page)}`}`,
+    ).then((r) => r.answers),
   answer: (id: string, page: string, question: string, choice: string | null, body: string) =>
     request<Answer>(`/api/wikis/${enc(id)}/answers`, {
       method: "POST",
@@ -73,18 +92,35 @@ export const api = {
     request<{ threads: Thread[] }>(
       `/api/wikis/${enc(id)}/threads${page === undefined ? "" : `?page=${enc(page)}`}`,
     ).then((r) => r.threads),
-  createThread: (id: string, page: string, quote: Quote, body: string) =>
-    request<Thread>(`/api/wikis/${enc(id)}/threads`, { method: "POST", body: JSON.stringify({ page, quote, body }) }),
+  createThread: (id: string, page: string, quote: Quote, body: string, images: string[] = []) =>
+    request<Thread>(`/api/wikis/${enc(id)}/threads`, {
+      method: "POST",
+      body: JSON.stringify({ page, quote, body, images }),
+    }),
+  /** Uploads a picture for a comment; name the file it answers in the new thread. */
+  attach: (id: string, picture: Blob) => upload<{ file: string }>(`/api/wikis/${enc(id)}/attachments`, "POST", picture),
+  /** A comment's picture, smaller when `w` is given. */
+  attachmentUrl: (id: string, file: string, w?: number) =>
+    withBase(`/api/wikis/${enc(id)}/attachments/${enc(file)}${w ? `?w=${w}` : ""}`),
   reply: (id: string, thread: number, body: string) =>
     request<Thread>(`/api/wikis/${enc(id)}/threads/${thread}/messages`, {
       method: "POST",
       body: JSON.stringify({ body }),
     }),
+  /** Removes a thread: the host any, a guest their own. */
+  removeThread: (id: string, thread: number) =>
+    request<void>(`/api/wikis/${enc(id)}/threads/${thread}`, { method: "DELETE" }),
   setStatus: (id: string, thread: number, status: ThreadStatus) =>
     request<Thread>(`/api/wikis/${enc(id)}/threads/${thread}`, { method: "PATCH", body: JSON.stringify({ status }) }),
   /** The owner hides a guest's message or answer from guests and the inbox (ADR-0003), or shows it again. */
   hideMessage: (id: string, message: number, hidden: boolean) =>
     request<Thread>(`/api/wikis/${enc(id)}/messages/${message}`, { method: "PATCH", body: JSON.stringify({ hidden }) }),
+  /** Adds this viewer's reaction to a message, or takes it back. */
+  react: (id: string, message: number, emoji: ReactionEmoji, on: boolean) =>
+    request<Thread>(`/api/wikis/${enc(id)}/messages/${message}/reactions`, {
+      method: "POST",
+      body: JSON.stringify({ emoji, on }),
+    }),
   hideAnswer: (id: string, answer: number, hidden: boolean) =>
     request<Answer>(`/api/wikis/${enc(id)}/answers/${answer}`, { method: "PATCH", body: JSON.stringify({ hidden }) }),
   /** Share links (ADR-0003), for the owner's Share dialog. */

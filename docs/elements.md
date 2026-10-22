@@ -115,6 +115,9 @@ Short range, high damage.
 :::tab[Ranged]
 Long range, lower damage.
 :::
+:::tab[Suggestions]{tone="good"}
+A tab with a `tone` (`accent`, `good`, `warn`, `bad`) stands out in that color, its panel tinted to match.
+:::
 ::::
 
 ```md
@@ -122,7 +125,7 @@ Long range, lower damage.
 :::tab[Melee]
 …
 :::
-:::tab[Ranged]
+:::tab[Suggestions]{tone="good"}
 …
 :::
 ::::
@@ -172,6 +175,24 @@ questions:
     answer: "Nari, by the end of the month"
 ---
 ::question{id=q1}
+```
+
+## Suggestions
+
+::suggestion{id=s1}
+
+The agent's ideas for a page, in green: what to add or improve, where questions ask about what's there. The agent
+writes 3 to 6 after reviewing a page (within the wiki's `settings.json`), with the same fields as questions; people
+answer them the same way, and they collect under "Suggestions", below the questions.
+
+```md
+---
+suggestions:
+  - id: s1
+    text: "Add a weekly leaderboard so players come back?"
+    options: [Yes, Later, No]
+---
+::suggestion{id=s1}
 ```
 
 ## Related pages
@@ -294,6 +315,61 @@ A video or design played in place: YouTube, Vimeo and Figma links only. Quote th
 | Sword | 12 | Medium |
 | Dagger | 6 | Fast |
 | Hammer | 20 | Slow |
+
+## Data tables
+
+Wrap a table in `:::table` and people can sort it (click a column: up, down, back) and filter it. With six rows or
+more a filter box shows: words to find, or a column and a test, `damage>10`, `speed:fast`, `name!=sword`. `stats`
+adds a foot with the average, lowest and highest of each number column (or name them: `stats="sum, avg"`), over the
+rows shown.
+
+:::table[Weapons]{sort="-Damage" stats}
+| Weapon | Damage | Speed | Price |
+|---|---|---|---|
+| Sword | 12 | Medium | $40 |
+| Dagger | 6 | Fast | $15 |
+| Hammer | 20 | Slow | $55 |
+| Spear | 14 | Medium | $35 |
+| Bow | 9 | Fast | $45 |
+| Staff | 4 | Slow | $1.2k |
+:::
+
+A table can also fill itself, from a data file in the wiki (CSV, TSV, or JSON as a list of objects) or from the
+wiki's pages: one row per page, with the page's `infobox` rows and its own frontmatter keys (`hp: 20`) as columns.
+
+```md
+::table[Mobs]{src="/tables/mobs.csv" sort="-HP"}
+::table[Every mob]{pages="type:Mob" columns="Page, HP, Damage, Biome" stats}
+::table{pages="in:mobs, tag:boss"}
+```
+
+`pages` takes terms joined by commas, all of which must match: `type:Mob`, `tag:boss`, `status:active`, `in:mobs`
+(a folder and below), or any field the pages have (`biome:forest`). `columns` picks and orders them (`Page` is the
+linked page). The page holding the table isn't listed in it.
+
+## Math
+
+Formulas are typeset with KaTeX: `$$E = mc^2$$` inside a sentence gives $$E = mc^2$$, and `$$` on lines of their own
+make a block. A single `$` is just a dollar sign, so $5 stays $5.
+
+$$
+\text{damage} = \max\left(1,\ \text{attack} \times \frac{100}{100 + \text{armor}}\right)
+$$
+
+A ```` ```math ```` fence works too. A formula KaTeX can't read shows in red and `pnpm wiki check` reports it.
+
+## Diagrams
+
+A ```` ```mermaid ```` fence is drawn as a diagram, in the wiki's colors: flowcharts, sequence, state, class and ER
+diagrams, gantt charts, timelines, mind maps and pies. A wide one scrolls sideways.
+
+```mermaid
+flowchart LR
+  idle[Idle] -->|sees player| chase[Chase]
+  chase -->|in range| attack[Attack]
+  attack --> chase
+  chase -->|lost them| idle
+```
 
 ## Code
 

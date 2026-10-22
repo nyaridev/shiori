@@ -1,4 +1,5 @@
-/* The home page: the hero (HomeHero.tsx), titled boxes in a grid, and the live blocks (blocks.tsx). */
+/* The home page: titled boxes in a grid (in columns on the home page itself), the live blocks (blocks.tsx), and the
+   banner (HomeHero.tsx). */
 
 /* Boxes */
 .sh-boxes {
@@ -90,7 +91,7 @@
   text-decoration: none;
 }
 .sh-block-link:hover {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .sh-block-name {
   overflow-wrap: anywhere;
@@ -146,7 +147,7 @@ a.sh-block-page:hover {
   align-items: center;
   gap: 4px;
   margin-top: var(--s-2);
-  color: var(--accent);
+  color: var(--accent-ink);
   font-size: var(--t-xs);
   font-weight: 650;
   text-decoration: none;
@@ -202,39 +203,21 @@ a.sh-block-page:hover {
   }
 }
 
-/* The hero: the wiki's picture behind its name, where it stands, its numbers and where to go first. */
-.sh-home-hero {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: var(--s-4);
-  padding: var(--s-7) var(--s-5) calc(var(--s-7) + var(--s-4));
-  overflow: hidden;
-  /* A blurred picture can paint past an overflow edge; this clips it for good. */
-  clip-path: inset(0);
-  isolation: isolate;
-  text-align: center;
+/* On the home page the boxes flow down columns, like a pinboard, in the page's order; the wide ones go across the end. */
+.sh-boxes[data-flow] {
+  display: block;
+  columns: 3 280px;
+  column-gap: var(--s-4);
 }
-.sh-home-backdrop {
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: blur(2px) saturate(1.05);
-  opacity: 0.55;
-  scale: 1.03;
+.sh-boxes[data-flow] .sh-box {
+  margin-bottom: var(--s-4);
+  break-inside: avoid;
 }
-.sh-home-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(70% 60% at 50% 40%, color-mix(in oklab, var(--bg) 35%, transparent), transparent),
-    linear-gradient(180deg, color-mix(in oklab, var(--bg) 30%, transparent) 0%, var(--bg) 88%);
+.sh-boxes[data-flow] .sh-box[data-wide] {
+  column-span: all;
 }
+
+/* The banner's parts: where it stands, the name, the numbers, the ways in. */
 .sh-home-pill {
   display: inline-flex;
   align-items: center;
@@ -277,12 +260,6 @@ a.sh-block-page:hover {
   line-height: 1.45;
   text-wrap: balance;
 }
-.sh-home-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 170px));
-  gap: var(--s-3);
-  margin-top: var(--s-2);
-}
 .sh-home-stat {
   display: grid;
   gap: 2px;
@@ -323,7 +300,7 @@ a.sh-home-stat:hover {
   height: 38px;
   padding: 0 var(--s-4);
   border: var(--bw) solid var(--border-strong);
-  border-radius: 999px;
+  border-radius: var(--r-md);
   background: color-mix(in oklab, var(--surface) 70%, transparent);
   backdrop-filter: blur(8px);
   color: var(--text);
@@ -348,10 +325,166 @@ a.sh-home-stat:hover {
   box-shadow: var(--focus);
 }
 @media (max-width: 640px) {
-  .sh-home-stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
   .sh-home-stat {
     padding: var(--s-2);
   }
+}
+/* The banner (HomeHero.tsx): the picture framed, the name on it, the ways in on a bar under it. */
+.sh-hero-banner {
+  margin-bottom: var(--s-5);
+  overflow: hidden;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+.sh-hero-banner-art {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--s-5);
+  min-height: 280px;
+  padding: var(--s-6);
+  isolation: isolate;
+}
+.sh-hero-banner-art > img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sh-hero-banner-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--bg) 10%, transparent) 0%,
+    color-mix(in oklab, var(--bg) 88%, transparent) 100%
+  );
+}
+.sh-hero-banner-text {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-2);
+}
+.sh-hero-banner .sh-home-title {
+  justify-content: flex-start;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+.sh-hero-banner .sh-home-summary {
+  font-size: var(--t-lg);
+}
+.sh-hero-banner-stats {
+  display: flex;
+  gap: var(--s-2);
+}
+.sh-hero-banner-stats .sh-home-stat {
+  padding: var(--s-2) var(--s-3);
+  text-align: right;
+}
+.sh-hero-banner-stats .sh-home-stat-value {
+  font-size: var(--t-lg);
+}
+.sh-hero-banner-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border-top: var(--bw) solid var(--border);
+  background: color-mix(in oklab, var(--accent) 8%, var(--raised));
+}
+.sh-hero-banner-bar .sh-home-actions {
+  justify-content: flex-start;
+  margin: 0;
+}
+.sh-hero-banner-bar .sh-home-action {
+  height: 34px;
+  backdrop-filter: none;
+}
+
+@media (max-width: 860px) {
+  .sh-hero-banner-art {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .sh-hero-banner-art {
+    min-height: 220px;
+    padding: var(--s-4);
+  }
+  .sh-hero-banner-stats {
+    flex-wrap: wrap;
+  }
+}
+/* The bar's right end: page problems, and where the wiki is kept in git (GitBadge.tsx, ADR-0008). */
+.sh-hero-banner-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  margin-left: auto;
+}
+.sh-git-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 30px;
+  padding: 0 var(--s-3);
+  border: var(--bw) solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.sh-git-badge .sh-glyph {
+  width: 16px;
+  height: 16px;
+}
+a.sh-git-badge:hover {
+  background: var(--raised);
+}
+.sh-git-badge:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-git-badge[data-off] {
+  border-style: dashed;
+  color: var(--muted);
+}
+.sh-git-badge[data-off] .sh-glyph {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+.sh-git-name {
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sh-git-changes {
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tone-warn) 22%, transparent);
+  color: var(--tone-warn);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.sh-home-pill-link {
+  color: inherit;
+  text-decoration: none;
+}
+.sh-home-pill-link:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }

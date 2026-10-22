@@ -23,6 +23,33 @@ export interface PageFile {
   icon?: string;
   summary?: string;
   status?: PageStatus;
+  type?: string;
+  tags?: string[];
+  /** The page's own facts, for tables of pages (`::table{pages}`): its infobox rows and frontmatter of its own. */
+  fields?: Record<string, string>;
+}
+
+/** Frontmatter keys Shiori reads; any other key is one of the page's own fields. */
+const KNOWN_KEYS = new Set(Object.keys(frontmatterSchema.shape));
+
+/** A field as a table shows it: lists joined, days as written, nested values left out. */
+function fieldText(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (Array.isArray(value)) return value.every((v) => typeof v !== "object") ? value.join(", ") : null;
+  if (typeof value === "object") return null;
+  return String(value);
+}
+
+function fieldsOf(fm: Frontmatter): Record<string, string> {
+  const out: Record<string, string> = {};
+  const put = (key: string, value: unknown) => {
+    const text = fieldText(value);
+    if (text !== null && !(key in out)) out[key] = text;
+  };
+  for (const [key, value] of Object.entries(fm.infobox ?? {})) put(key, value);
+  for (const [key, value] of Object.entries(fm)) if (!KNOWN_KEYS.has(key)) put(key, value);
+  return out;
 }
 
 /** About 220 words a minute, never under one. */
@@ -70,8 +97,9 @@ export const pathOf = (rel: string) => rel.replace(/\.md$/, "").replace(/(^|\/)i
 
 const humanize = (s: string) => s.replace(/[-_]+/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 
-function readPage(wiki: Wiki, rel: string) {
-  const split = splitFrontmatter(readFileSync(join(wiki.root, "pages", rel), "utf8"));
+/** A page file read and split; `text` instead of the file is an older version of it (ADR-0008). */
+function readPage(wiki: Wiki, rel: string, text?: string) {
+  const split = splitFrontmatter(text ?? readFileSync(join(wiki.root, "pages", rel), "utf8"));
   const parsed = frontmatterSchema.safeParse(split.data);
   const problems = split.error ? [split.error] : [];
   if (!parsed.success) problems.push(...issues(parsed.error).map((i) => `frontmatter: ${i}`));
@@ -98,6 +126,9 @@ export function listPages(wiki: Wiki): PageFile[] {
       icon: iconOf(wiki, posix.dirname(rel).replace(/^\.$/, ""), fm.icon),
       summary: fm.summary,
       status: fm.status,
+      type: fm.type,
+      tags: fm.tags ?? [],
+      fields: fieldsOf(fm),
     };
   });
 }
@@ -182,15 +213,17 @@ function findNode(nav: NavNode[], path: string): NavNode | undefined {
   return undefined;
 }
 
+/** A page rendered with the wiki around it. `text` renders an older version of its file instead (ADR-0008). */
 export function renderPage(
   wiki: Wiki,
   pages: PageFile[],
   path: string,
   layouts: Layouts = loadLayouts(wiki),
+  text?: string,
 ): PageData | null {
   const page = pages.find((p) => p.path === path);
   if (!page) return null;
-  const { split, fm, problems, title } = readPage(wiki, page.file.slice("pages/".length));
+  const { split, fm, problems, title } = readPage(wiki, page.file.slice("pages/".length), text);
   const byPath = new Map(pages.map((p) => [p.path, p]));
   const link = (at: string, fallback?: string): PageLink => {
     const p = byPath.get(at);
@@ -215,6 +248,18 @@ export function renderPage(
     fileExists: (rel) => {
       const full = inside(wiki.root, rel);
       return full !== null && existsSync(full);
+    },
+    tables: {
+      readData: (rel) => {
+        const full = inside(wiki.root, rel);
+        try {
+          return full === null ? null : readFileSync(full, "utf8");
+        } catch {
+          return null;
+        }
+      },
+      // A table of pages never lists the page it sits on.
+      pages: () => pages.filter((p) => p.path !== path),
     },
   };
   const rendered = renderMarkdown(split.body, ctx, split.bodyLine - 1);
@@ -264,7 +309,8 @@ export function renderPage(
   visit(rendered.hast, "element", (el) => {
     if (el.tagName === "sh-related") relatedPlaced = true;
     if (el.tagName === "sh-children") childrenPlaced = true;
-    if (el.tagName === "sh-question" && el.properties.id) placedQuestions.push(String(el.properties.id));
+    if ((el.tagName === "sh-question" || el.tagName === "sh-suggestion") && el.properties.id)
+      placedQuestions.push(String(el.properties.id));
   });
   // A layout (ADR-0006): one the wiki has and that's valid, else the plain page and a problem.
   let layout: PageData["layout"];
@@ -288,13 +334,30 @@ export function renderPage(
   const [collection, designId] = fm.design?.split("/") ?? [];
   if (collection && !wiki.manifest.collections[collection])
     problems.push(`frontmatter: design: there's no collection "${collection}" in wiki.json`);
-  const questions = (fm.questions ?? []).map((q) => ({ ...q, options: q.options ?? [] }));
+  // Questions ask about what's there; suggestions (the agent's, from reviewing the page) propose what to add or improve.
+  // Both are answered the same way, so their ids share one namespace.
+  const questions = [
+    ...(fm.questions ?? []).map((q) => ({ ...q, kind: "question" as const, options: q.options ?? [] })),
+    ...(fm.suggestions ?? []).map((q) => ({ ...q, kind: "suggestion" as const, options: q.options ?? [] })),
+  ];
   const ids = questions.map((q) => q.id);
   for (const id of new Set(ids.filter((id, i) => ids.indexOf(id) !== i))) {
-    problems.push(`frontmatter: questions: "${id}" is used twice`);
+    problems.push(`frontmatter: questions and suggestions: "${id}" is used twice`);
   }
   for (const id of placedQuestions) {
-    if (!ids.includes(id)) problems.push(`::question{id=${id}}: there's no question "${id}" in the frontmatter`);
+    if (!ids.includes(id))
+      problems.push(`::question{id=${id}}: there's no question or suggestion "${id}" in the frontmatter`);
+  }
+  // Each wiki's settings.json caps how many are open at once on a page.
+  for (const [kind, max] of [
+    ["question", wiki.settings.maxQuestions],
+    ["suggestion", wiki.settings.maxSuggestions],
+  ] as const) {
+    const open = questions.filter((q) => q.kind === kind && q.status === "open").length;
+    if (open > max)
+      problems.push(
+        `frontmatter: ${open} open ${kind}s, more than the ${max} settings.json allows; decide or drop some`,
+      );
   }
 
   return {

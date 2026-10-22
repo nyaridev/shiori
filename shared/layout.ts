@@ -19,8 +19,10 @@ export const blockSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("infobox"), ...title }),
   /** The page's pictures, as a gallery. */
   z.strictObject({ type: z.literal("gallery"), ...title }),
-  /** The page's open decisions (`questions:`). */
+  /** The page's questions (`questions:`). */
   z.strictObject({ type: z.literal("questions"), ...title }),
+  /** The agent's suggestions for the page (`suggestions:`), in green. */
+  z.strictObject({ type: z.literal("suggestions"), ...title }),
   /** The pages from `related:`. */
   z.strictObject({ type: z.literal("related"), ...title }),
   /** The pages under this one. */
@@ -72,10 +74,26 @@ export const layoutSchema = z
   });
 export type Layout = z.infer<typeof layoutSchema>;
 
-/** The CSS grid a layout makes: `grid-template-areas` and how many columns. Names are checked, so this is safe. */
-export function gridOf(layout: Layout): { areas: string; columns: number } {
+/** A column that holds only fact boxes keeps the infobox's width on every page; the others share the rest. */
+export const INFOBOX_WIDTH = "300px";
+
+/**
+ * The CSS grid for a layout: its areas (names are checked, so this is safe), and its columns. Fact boxes (`infobox`)
+ * are as wide in a layout as beside a plain page's article, so a column of them is fixed and the others share what's
+ * left.
+ */
+export function gridOf(layout: Layout): { areas: string; columns: string } {
+  const width = layout.areas[0].length;
+  // Rows where an area spans several columns (a full-width block) don't decide a column's width.
+  const own = (row: string[], c: number) => row.filter((a) => a === row[c]).length === 1;
+  const columns = Array.from({ length: width }, (_, c) => {
+    const decided = layout.areas.filter((row) => own(row, c));
+    return decided.length && decided.every((row) => layout.blocks[row[c]]?.type === "infobox")
+      ? INFOBOX_WIDTH
+      : "minmax(0, 1fr)";
+  });
   return {
     areas: layout.areas.map((row) => `"${row.join(" ")}"`).join(" "),
-    columns: layout.areas[0].length,
+    columns: columns.join(" "),
   };
 }

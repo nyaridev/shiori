@@ -1,0 +1,64 @@
+/* Reactions under a message (Reactions.tsx). */
+.sh-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1);
+  margin-top: var(--s-1);
+}
+.sh-reaction,
+.sh-reaction-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 7px;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: var(--t-xs);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color var(--fast) var(--ease),
+    background var(--fast) var(--ease);
+}
+.sh-reaction:hover:not(:disabled),
+.sh-reaction-pick:hover {
+  border-color: var(--border-strong);
+  background: var(--raised);
+}
+.sh-reaction[aria-pressed="true"],
+.sh-reaction-pick[aria-pressed="true"] {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.sh-reaction:disabled {
+  cursor: default;
+}
+.sh-reaction-count {
+  font-weight: 650;
+}
+.sh-reaction-add {
+  color: var(--muted);
+}
+.sh-reaction-picker {
+  display: inline-flex;
+  gap: 2px;
+  margin: 0;
+  padding: 2px;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--raised);
+  box-shadow: var(--shadow-1);
+}
+.sh-reaction-pick {
+  justify-content: center;
+  width: 26px;
+  padding: 0;
+  border-color: transparent;
+  background: none;
+  font-size: var(--t-sm);
+}

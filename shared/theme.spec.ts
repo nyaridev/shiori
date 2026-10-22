@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contrast, DEFAULT_THEME, PALETTES, themeColors, themeSchema, themeVars } from "./theme.ts";
+import { contrast, DEFAULT_THEME, INK, PALETTES, themeColors, themeSchema, themeVars } from "./theme.ts";
 
 describe("themes", () => {
   it("fills every token from the palette and presets", () => {
@@ -62,5 +62,55 @@ describe("the viewer's day/night switch", () => {
     const blue = themeSchema.parse({ colors: { accent: "#1d4ed8" } });
     expect(themeColors(blue, "light").accent).toBe("#1d4ed8");
     expect(themeColors(DEFAULT_THEME, "light")).toEqual(PALETTES.light);
+  });
+});
+
+describe("colors that must read", () => {
+  // Accents across the range wikis use: pale, mid and dark, warm and cool.
+  const accents = ["#e8b86d", "#4f8a6f", "#b5651d", "#c49be0", "#6fb3d4", "#1d4ed8", "#d4c46a", "#ffffff"];
+  const cases = accents.flatMap((accent) =>
+    (["dark", "light"] as const).flatMap((own) =>
+      (["dark", "light"] as const).map((mode) => ({
+        theme: themeSchema.parse({ mode: own, colors: { accent } }),
+        mode,
+      })),
+    ),
+  );
+
+  it("gives links, statuses and code text a shade that reads on every background", () => {
+    for (const { theme, mode } of cases) {
+      const vars = themeVars(theme, mode);
+      for (const ink of ["--accent-ink", "--tone-good", "--tone-warn", "--tone-bad"])
+        for (const bg of ["--bg", "--surface", "--raised"])
+          expect(contrast(vars[ink], vars[bg]), `${ink} on ${bg}`).toBeGreaterThanOrEqual(INK - 0.05);
+    }
+  });
+
+  it("puts text on the accent that reads, in the theme's own mode too", () => {
+    for (const { theme, mode } of cases) {
+      const { accent, accentText } = themeColors(theme, mode);
+      expect(contrast(accentText, accent)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("puts light text on a light page's buttons and dark text on a dark page's", () => {
+    for (const { theme, mode } of cases) {
+      const { accent, accentText } = themeColors(theme, mode);
+      expect(accentText).toBe(PALETTES[mode].accentText);
+      expect(contrast(accentText, accent)).toBeGreaterThanOrEqual(INK - 0.05);
+    }
+  });
+
+  it("keeps the palettes' own text on their accent", () => {
+    for (const mode of ["dark", "light"] as const)
+      expect(contrast(PALETTES[mode].accentText, PALETTES[mode].accent)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("keeps the small dots bright on a light page, where the status text goes dark", () => {
+    const light = themeVars({ ...DEFAULT_THEME, mode: "light" });
+    for (const tone of ["good", "warn"]) {
+      expect(light[`--dot-${tone}`]).not.toBe(light[`--tone-${tone}`]);
+      expect(contrast(light[`--dot-${tone}`], "#000000")).toBeGreaterThan(contrast(light[`--tone-${tone}`], "#000000"));
+    }
   });
 });

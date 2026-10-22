@@ -2,7 +2,15 @@
 // recent changes, open questions and tasks, the latest discussions, and the directory of sections. Each wiki's home
 // places the ones it wants, so every wiki's front page is its own. Outside a wiki (the /dev/ui reference) the blocks
 // say what they'd show.
-import type { ReactNode } from "react";
+import {
+  Children,
+  cloneElement,
+  createContext,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+  useContext,
+} from "react";
 import { Link } from "react-router";
 import type { Thread } from "../../../shared/api.ts";
 import { DesignsGallery } from "../../designs/DesignsGallery.tsx";
@@ -33,17 +41,43 @@ function More({ wikiId, route, children }: Props<{ wikiId: string; route: string
   );
 }
 
+/** The home page's boxes flow down columns instead of the grid the page wrote (PageArea says which page this is). */
+export const HomeBoxesContext = createContext(false);
+
+/** A box that needs the whole width: the directory, a designs gallery. */
+const isWide = (box: ReactElement<{ children?: ReactNode }>) =>
+  Children.toArray(box.props.children).some((c) => isValidElement(c) && WIDE.has(c.type));
+
 export function BoxesEl({ columns, children }: Props<{ columns?: string }>) {
+  const home = useContext(HomeBoxesContext);
+  if (!home)
+    return (
+      <div className="sh-boxes" data-columns={columns}>
+        {children}
+      </div>
+    );
+  // The home page: every box in the page's order, flowing down columns like a pinboard; the wide ones across the end.
+  const boxes = Children.toArray(children).filter((b): b is ReactElement<BoxProps> => isValidElement(b));
   return (
-    <div className="sh-boxes" data-columns={columns}>
-      {children}
+    <div className="sh-boxes" data-flow="">
+      {boxes.filter((b) => !isWide(b))}
+      {boxes.filter(isWide).map((b) => cloneElement(b, { wide: true }))}
     </div>
   );
 }
 
-export function BoxEl({ title, icon, span, children }: Props<{ title?: string; icon?: string; span?: string }>) {
+interface BoxProps {
+  title?: string;
+  icon?: string;
+  span?: string;
+  /** Across every column of the home page's flow. */
+  wide?: boolean;
+  children?: ReactNode;
+}
+
+export function BoxEl({ title, icon, span, wide, children }: BoxProps) {
   return (
-    <section className="sh-box" data-span={span}>
+    <section className="sh-box" data-span={span} data-wide={wide || undefined}>
       {title && (
         <h2 className="sh-box-title">
           <PageIcon icon={icon} className="sh-box-icon" />
@@ -92,7 +126,7 @@ export function OpenQuestionsEl({ count }: Props<{ count?: string }>) {
   if (!wiki) return <Placeholder>The decisions the pages ask for, newest pages first, show here.</Placeholder>;
   const updated = (path: string) => wiki.byPath.get(path)?.updatedAt ?? "";
   const open = wiki.index.questions
-    .filter((q) => q.status === "open")
+    .filter((q) => q.status === "open" && q.kind === "question")
     .sort((a, b) => updated(b.page.path).localeCompare(updated(a.page.path)))
     .slice(0, howMany(count, 5));
   if (!open.length) return <Empty>Nothing to decide right now.</Empty>;
@@ -250,3 +284,6 @@ export function DirectoryEl() {
     </div>
   );
 }
+
+/** The blocks that need the whole width (BoxesEl). */
+const WIDE = new Set<unknown>([DirectoryEl, DesignsEl]);

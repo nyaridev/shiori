@@ -26,11 +26,119 @@
 .sh-prose hr {
   display: flow-root;
 }
+/* Sections: the rule under each starts with a short stroke of the accent. */
 .sh-prose h2 {
   margin: var(--s-7) 0 var(--s-3);
   padding-bottom: var(--s-2);
   border-bottom: var(--bw) solid var(--border);
+  background: linear-gradient(var(--accent), var(--accent)) left bottom / 36px 2px no-repeat;
   font-size: var(--t-xl);
+}
+/* On a plain page each `##` section (Section.tsx) reads like a wiki's: the heading over a thin line, with the
+   section's tools at the line's end, and the text under it. No box: a section folds away under its heading. Beside a
+   floating infobox it stops at the infobox's edge. */
+.sh-prose .sh-section {
+  display: flow-root;
+  margin: var(--s-6) 0 0;
+}
+/* Wide content (tables, tiles, galleries) would be squeezed beside the infobox: its section starts below it. */
+.sh-prose .sh-section:has(table, .sh-stats, .sh-cards, .sh-gallery, .sh-compare, .sh-columns) {
+  clear: both;
+}
+.sh-section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 6px 0;
+  border-bottom: var(--bw) solid var(--border);
+}
+.sh-prose .sh-section-head > h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--t-xl);
+}
+.sh-section-tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+.sh-section-tools .sh-badge {
+  margin-right: var(--s-1);
+}
+.sh-section-tool {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.sh-section-tool:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.sh-section-tool:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-section-fold-button svg {
+  transition: rotate 200ms var(--ease);
+}
+.sh-section[data-folded] .sh-section-fold-button svg {
+  rotate: -90deg;
+}
+/* Folding slides the body shut: its row shrinks from its height to nothing. */
+.sh-section-fold {
+  display: grid;
+  /* As wide as the section, whatever is inside: a wide diagram or code block scrolls in its own box. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 220ms var(--ease),
+    opacity 220ms var(--ease);
+}
+.sh-section-fold > div {
+  min-height: 0;
+  /* Room for focus rings at the edges; folded, the body is hidden anyway. */
+  overflow: clip;
+  overflow-clip-margin: 6px;
+}
+.sh-section[data-folded] .sh-section-fold {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 220ms var(--ease),
+    opacity 220ms var(--ease),
+    visibility 0s 220ms;
+}
+/* Changed since the viewer's last visit (seen.ts): the line under the heading turns accent. */
+.sh-section[data-changed] .sh-section-head {
+  border-bottom-color: var(--accent-line);
+}
+.sh-section-body {
+  padding-top: var(--s-2);
+}
+.sh-section-body > :first-child {
+  margin-top: var(--s-2);
+}
+.sh-section-body > :last-child {
+  margin-bottom: 0;
+}
+.sh-section-body:empty {
+  display: none;
 }
 .sh-prose h3 {
   margin: var(--s-6) 0 var(--s-2);
@@ -67,7 +175,7 @@
   margin-left: -1.4em;
 }
 .sh-link {
-  color: var(--accent);
+  color: var(--accent-ink);
   text-decoration: underline;
   text-decoration-color: var(--accent-line);
   text-underline-offset: 3px;
@@ -150,6 +258,15 @@
   max-width: 100%;
   border-radius: var(--r-md);
 }
+.sh-table-wrap {
+  margin: var(--s-3) 0;
+  overflow-x: auto;
+  border-radius: var(--r-md);
+}
+.sh-table-wrap:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
 .sh-prose table {
   width: 100%;
   border-collapse: separate;
@@ -158,6 +275,9 @@
   border-radius: var(--r-md);
   overflow: hidden;
   font-size: var(--t-sm);
+}
+.sh-prose .sh-table-wrap > table {
+  margin: 0;
 }
 .sh-prose th,
 .sh-prose td {
@@ -178,15 +298,19 @@
 }
 
 /* Task box */
+/* A checklist's box: an outline that stands out on any theme (as a field's does), a little lighter than the page
+   inside; done, filled with the accent and a bold tick (CheckMark). */
 .sh-task {
   display: inline-grid;
+  flex: none;
   place-items: center;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   margin-right: var(--s-2);
-  vertical-align: -0.15em;
-  border: var(--bw) solid var(--border-strong);
-  border-radius: calc(var(--r-sm) - 1px);
+  vertical-align: -0.2em;
+  border: 1.5px solid var(--border-field);
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--text) 6%, var(--surface));
   color: var(--accent-text);
 }
 .sh-task[data-checked] {

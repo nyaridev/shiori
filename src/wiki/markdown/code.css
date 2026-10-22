@@ -3,15 +3,15 @@
 .sh-code-block {
   --code-foreground: var(--text);
   --code-background: var(--surface);
-  --code-token-keyword: var(--accent);
-  --code-token-function: color-mix(in oklab, var(--accent) 45%, var(--text));
+  --code-token-keyword: var(--accent-ink);
+  --code-token-function: color-mix(in oklab, var(--accent-ink) 45%, var(--text));
   --code-token-string: var(--tone-good);
   --code-token-string-expression: var(--tone-good);
   --code-token-constant: var(--tone-warn);
   --code-token-parameter: var(--text-soft);
   --code-token-comment: var(--muted);
   --code-token-punctuation: color-mix(in oklab, var(--text) 55%, var(--muted));
-  --code-token-link: var(--accent);
+  --code-token-link: var(--accent-ink);
   margin: var(--s-4) 0;
   overflow: hidden;
   border: var(--bw) solid var(--border);
@@ -43,6 +43,6 @@
   color: var(--code-foreground);
 }
 .sh-prose .sh-code-block pre.sh-code:focus-visible {
-  outline: 2px solid var(--focus);
+  outline: 2px solid var(--accent-line);
   outline-offset: -2px;
 }

@@ -4,6 +4,8 @@ import { Link } from "react-router";
 import { api } from "../lib/api.ts";
 import { picture } from "../lib/base.ts";
 import { useResource } from "../lib/useResource.ts";
+import { specialHref } from "../wiki/PageHead.tsx";
+import { PageIcon } from "../wiki/PageIcon.tsx";
 import { designHref } from "./DesignsGallery.tsx";
 import "./designs.css";
 
@@ -11,7 +13,16 @@ export function DesignBlock({ wikiId, design }: { wikiId: string; design?: { col
   const d = useResource(design ? `design:${wikiId}:${design.collection}:${design.id}` : null, () =>
     api.design(wikiId, design?.collection ?? "", design?.id ?? ""),
   );
-  if (!design) return <p className="sh-block-empty">This page names no design (`design:` in its frontmatter).</p>;
+  if (!design)
+    return (
+      <Link to={specialHref(wikiId, "designs")} className="sh-design-block-none">
+        <PageIcon icon="pencil" className="sh-design-block-none-icon" />
+        <span>
+          <strong>No sketch yet</strong>
+          <span>Draw one in Designs; once an agent links it here, it shows in this panel.</span>
+        </span>
+      </Link>
+    );
   if (d.error) return <p className="sh-block-empty">The design “{design.id}” isn't there any more.</p>;
   if (!d.data) return null;
   return (

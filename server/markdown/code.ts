@@ -72,14 +72,32 @@ function langOf(code: Element): string | null {
 const textIn = (node: ElementContent): string =>
   node.type === "text" ? node.value : "children" in node ? node.children.map(textIn).join("") : "";
 
-/** rehype plugin: every fenced block becomes `<pre class="sh-code" data-lang>`, colored when its language is known. */
-export function rehypeCode() {
+/** Fences drawn as diagrams, by the app with Mermaid, instead of shown as code. */
+const DIAGRAMS = new Set(["mermaid"]);
+
+/**
+ * rehype plugin: every fenced block becomes `<pre class="sh-code" data-lang>`, colored when its language is known.
+ * A ```mermaid fence becomes `<sh-diagram>` with its source, which the app draws in the wiki's colors.
+ */
+export function rehypeCode(problems: string[] = [], lineOffset = 0) {
   return (tree: Root) => {
     visit(tree, "element", (node, index, parent) => {
       if (node.tagName !== "pre" || !parent || index === undefined) return;
       const code = node.children.find((c): c is Element => c.type === "element" && c.tagName === "code");
       if (!code) return;
       const lang = langOf(code);
+      if (lang && DIAGRAMS.has(lang)) {
+        const source = textIn(code).trim();
+        if (!source)
+          problems.push(`line ${(node.position?.start.line ?? 0) + lineOffset}: diagram: the block is empty`);
+        parent.children[index] = {
+          type: "element",
+          tagName: "sh-diagram",
+          properties: {},
+          children: [{ type: "text", value: source }],
+        };
+        return;
+      }
       const props = { className: ["sh-code"], dataLang: lang ?? undefined };
       const known = lang && shiki().getLoadedLanguages().includes(lang);
       if (!known) {

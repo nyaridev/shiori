@@ -19,6 +19,16 @@ questions:
     text: "How often do we share progress?"
     status: resolved
     answer: "Once a week, every Friday"
+suggestions:
+  - id: weekly-review
+    text: "Add a short weekly review to this page: what moved, what's stuck, what's next?"
+    options: [Yes, Later, No]
+  - id: owners
+    text: "Give each item in \"This week\" an owner, so it's clear who picks it up?"
+    options: [Yes, No]
+  - id: risk-levels
+    text: "Rate each risk as low, medium or high, so the big ones stand out?"
+    options: [Yes, Later, No]
 ---
 
 The plan has two parts: :page[Goals] say what success means, and the :page[Roadmap] puts the work on a

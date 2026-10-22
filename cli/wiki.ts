@@ -34,7 +34,7 @@ const HELP = `Shiori wiki CLI
   pnpm wiki rename <id> <page> <new path> [--dry-run]
                                                    Move a page (or a section and everything under it), fix the
                                                    links to and from it, and move its comments and answers
-  pnpm wiki inbox [id]                             Open comments and answers to open questions, waiting for an agent
+  pnpm wiki inbox [id]                             Open comments, and answers to open questions and suggestions
   pnpm wiki threads <id> [--all]                   All open (or all) threads of a wiki
   pnpm wiki reply <id> <thread> "message"          Answer or ask back; the thread stays open
   pnpm wiki resolve <id> <thread> [--note "…"] [--wontfix]
@@ -104,12 +104,15 @@ const GUEST_DESIGNS =
 
 function printThread(wiki: Wiki, t: Thread) {
   console.log(`\n#${t.id} [${t.status}] ${wiki.id} › ${t.page || "(home)"}  pages/${t.page || "index"}.md`);
-  if (isPageComment(t.quote)) console.log("  on:    the whole page");
+  if (isPageComment(t.quote)) console.log("  on:    the whole page (a change request)");
   else console.log(`  quote: …${short(t.quote.prefix, 32)}«${t.quote.exact}»${short(t.quote.suffix, 32)}…`);
   for (const m of t.messages) {
     // Hidden by the owner (ADR-0003): `threads` lists it, marked; the inbox leaves it out.
     const tag = m.hidden ? " (hidden by the owner)" : "";
     console.log(`  ${who(m)}${tag}: ${m.body.replace(/\n/g, "\n         ")}`);
+    // Pictures attached to it, to open and look at.
+    for (const f of m.images ?? [])
+      console.log(`         picture: ${slashes(join(wiki.root, "data", "attachments", f))}`);
   }
 }
 
@@ -132,8 +135,9 @@ function openAnswers(wiki: Wiki): { page: PageData; question: Question; answers:
 
 function printAnswers(wiki: Wiki, { page, question, answers }: ReturnType<typeof openAnswers>[number]) {
   console.log(`
-? ${wiki.id} › ${page.path || "(home)"}  ${page.file}  questions: ${question.id}`);
-  console.log(`  question: ${question.text}${question.options.length ? `  [${question.options.join(" / ")}]` : ""}`);
+? ${wiki.id} › ${page.path || "(home)"}  ${page.file}  ${question.kind}s: ${question.id}`);
+  const label = question.kind === "suggestion" ? "suggest: " : "question:";
+  console.log(`  ${label} ${question.text}${question.options.length ? `  [${question.options.join(" / ")}]` : ""}`);
   for (const a of answers) {
     const when = a.createdAt.slice(0, 16).replace("T", " ");
     const by = a.author === "guest" ? `  by guest "${a.name}"` : "";
@@ -243,8 +247,9 @@ const commands: Record<string, () => void> = {
       );
     if (q) {
       console.log(
-        `\n${q} question${q === 1 ? "" : "s"} answered. Decide, then write it into the page's frontmatter:` +
-          " that question's `status: resolved` and `answer: …`.",
+        `\n${q} question${q === 1 ? "" : "s"} or suggestion${q === 1 ? "" : "s"} answered. Decide, then write it into` +
+          " the page's frontmatter: its `status: resolved`, `answer: …` and `decided: <today>`. For an accepted" +
+          " suggestion, make the change on the page too.",
       );
     }
   },

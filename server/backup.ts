@@ -4,6 +4,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
+import { REACTIONS } from "../shared/api.ts";
 import { listAnswers } from "./answers.ts";
 import { slashes } from "./paths.ts";
 import { authorColumns, dbFor, fillUids, listThreads, type Writer } from "./threads.ts";
@@ -27,6 +28,7 @@ export const backupSchema = z.object({
       status: z.enum(["open", "resolved", "wontfix"]),
       createdAt: z.string(),
       resolvedAt: z.string().nullable(),
+      removedAt: z.string().optional(),
       ...syncFields,
       messages: z.array(
         z.object({
@@ -35,6 +37,21 @@ export const backupSchema = z.object({
           ...guestFields,
           body: z.string(),
           createdAt: z.string(),
+          images: z.array(z.string()).optional(),
+          reactions: z
+            .array(
+              z.object({
+                emoji: z.enum(REACTIONS),
+                by: z.array(
+                  z.object({
+                    author: z.enum(["user", "guest"]),
+                    name: z.string().optional(),
+                    guestId: z.string().optional(),
+                  }),
+                ),
+              }),
+            )
+            .optional(),
           ...syncFields,
         }),
       ),
@@ -63,7 +80,7 @@ export function exportData(root: string): Backup {
   return {
     schema: BACKUP_SCHEMA,
     exportedAt: new Date().toISOString(),
-    threads: listThreads(root),
+    threads: listThreads(root, { removed: true }),
     answers: listAnswers(root),
   };
 }
@@ -98,10 +115,10 @@ export function importData(root: string, data: Backup, { replace = false } = {})
   try {
     db.exec("delete from messages; delete from threads; delete from answers;");
     const thread = db.prepare(
-      "insert into threads (id, page, quote, status, created_at, resolved_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?)",
+      "insert into threads (id, page, quote, status, created_at, resolved_at, removed_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     const message = db.prepare(
-      "insert into messages (id, thread_id, author, guest_id, guest_name, body, created_at, hidden, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "insert into messages (id, thread_id, author, guest_id, guest_name, body, created_at, hidden, reactions, images, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     const answer = db.prepare(
       "insert into answers (id, page, question, choice, body, author, guest_id, guest_name, created_at, hidden, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -114,6 +131,7 @@ export function importData(root: string, data: Backup, { replace = false } = {})
         t.status,
         t.createdAt,
         t.resolvedAt,
+        t.removedAt ?? null,
         t.uid ?? null,
         t.updatedAt ?? null,
       );
@@ -125,6 +143,8 @@ export function importData(root: string, data: Backup, { replace = false } = {})
           m.body,
           m.createdAt,
           m.hidden ? 1 : 0,
+          JSON.stringify(m.reactions ?? []),
+          JSON.stringify(m.images ?? []),
           m.uid ?? null,
           m.updatedAt ?? null,
         );

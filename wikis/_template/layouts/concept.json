@@ -3,12 +3,14 @@
   "areas": [
     ["design", "facts"],
     ["body", "facts"],
-    ["questions", "questions"]
+    ["questions", "questions"],
+    ["suggestions", "suggestions"]
   ],
   "blocks": {
     "design": { "type": "design" },
     "facts": { "type": "infobox" },
     "body": { "type": "body" },
-    "questions": { "type": "questions", "title": "Open questions" }
+    "questions": { "type": "questions", "title": "Open questions" },
+    "suggestions": { "type": "suggestions", "title": "Suggestions" }
   }
 }

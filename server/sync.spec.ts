@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { addAnswer, listAnswers, setAnswerHidden } from "./answers.ts";
 import { syncFiles, syncWiki } from "./sync.ts";
-import { addMessage, closeAll, createThread, listThreads, setStatus } from "./threads.ts";
+import { addMessage, closeAll, createThread, listThreads, react, setStatus } from "./threads.ts";
 
 let tmp: string;
 
@@ -72,6 +72,31 @@ describe("sync files", () => {
       expect(threads.find((t) => t.uid === ta.uid)?.messages.map((m) => m.body)).toEqual(["From the desk", "Done"]);
       expect(listAnswers(root)[0].hidden).toBe(true);
     }
+  });
+});
+
+describe("sync files, later changes", () => {
+  it("carry reactions and changed answers to the other PC", () => {
+    const a = pc(join(tmp, "a"), "desk");
+    const b = pc(join(tmp, "b"), "laptop");
+    const carry = (from: string, to: string, file: string) => {
+      mkdirSync(join(to, "sync"), { recursive: true });
+      writeFileSync(join(to, file), readFileSync(join(from, file)));
+    };
+    const t = createThread(a, "plan", quote, "Ship it?");
+    addAnswer(a, "plan", "q1", "Steam", "");
+    carry(a, b, syncFiles(a).file);
+    syncFiles(b);
+
+    // The laptop reacts and the owner changes their answer there.
+    const there = listThreads(b).find((x) => x.uid === t.uid);
+    react(b, there?.messages[0].id ?? 0, "👍", "user", true);
+    addAnswer(b, "plan", "q1", "itch.io", "Changed my mind");
+    carry(b, a, syncFiles(b).file);
+    syncFiles(a);
+
+    expect(listThreads(a)[0].messages[0].reactions).toEqual([{ emoji: "👍", by: [{ author: "user" }] }]);
+    expect(listAnswers(a).map((x) => [x.choice, x.body])).toEqual([["itch.io", "Changed my mind"]]);
   });
 });
 

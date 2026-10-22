@@ -1,5 +1,6 @@
 // Comments on page text: select text → "Comment" bubble → composer. Anchored threads are painted with the CSS
-// Custom Highlight API, so the page's DOM is never changed. Clicking highlighted text opens its thread.
+// Custom Highlight API, so the page's DOM is never changed. Clicking highlighted text opens its thread; pointing at a
+// thread in the rail lights up its text.
 import { type RefObject, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { findQuote, isPageComment, quoteAt } from "../../shared/quote.ts";
 import { canComment, useGuest } from "../guest/GuestContext.ts";
@@ -16,11 +17,18 @@ interface Props {
   contentKey: unknown;
   threads: Threads;
   active: number | null;
+  /** The thread under the pointer in the rail. */
+  hovered?: number | null;
   onActivate: (id: number | null) => void;
   onAnchors: (anchors: Anchors) => void;
 }
 
-const HL = { open: "sh-comment", active: "sh-comment-active", pending: "sh-pending" } as const;
+const HL = {
+  open: "sh-comment",
+  active: "sh-comment-active",
+  hover: "sh-comment-hover",
+  pending: "sh-pending",
+} as const;
 
 function paint(name: string, ranges: Range[]) {
   if (!("highlights" in CSS)) return;
@@ -28,7 +36,7 @@ function paint(name: string, ranges: Range[]) {
   else CSS.highlights.delete(name);
 }
 
-export function CommentLayer({ container, contentKey, threads, active, onActivate, onAnchors }: Props) {
+export function CommentLayer({ container, contentKey, threads, active, hovered, onActivate, onAnchors }: Props) {
   const [pending, setPending] = useState<{ start: number; end: number } | null>(null);
   const [composing, setComposing] = useState(false);
   // Read by the selection listener, which runs just after the click that opens the composer.
@@ -73,6 +81,8 @@ export function CommentLayer({ container, contentKey, threads, active, onActivat
     );
     const a = active === null ? null : anchors.current.get(active);
     paint(HL.active, a ? [a] : []);
+    const h = hovered == null || hovered === active ? null : anchors.current.get(hovered);
+    paint(HL.hover, h ? [h] : []);
     paint(HL.pending, composing && pendingRange ? [pendingRange] : []);
   });
   useEffect(

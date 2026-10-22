@@ -1,0 +1,56 @@
+/* Diagrams (Diagram.tsx): Mermaid's drawing on the page's surface, as wide as it needs and scrolling past that. */
+.sh-diagram {
+  min-width: 0;
+  max-width: 100%;
+  margin: var(--s-4) 0;
+  padding: var(--s-4);
+  overflow-x: auto;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.sh-diagram-svg {
+  display: flex;
+  /* `safe`: a drawing wider than the box starts at its left edge, so all of it can be scrolled to. */
+  justify-content: safe center;
+}
+.sh-diagram-svg svg {
+  flex: none;
+  height: auto;
+}
+.sh-diagram-loading {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.sh-diagram[data-state="error"] {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.sh-diagram-error {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  white-space: pre-wrap;
+}
+
+/* Math (server/markdown/math.ts): KaTeX's markup, in the text's color; a block scrolls when it's wider than the page. */
+.sh-math .katex {
+  font-size: 1.08em;
+}
+.sh-math-block {
+  margin: var(--s-4) 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: var(--s-1) 0;
+}
+.sh-math-block .katex-display {
+  margin: 0;
+}
+.katex .katex-error,
+.sh-math-block .katex-error {
+  color: var(--tone-bad) !important;
+}

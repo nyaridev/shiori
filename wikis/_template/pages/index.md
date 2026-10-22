@@ -3,6 +3,14 @@ title: "{{title}}"
 summary: "{{tagline}}"
 icon: home
 status: active
+questions:
+  - id: first-for
+    text: "Who exactly is the first version for?"
+  - id: done
+    text: "What does \"done\" look like for version one?"
+  - id: working
+    text: "How will we know it's working?"
+    options: [People come back, People pay, People tell a friend]
 ---
 
 ::::boxes
@@ -51,8 +59,13 @@ shape works for anything:
 :::
 ::::
 
-## Open questions
+## Big questions
 
-- [ ] Who exactly is the first version for?
-- [ ] What does "done" look like for version one?
-- [ ] How will we know it's working?
+Three questions every project answers early. Answer them here: the agent reads your answers and writes the decision
+into the plan.
+
+::question{id=first-for}
+
+::question{id=done}
+
+::question{id=working}

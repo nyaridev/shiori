@@ -7,6 +7,19 @@ order: 2
 type: "Research"
 tags: [research]
 banner: "/assets/grove.svg"
+questions:
+  - id: where-to-look
+    text: "Where would you look first for people who need this?"
+suggestions:
+  - id: interview-script
+    text: "Add a short interview script, so every conversation asks the same core questions?"
+    options: [Yes, Later, No]
+  - id: confidence
+    text: "Mark each finding with how sure we are (a hunch, a few sources, solid)?"
+    options: [Yes, No]
+  - id: sources-log
+    text: "Keep a dated log of sources, so findings can be traced and refreshed?"
+    options: [Yes, Later, No]
 ---
 
 Research turns guesses into decisions. Every finding here links back to a source, so anyone can check it, and the
@@ -34,8 +47,17 @@ I'd pay for it today if setting it up took five minutes instead of an evening.
 | Five user interviews | Interviews | Price matters less than setup time |
 | Top 10 similar channels and products | Market scan | Nobody covers the beginner angle well |
 
+## Every research page
+
+A table made from the pages themselves: each page in this section, with what its frontmatter says. Write a new
+research page and it shows here.
+
+::table{pages="in:research" columns="Page, Type, Status, Summary"}
+
 ## Still to find out
 
 - [ ] How much would people pay, or how often would they come back?
 - [ ] Which platform does the audience use most?
 - [x] Are there similar projects? (Yes: see [Audience & market](audience).)
+
+::question{id=where-to-look}

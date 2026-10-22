@@ -1,7 +1,7 @@
 // A page arranged by its wiki's layout (ADR-0006): each area of the layout's grid shows one built-in block. The
 // page's Markdown is split at its `##` headings, so a `section` block can show one part and `body` the rest. On narrow
 // screens the areas stack in reading order.
-import type { Element, Root, RootContent } from "hast";
+import type { Root, RootContent } from "hast";
 import type { CSSProperties, ReactNode } from "react";
 import type { PageData, WikiDetail } from "../../../shared/api.ts";
 import { type Block, gridOf, type Layout } from "../../../shared/layout.ts";
@@ -12,33 +12,13 @@ import { picture } from "../../lib/base.ts";
 import { useResource } from "../../lib/useResource.ts";
 import { DirectoryEl, DiscussionsEl, OpenQuestionsEl, OpenTasksEl, RecentChangesEl } from "../home/blocks.tsx";
 import { Markdown } from "../markdown/Markdown.tsx";
+import { split } from "../markdown/sections.ts";
 import { ChildrenEl, TocEl } from "../markdown/universal.tsx";
 import { PageInfobox } from "../PageInfobox.tsx";
 import { QuestionCard } from "../questions/QuestionCard.tsx";
 import { Related } from "../Related.tsx";
 import { Zoom } from "../viewer/Zoom.tsx";
 import "./layout.css";
-
-interface Section {
-  heading: string;
-  nodes: RootContent[];
-}
-
-const textOf = (node: RootContent): string =>
-  node.type === "text" ? node.value : "children" in node ? node.children.map(textOf).join("") : "";
-
-/** The Markdown before its first `##`, and each `##` section with its heading. */
-function split(hast: Root): { intro: RootContent[]; sections: Section[] } {
-  const intro: RootContent[] = [];
-  const sections: Section[] = [];
-  for (const node of hast.children) {
-    if (node.type === "element" && (node as Element).tagName === "h2")
-      sections.push({ heading: textOf(node).trim(), nodes: [node] });
-    else if (sections.length) sections[sections.length - 1].nodes.push(node);
-    else intro.push(node);
-  }
-  return { intro, sections };
-}
 
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 const root = (children: RootContent[]): Root => ({ type: "root", children });
@@ -78,11 +58,15 @@ export function LayoutView({
       case "gallery":
         return <PageGallery wikiId={wiki.id} path={page.path} />;
       case "questions":
-        return page.questions.length ? (
-          page.questions.map((q) => <QuestionCard key={q.id} question={q} />)
+      case "suggestions": {
+        const kind = block.type === "questions" ? "question" : "suggestion";
+        const list = page.questions.filter((q) => q.kind === kind);
+        return list.length ? (
+          list.map((q) => <QuestionCard key={q.id} question={q} />)
         ) : (
-          <p className="sh-block-empty">No open questions on this page.</p>
+          <p className="sh-block-empty">No {block.type} on this page.</p>
         );
+      }
       case "related":
         return <Related wikiId={wiki.id} page={page} />;
       case "children":
@@ -121,12 +105,12 @@ export function LayoutView({
       {inOrder(layout).map(([area, block]) => (
         <section
           key={area}
-          className="sh-layout-area sh-prose"
+          className="sh-layout-area"
           data-block={block.type}
           style={{ "--area": area } as CSSProperties}
         >
           {block.title && <h2 className="sh-layout-title">{block.title}</h2>}
-          {show(block)}
+          <div className="sh-layout-body sh-prose">{show(block)}</div>
         </section>
       ))}
     </div>

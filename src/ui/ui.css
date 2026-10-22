@@ -53,6 +53,15 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+/* A main action that's waiting for input (Send answer, Reply) still shows where it is: a muted accent, not a ghost. */
+.sh-button[data-variant="solid"]:disabled {
+  opacity: 1;
+  border-color: var(--accent-line);
+  background: color-mix(in oklab, var(--accent) 22%, var(--surface));
+  box-shadow: none;
+  color: var(--text-soft);
+  --icon-ink: var(--text-soft);
+}
 .sh-button[data-variant="solid"] {
   background: var(--accent);
   color: var(--accent-text);
@@ -100,7 +109,7 @@
   min-height: 34px;
   padding: 7px var(--s-3);
   background: var(--surface);
-  border: var(--bw) solid var(--border);
+  border: var(--bw) solid var(--border-field);
   border-radius: var(--r-md);
   font-size: var(--t-sm);
   line-height: 1.4;
@@ -112,7 +121,7 @@
   color: var(--muted);
 }
 .sh-field:hover {
-  border-color: var(--border-strong);
+  border-color: var(--muted);
 }
 .sh-field:focus,
 .sh-field:focus-visible {
@@ -121,8 +130,42 @@
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .sh-textarea {
-  resize: vertical;
+  display: block;
+  resize: none;
   min-height: 72px;
+  padding-bottom: var(--s-3);
+}
+/* The grip along a text field's bottom edge (Field.tsx), a long pill in the middle: drag to resize, double-click for
+   the first size. Its hit area is taller than the pill, so it's easy to catch. */
+.sh-textarea-wrap {
+  position: relative;
+}
+.sh-textarea-grip {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 14px;
+  translate: -50% 0;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.sh-textarea-grip::before {
+  content: "";
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  transition:
+    background var(--fast) var(--ease),
+    width var(--fast) var(--ease);
+}
+.sh-textarea-grip:hover::before,
+.sh-textarea-grip:active::before {
+  width: 48px;
+  background: var(--accent);
 }
 .sh-select {
   display: inline-flex;
@@ -147,7 +190,7 @@
   height: 20px;
   padding: 0 7px;
   border-radius: var(--r-sm);
-  background: color-mix(in oklab, var(--tone) 14%, transparent);
+  background: color-mix(in oklab, var(--tone) 12%, transparent);
   color: color-mix(in oklab, var(--tone) 75%, var(--text));
   font-size: 0.6875rem;
   font-weight: 650;
@@ -164,7 +207,7 @@
   background: var(--tone);
 }
 .sh-badge[data-tone="accent"] {
-  --tone: var(--accent);
+  --tone: var(--accent-ink);
 }
 .sh-badge[data-tone="good"] {
   --tone: var(--tone-good);
@@ -296,7 +339,7 @@
 }
 .sh-menu-check {
   margin-left: auto;
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .sh-menu-label {
   padding: 6px var(--s-2) 2px;
@@ -405,6 +448,48 @@
 .sh-tabs-panel {
   padding-top: var(--s-3);
 }
+/* A tab with a tone (`:::tab[Suggestions]{tone="good"}`): its label and line in that color, and its panel tinted. */
+.sh-tabs-trigger[data-tone="accent"],
+.sh-tabs-panel[data-tone="accent"] {
+  --tab-tone: var(--accent-ink);
+}
+.sh-tabs-trigger[data-tone="good"],
+.sh-tabs-panel[data-tone="good"] {
+  --tab-tone: var(--tone-good);
+}
+.sh-tabs-trigger[data-tone="warn"],
+.sh-tabs-panel[data-tone="warn"] {
+  --tab-tone: var(--tone-warn);
+}
+.sh-tabs-trigger[data-tone="bad"],
+.sh-tabs-panel[data-tone="bad"] {
+  --tab-tone: var(--tone-bad);
+}
+.sh-tabs-trigger[data-tone] {
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  color: color-mix(in oklab, var(--tab-tone) 80%, var(--text));
+}
+.sh-tabs-trigger[data-tone]:hover,
+.sh-tabs-trigger[data-tone][data-state="active"] {
+  background: color-mix(in oklab, var(--tab-tone) 14%, transparent);
+  color: color-mix(in oklab, var(--tab-tone) 70%, var(--text));
+}
+.sh-tabs-trigger[data-tone][data-state="active"]::after {
+  background: var(--tab-tone);
+}
+.sh-tabs-panel[data-tone] {
+  padding: var(--s-3) var(--s-4) var(--s-4);
+  border: var(--bw) solid color-mix(in oklab, var(--tab-tone) 45%, var(--border));
+  border-top: 0;
+  border-radius: 0 0 var(--r-md) var(--r-md);
+  background: color-mix(in oklab, var(--tab-tone) 7%, var(--surface));
+}
+.sh-tabs-panel[data-tone] > :first-child {
+  margin-top: 0;
+}
+.sh-tabs-panel[data-tone] > :last-child {
+  margin-bottom: 0;
+}
 .sh-tabs-panel[data-state="inactive"] {
   display: none;
 }
@@ -426,9 +511,15 @@
   font-weight: 600;
   cursor: pointer;
 }
+.sh-segmented-item {
+  transition: color var(--fast) var(--ease);
+}
 .sh-segmented-item[data-state="active"] {
-  background: var(--raised);
   color: var(--text);
+}
+.sh-segmented-thumb {
+  border-radius: calc(var(--r-md) - 3px);
+  background: var(--raised);
   box-shadow: var(--shadow-1);
 }
 
@@ -478,11 +569,23 @@
   height: 18px;
   flex: none;
   padding: 0;
-  border: var(--bw) solid var(--border-strong);
-  border-radius: calc(var(--r-sm) - 1px);
-  background: var(--surface);
+  border: 1.5px solid var(--border-field);
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--text) 6%, var(--surface));
   color: var(--accent-text);
   cursor: pointer;
+}
+.sh-checkbox:hover:not(:disabled) {
+  border-color: var(--accent-line);
+}
+/* The tick (CheckMark): a bold stroke with round ends, in the color of the text on the accent. */
+.sh-checkmark {
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .sh-checkbox[data-state="checked"] {
   background: var(--accent);
@@ -565,14 +668,15 @@
 }
 
 /* Avatar */
+/* Initials in the page's background color on the tone, which reads on it both ways (shared/theme.ts). */
 .sh-avatar {
-  --tone: var(--accent);
+  --tone: var(--accent-ink);
   position: relative;
   display: inline-grid;
   flex: none;
   place-items: center;
   border-radius: 50%;
-  background: color-mix(in oklab, var(--tone) 78%, var(--bg));
+  background: var(--tone);
   color: var(--bg);
   font-family: var(--font-body);
   font-weight: 700;
@@ -612,6 +716,69 @@
   height: 13px;
   border-radius: 50%;
   background: var(--raised);
-  color: var(--accent);
+  color: var(--accent-ink);
   font-size: 8px;
+}
+
+/* A block that folds by sliding shut (the sidebar's sections and groups): its row shrinks to nothing and it fades.
+   Folded, it's also `inert` (set by the component), so nothing inside takes focus. The clip leaves room for focus
+   rings at the edges. */
+.sh-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 200ms var(--ease),
+    opacity 200ms var(--ease);
+}
+.sh-collapse > * {
+  min-height: 0;
+  overflow: clip;
+  overflow-clip-margin: 4px;
+}
+.sh-collapse[data-folded] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 200ms var(--ease),
+    opacity 200ms var(--ease),
+    visibility 0s 200ms;
+}
+
+/* Inside a scroll area (the sidebar, the rail, lists that scroll) a ring outside the control would be cut off at
+   the edge, so focus draws inside it instead. */
+.sh-scroll .sh-scroll-view :focus-visible,
+.sh-side-dock .sh-nav :focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-line);
+}
+
+/* Glider (Glider.tsx): a highlight that slides between a list's items, under them. Its host is positioned and makes a
+   stacking context, so the glider sits over the host's background and under its items; each use gives its look. */
+.sh-glide-host {
+  position: relative;
+  isolation: isolate;
+}
+.sh-glide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  pointer-events: none;
+  transition:
+    transform 320ms var(--glide),
+    width 320ms var(--glide),
+    height 320ms var(--glide),
+    opacity 160ms var(--ease);
+}
+.sh-glide[data-hidden] {
+  opacity: 0;
+}
+.sh-glide[data-instant] {
+  transition: opacity 160ms var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sh-glide {
+    transition: opacity 120ms var(--ease);
+  }
 }

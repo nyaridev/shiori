@@ -65,21 +65,26 @@ export function mergeData(root: string, data: Backup, into: Merged = emptyMerge(
         id = Number(
           db
             .prepare(
-              "insert into threads (page, quote, status, created_at, resolved_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?)",
+              "insert into threads (page, quote, status, created_at, resolved_at, removed_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?)",
             )
-            .run(t.page, JSON.stringify(t.quote), t.status, t.createdAt, t.resolvedAt, t.uid, changed).lastInsertRowid,
+            .run(
+              t.page,
+              JSON.stringify(t.quote),
+              t.status,
+              t.createdAt,
+              t.resolvedAt,
+              t.removedAt ?? null,
+              t.uid,
+              changed,
+            ).lastInsertRowid,
         );
         into.added.threads++;
       } else {
         id = local.id;
         if (changed > local.updated_at) {
-          db.prepare("update threads set page = ?, status = ?, resolved_at = ?, updated_at = ? where id = ?").run(
-            t.page,
-            t.status,
-            t.resolvedAt,
-            changed,
-            id,
-          );
+          db.prepare(
+            "update threads set page = ?, status = ?, resolved_at = ?, removed_at = ?, updated_at = ? where id = ?",
+          ).run(t.page, t.status, t.resolvedAt, t.removedAt ?? null, changed, id);
           into.updated++;
         }
       }
@@ -89,12 +94,23 @@ export function mergeData(root: string, data: Backup, into: Merged = emptyMerge(
         const mine = find("messages", m.uid);
         if (!mine) {
           db.prepare(
-            "insert into messages (thread_id, author, guest_id, guest_name, body, created_at, hidden, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          ).run(id, ...authorColumns(writer(m)), m.body, m.createdAt, m.hidden ? 1 : 0, m.uid, mChanged);
+            "insert into messages (thread_id, author, guest_id, guest_name, body, created_at, hidden, reactions, images, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          ).run(
+            id,
+            ...authorColumns(writer(m)),
+            m.body,
+            m.createdAt,
+            m.hidden ? 1 : 0,
+            JSON.stringify(m.reactions ?? []),
+            JSON.stringify(m.images ?? []),
+            m.uid,
+            mChanged,
+          );
           into.added.messages++;
         } else if (mChanged > mine.updated_at) {
-          db.prepare("update messages set hidden = ?, updated_at = ? where id = ?").run(
+          db.prepare("update messages set hidden = ?, reactions = ?, updated_at = ? where id = ?").run(
             m.hidden ? 1 : 0,
+            JSON.stringify(m.reactions ?? []),
             mChanged,
             mine.id,
           );
@@ -122,8 +138,11 @@ export function mergeData(root: string, data: Backup, into: Merged = emptyMerge(
         );
         into.added.answers++;
       } else if (changed > local.updated_at) {
-        db.prepare("update answers set page = ?, hidden = ?, updated_at = ? where id = ?").run(
+        // Someone changed their answer, or the owner hid it.
+        db.prepare("update answers set page = ?, choice = ?, body = ?, hidden = ?, updated_at = ? where id = ?").run(
           a.page,
+          a.choice,
+          a.body,
           a.hidden ? 1 : 0,
           changed,
           local.id,

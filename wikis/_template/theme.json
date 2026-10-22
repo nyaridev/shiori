@@ -3,7 +3,7 @@
   "colors": {
     "accent": "{{accent}}"
   },
-  "radius": "medium",
+  "radius": "small",
   "border": "thin",
   "shadow": "soft",
   "font": {

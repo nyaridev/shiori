@@ -11,6 +11,16 @@ infobox:
   Done: ':progress{value="1" max="5"}'
   Now: "Prototype"
   Decisions: "[Decision log](/notes/decisions)"
+suggestions:
+  - id: buffer
+    text: "Leave a buffer week before launch for fixes and polish?"
+    options: [Yes, No]
+  - id: exit-criteria
+    text: "Give each milestone a one-line \"done when…\" so it's clear when to move on?"
+    options: [Yes, Later, No]
+  - id: public-roadmap
+    text: "Share a simpler version of this roadmap with the first users?"
+    options: [Yes, Later, No]
 ---
 
 The roadmap is a promise to ourselves, not a contract: when reality disagrees, change the roadmap and log why in the
@@ -25,6 +35,20 @@ The roadmap is a promise to ourselves, not a contract: when reality disagrees, c
 - [ ] Week 7: Launch to the first users (see the [[Launch checklist]])
 - [ ] After launch: Measure, learn, and plan version two
 :::
+
+## How the work flows
+
+Each milestone feeds the next; a prototype that doesn't work yet goes back to research, not forward.
+
+```mermaid
+flowchart LR
+  research[Research] --> prototype[Prototype]
+  prototype -->|works| v1[Version one]
+  prototype -->|not yet| research
+  v1 --> launch[Launch]
+  launch --> learn[Measure and learn]
+  learn -->|version two| v1
+```
 
 ## What each milestone needs
 

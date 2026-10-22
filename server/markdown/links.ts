@@ -3,6 +3,7 @@ import { posix } from "node:path";
 import type { Element, Root } from "hast";
 import { visit } from "unist-util-visit";
 import { ICON_NAME, iconSet } from "../icons.ts";
+import type { TableSource } from "./tables.ts";
 import type { Found } from "./wikilinks.ts";
 
 export interface LinkContext {
@@ -16,6 +17,8 @@ export interface LinkContext {
   findPage?: (name: string) => Found;
   /** The URL of a file from the wiki root; `fileUrl` by default. The element reference serves the app's docs. */
   files?: (rel: string) => string;
+  /** Where `::table` reads its rows (tables.ts): the wiki's data files and its pages. */
+  tables?: TableSource;
 }
 
 const EXTERNAL = /^([a-z][a-z0-9+.-]*:|\/\/)/i;

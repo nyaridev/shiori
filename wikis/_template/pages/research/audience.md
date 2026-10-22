@@ -6,6 +6,16 @@ status: active
 order: 1
 tags: [research, audience]
 type: "Research"
+suggestions:
+  - id: personas
+    text: "Turn the audience into two or three short personas with names and goals?"
+    options: [Yes, Later, No]
+  - id: where-to-reach
+    text: "Add where each group can be reached first, with one link each?"
+    options: [Yes, No]
+  - id: competitor-gaps
+    text: "Add a column for what each alternative is missing?"
+    options: [Yes, Later, No]
 ---
 
 :::infobox[Main persona]{caption="The person we build for first"}
@@ -37,11 +47,10 @@ share it. Start with **one** persona and only add more when the first one is hap
 
 ## What's already out there
 
-| Name | What they do well | Where they fall short |
-|---|---|---|
-| The big established one | Polished, trusted | Expensive, overwhelming for beginners |
-| The popular free option | Free, large community | Hard to set up, dated |
-| A newer competitor | Modern look | Small, few features yet |
+The alternatives live in a data file, `tables/alternatives.csv`: add a row there and this table follows. Click a
+column to sort it, or filter: `price<10`, `rating>=4`, `free`.
+
+::table[Alternatives]{src="/tables/alternatives.csv" sort="-Users" stats}
 
 ## Market numbers
 

@@ -13,6 +13,7 @@ import { Related } from "../Related.tsx";
 import { StatusBadge } from "../StatusBadge.tsx";
 import "./universal.css";
 import { PageIcon } from "../PageIcon.tsx";
+import { tocNumbers } from "../Toc.tsx";
 
 type Props<T = object> = T & { children?: ReactNode };
 
@@ -26,9 +27,9 @@ export function RelatedEl({ kind }: Props<{ kind?: string }>) {
 
 export function QuestionEl({ id }: Props<{ id?: string }>) {
   const ctx = usePage();
-  if (!ctx) return <Placeholder>A question from the page's `questions:` frontmatter shows here.</Placeholder>;
+  if (!ctx) return <Placeholder>A question or suggestion from the page's frontmatter shows here.</Placeholder>;
   const question = ctx.page.questions.find((q) => q.id === id);
-  if (!question) return <Placeholder>There's no question “{id}” in this page's frontmatter.</Placeholder>;
+  if (!question) return <Placeholder>There's no question or suggestion “{id}” in this page's frontmatter.</Placeholder>;
   return <QuestionCard question={question} />;
 }
 
@@ -65,17 +66,8 @@ export function ChildrenEl({ layout = "cards" }: Props<{ layout?: string }>) {
 export function TocEl() {
   const ctx = usePage();
   if (!ctx) return <Placeholder>The page's contents show here.</Placeholder>;
-  let major = 0;
-  let minor = 0;
-  const entries = ctx.page.toc.map((e) => {
-    if (e.depth === 2) {
-      major++;
-      minor = 0;
-      return { ...e, number: `${major}` };
-    }
-    minor++;
-    return { ...e, number: `${Math.max(major, 1)}.${minor}` };
-  });
+  const numbers = tocNumbers(ctx.page.toc);
+  const entries = ctx.page.toc.map((e, i) => ({ ...e, number: numbers[i] }));
   if (!entries.length) return null;
   return (
     <nav className="sh-inline-toc" aria-label="Contents">

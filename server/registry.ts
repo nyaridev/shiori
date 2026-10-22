@@ -3,7 +3,14 @@
 import { existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { WikiCard } from "../shared/api.ts";
-import { issues, type Manifest, manifestSchema } from "../shared/schema.ts";
+import {
+  DEFAULT_SETTINGS,
+  issues,
+  type Manifest,
+  manifestSchema,
+  type Settings,
+  settingsSchema,
+} from "../shared/schema.ts";
 import { DEFAULT_THEME, type Theme, themeAccent, themeSchema } from "../shared/theme.ts";
 import { iconSet } from "./icons.ts";
 import { fileUrl } from "./markdown/links.ts";
@@ -16,7 +23,9 @@ export interface Wiki {
   source: "local" | "linked";
   manifest: Manifest;
   theme: Theme;
-  /** Problems with wiki.json, theme.json or the cover. Page problems come from `pages.ts`. */
+  /** `settings.json`: how many open questions and suggestions a page may have. */
+  settings: Settings;
+  /** Problems with wiki.json, theme.json, settings.json or the cover. Page problems come from `pages.ts`. */
   problems: string[];
 }
 
@@ -49,12 +58,20 @@ export function loadWiki(root: string, source: Wiki["source"]): Wiki | Broken {
     if (parsed.success) theme = parsed.data;
     else problems.push(...issues(parsed.error).map((i) => `theme.json: ${i}`));
   }
+  let settings = DEFAULT_SETTINGS;
+  const s = readJson(join(root, "settings.json"));
+  if (s.error && s.error !== "missing") problems.push(`settings.json: ${s.error}`);
+  if (!s.error) {
+    const parsed = settingsSchema.safeParse(s.value);
+    if (parsed.success) settings = parsed.data;
+    else problems.push(...issues(parsed.error).map((i) => `settings.json: ${i}`));
+  }
   if (!existsSync(join(root, manifest.data.cover))) problems.push(`cover "${manifest.data.cover}" is missing`);
   const icon = manifest.data.icon;
   if (icon && !iconSet().has(icon))
     problems.push(`wiki.json: icon "${icon}" isn't in Shiori's icon set (Toolbox → Icons lists them)`);
   if (!existsSync(join(root, "pages"))) problems.push("pages/ folder is missing");
-  return { id: manifest.data.id, root, source, manifest: manifest.data, theme, problems };
+  return { id: manifest.data.id, root, source, manifest: manifest.data, theme, settings, problems };
 }
 
 export function readLinks(appRoot: string): string[] {
@@ -116,13 +133,14 @@ export function toCard(wiki: Wiki, pages: number): WikiCard {
 /** What a changed file means: which wiki it belongs to and what part of it. */
 export interface Change {
   wiki: string | null;
-  /** `meta`: wiki.json, theme.json, the cover or a new folder. `data`: the comment database. */
-  area: "pages" | "meta" | "data" | "designs" | "ignore";
+  /** `meta`: wiki.json, theme.json, the cover or a new folder. `data`: the comment database. `git`: its `.git`. */
+  area: "pages" | "meta" | "data" | "designs" | "git" | "ignore";
 }
 
 function areaOf(wiki: Wiki, rel: string[]): Change["area"] {
   if (rel[0] === "data") return "data";
   if (rel[0] === "designs") return "designs";
+  if (rel[0] === ".git") return "git";
   if (rel[0] === "wiki.json" || rel[0] === "theme.json" || rel[0] === wiki.manifest.cover) return "meta";
   return "pages";
 }
@@ -134,10 +152,14 @@ const within = (root: string, file: string) => {
 
 /**
  * Cached discovery; `live.ts` invalidates it when files change.
- * Dev mode (`pnpm dev`) shows only the template, filled in as a preview outside the app folder.
+ * Dev mode (`pnpm dev`) shows only the template, filled in as a preview outside the app folder. A change to the
+ * template rebuilds the preview; a change made in the preview itself (a page added to try something) shows as it is
+ * and lasts until the template changes next.
  */
 export function createRegistry(appRoot: string, { dev = false, preview = previewDir() } = {}) {
   let cache: Discovery | null = null;
+  /** The template changed since the preview was last built. */
+  let stale = false;
   if (dev) buildPreview(appRoot, preview);
   const current = () => {
     if (!cache) {
@@ -156,20 +178,23 @@ export function createRegistry(appRoot: string, { dev = false, preview = preview
     get: (id: string) => current().wikis.find((w) => w.id === id),
     invalidate: () => {
       cache = null;
-      if (dev) buildPreview(appRoot, preview);
+      if (dev && stale) buildPreview(appRoot, preview);
+      stale = false;
     },
     /** Folders to watch, recursively. */
     watchDirs: (): string[] =>
       dev
-        ? [templateDir(appRoot), join(preview, "data")]
+        ? [templateDir(appRoot), preview]
         : [join(appRoot, "wikis"), ...readLinks(appRoot).map((p) => resolve(appRoot, p))],
     classify: (file: string): Change => {
       if (dev) {
         const id = current().wikis[0]?.id ?? null;
-        if (within(join(preview, "data"), file)) return { wiki: id, area: "data" };
+        const w = current().wikis[0];
+        const inPreview = within(preview, file);
+        if (inPreview) return { wiki: id, area: w ? areaOf(w, inPreview) : "meta" };
         const rel = within(templateDir(appRoot), file);
         if (!rel || rel[0] === "data") return { wiki: null, area: "ignore" };
-        const w = current().wikis[0];
+        stale = true;
         return { wiki: id, area: w ? areaOf(w, rel) : "meta" };
       }
       for (const w of current().wikis) {

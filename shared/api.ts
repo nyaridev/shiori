@@ -1,5 +1,6 @@
 // Shapes the server sends to the browser.
 import type { Root } from "hast";
+import type { FileDiff } from "./diff.ts";
 import type { Layout } from "./layout.ts";
 import type { Quote } from "./quote.ts";
 import type { PageStatus } from "./schema.ts";
@@ -117,13 +118,21 @@ export interface PageEntry extends PageLink {
   image?: string;
 }
 
-/** A decision a page asks for. Resolved ones carry the agent's `answer`. */
+/**
+ * A decision a page asks for. A `question` asks about what the page describes; a `suggestion` is the agent's idea for
+ * adding to it or improving it. Resolved ones carry the agent's `answer`.
+ */
 export interface Question {
+  kind: "question" | "suggestion";
   id: string;
   text: string;
   options: string[];
   status: "open" | "resolved";
   answer?: string;
+  /** When it should be decided by (`2026-11-15`). */
+  due?: string;
+  /** When the agent decided it. */
+  decided?: string;
 }
 
 /** Someone's answer to a question: an option they picked and/or a note. */
@@ -202,6 +211,28 @@ export interface SearchHit {
   marks: Marks;
 }
 
+/** What a search can narrow to: pages with this status, type or tag. */
+export interface SearchFilter {
+  status?: PageStatus;
+  type?: string;
+  tag?: string;
+}
+
+/** A comment or an answer that matches a search, on its page. */
+export interface NoteHit {
+  kind: "comment" | "answer";
+  path: string;
+  /** The page's title and icon. */
+  title: string;
+  icon?: string;
+  /** The thread's id for a comment, the question's id for an answer. */
+  ref: string;
+  /** Still open: an open thread, or an answer to an open question. */
+  open: boolean;
+  snippet: string;
+  marks: Marks;
+}
+
 export type ThreadStatus = "open" | "resolved" | "wontfix";
 
 /**
@@ -222,10 +253,31 @@ export interface Authored {
   hidden?: boolean;
 }
 
+/** The reactions people can leave on a message: agree, done, looking into it, love it. */
+export const REACTIONS = ["👍", "✅", "👀", "❤️"] as const;
+export type ReactionEmoji = (typeof REACTIONS)[number];
+
+/** Someone who reacted: the owner or a guest. Guests never see a guest's id, only whether it's them. */
+export interface Reactor {
+  author: "user" | "guest";
+  name?: string;
+  guestId?: string;
+  mine?: boolean;
+}
+
+export interface Reaction {
+  emoji: ReactionEmoji;
+  by: Reactor[];
+}
+
 export interface Message extends Authored, Synced {
   id: number;
   body: string;
   createdAt: string;
+  /** Who reacted with what, in the order the emoji were first used. */
+  reactions?: Reaction[];
+  /** Pictures attached to it: file names in the wiki's `data/attachments/`. */
+  images?: string[];
 }
 
 export interface Thread extends Synced {
@@ -236,6 +288,8 @@ export interface Thread extends Synced {
   status: ThreadStatus;
   createdAt: string;
   resolvedAt: string | null;
+  /** Removed by the host or by whoever started it: gone for everyone, kept in the database (never deleted). */
+  removedAt?: string;
   messages: Message[];
 }
 
@@ -249,7 +303,9 @@ export type LiveEvent =
   | { type: "threads"; wiki: string }
   | { type: "shares" }
   | { type: "presence"; wiki: string }
-  | { type: "designs"; wiki: string };
+  | { type: "designs"; wiki: string }
+  /** A wiki's `.git` changed: a commit or a pull (ADR-0008). */
+  | { type: "git"; wiki: string };
 
 /** What a share link lets a guest do (ADR-0003). */
 export type ShareKind = "view" | "comment";
@@ -384,4 +440,55 @@ export interface DesignInfo {
   mine: boolean;
   /** Owner only: hidden from guests. */
   hidden?: boolean;
+}
+
+/** Where a wiki's files are kept in git (ADR-0008), for the badge on its home page. The owner only. */
+export interface GitInfo {
+  /** False when the wiki's folder isn't in a git repo of its own. */
+  repo: boolean;
+  branch?: string;
+  /** The wiki's folder inside the repo ("" at its top). */
+  folder?: string;
+  /** Files in the wiki's folder changed since the last commit. */
+  changes?: number;
+  /** The repo online, from its `origin` remote: its page, the wiki's folder there, and where commits are shown. */
+  remote?: { name: string; host: string; url: string; folderUrl: string; commitUrl: string };
+}
+
+/** One commit that changed a page. */
+export interface PageVersion {
+  hash: string;
+  short: string;
+  /** When it was written (ISO). */
+  date: string;
+  author: string;
+  subject: string;
+  /** Lines added and removed in the page file. */
+  added: number;
+  removed: number;
+}
+
+/** A page's history from git, newest first. */
+export interface PageHistory {
+  /** The wiki is in a git repo. */
+  git: boolean;
+  /** The page file has been committed at least once. */
+  tracked: boolean;
+  /** The file has changes since its last commit (or was never committed). */
+  uncommitted: boolean;
+  versions: PageVersion[];
+  /** Older versions weren't listed. */
+  more: boolean;
+}
+
+/** One version of a page: what it changed, what changed since, and the page as it was. */
+export interface PageVersionDetail {
+  /** Null for the file as it is now, not committed yet. */
+  version: PageVersion | null;
+  /** Against the version before it. */
+  changes: FileDiff;
+  /** From this version to the page as it is now; null for the working copy. */
+  sinceThen: FileDiff | null;
+  /** The page as it was, rendered with the wiki as it is now. */
+  page: PageData;
 }

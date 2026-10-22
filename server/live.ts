@@ -20,7 +20,7 @@ export function createLive(registry: Registry) {
       timer = null;
       const events = [...pending.values()];
       pending.clear();
-      if (events.some((e) => e.type !== "threads" && e.type !== "designs")) registry.invalidate();
+      if (events.some((e) => e.type !== "threads" && e.type !== "designs" && e.type !== "git")) registry.invalidate();
       for (const e of events) for (const l of listeners) l(e);
     }, 120);
   };
@@ -35,6 +35,11 @@ export function createLive(registry: Registry) {
     // What people make in the app (ADR-0006): its own event, so pages aren't rendered again for each stroke.
     if (area === "designs") {
       if (wiki) emit({ type: "designs", wiki });
+      return;
+    }
+    // A commit or a pull (ADR-0008): page histories, not the pages.
+    if (area === "git") {
+      if (wiki) emit({ type: "git", wiki });
       return;
     }
     if (area === "meta" || !wiki) emit({ type: "wikis" });

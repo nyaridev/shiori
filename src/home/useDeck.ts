@@ -87,8 +87,8 @@ export function useDeck({ stage, slots, n, start, disabled, onOpen }: Options) {
         );
         write(card, i, "opacity", clamp(1 - Math.max(0, a - 0.5) * 0.16, 0.18, 1).toFixed(3));
         write(card, i, "zIndex", String(1000 - Math.round(a * 10)));
-        // --focus restyles the whole card (its sky's glow), so it's rounded to keep most frames from touching it.
-        write(card, i, "--focus", lift.toFixed(2));
+        // --card-focus restyles the whole card (its sky's glow), so it's rounded to keep most frames from touching it.
+        write(card, i, "--card-focus", lift.toFixed(2));
         if (card.hasAttribute("data-center") !== a < 0.5) card.toggleAttribute("data-center", a < 0.5);
       });
     };

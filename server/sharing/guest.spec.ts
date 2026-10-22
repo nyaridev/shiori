@@ -610,6 +610,20 @@ describe("hiding a guest's comment", () => {
     expect((await threadsOf(ana))[0].messages).toHaveLength(3);
   });
 
+  it("keeps hidden text out of guests' search too", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const bo = browser(share);
+    await bo.join("Bo");
+    const t = await posted(bo.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "Fine" }));
+    const spam = await posted(bo.post(`/api/wikis/alpha/threads/${t.id}/messages`, { body: "zebracoin offer" }));
+    const find = async (q: string) =>
+      ((await (await bo.get(`/api/wikis/alpha/search?q=${q}`)).json()) as { notes: { ref: string }[] }).notes;
+    expect(await find("zebracoin")).toHaveLength(1);
+    await hide("messages", spam.messages[1].id);
+    expect(await find("zebracoin")).toEqual([]);
+    expect((await find("fine")).map((n) => n.ref)).toEqual([String(t.id)]);
+  });
+
   it("hides the whole thread when its first message is hidden", async () => {
     const share = shares.create({ wiki: "alpha", kind: "comment" });
     const bo = browser(share);
@@ -641,4 +655,228 @@ describe("hiding a guest's comment", () => {
     expect((await hide("messages", 999)).status).toBe(404);
     expect((await hide("answers", 999)).status).toBe(404);
   });
+});
+
+describe("reactions", () => {
+  const owner = (path: string, init?: RequestInit) => ownerApp.request(`http://127.0.0.1:4400${path}`, init);
+  const ownerReact = (mid: number, emoji: string, on = true) =>
+    owner(`/api/wikis/alpha/messages/${mid}/reactions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "http://localhost:4400" },
+      body: JSON.stringify({ emoji, on }),
+    });
+  const posted = async (res: Promise<Response>) => (await (await res).json()) as Thread;
+
+  it("show who reacted: names and whose are yours for guests, never guest ids", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const ana = browser(share);
+    await ana.join("Ana");
+    const bo = browser(share, "198.51.100.2");
+    await bo.join("Bo");
+    const t = await posted(ana.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "Too vague" }));
+    const mid = t.messages[0].id;
+
+    const res = await bo.post(`/api/wikis/alpha/messages/${mid}/reactions`, { emoji: "👍", on: true });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as Thread).messages[0].reactions).toEqual([
+      { emoji: "👍", by: [{ author: "guest", name: "Bo", mine: true }] },
+    ]);
+    expect((await ownerReact(mid, "👍")).status).toBe(200);
+    const seen = ((await (await ana.get("/api/wikis/alpha/threads?page=plan")).json()) as { threads: Thread[] })
+      .threads[0];
+    expect(seen.messages[0].reactions?.[0].by).toEqual([
+      { author: "guest", name: "Bo", mine: false },
+      { author: "user", name: "Host", mine: false },
+    ]);
+    expect(JSON.stringify(seen)).not.toContain("guestId");
+    // The owner sees which guest it was.
+    expect(listThreads(alpha())[0].messages[0].reactions?.[0].by[0].guestId).toBeTruthy();
+
+    // Taking it back; a reaction nobody holds any more is gone.
+    await bo.post(`/api/wikis/alpha/messages/${mid}/reactions`, { emoji: "👍", on: false });
+    await ownerReact(mid, "👍", false);
+    expect(listThreads(alpha())[0].messages[0].reactions).toBeUndefined();
+  });
+
+  it("need a comment link, the link's own wiki, a visible message, a known emoji and this site's Origin", async () => {
+    const t = await posted(
+      (async () => {
+        const share = shares.create({ wiki: "alpha", kind: "comment" });
+        const ana = browser(share);
+        await ana.join("Ana");
+        return ana.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "Hi" });
+      })(),
+    );
+    const mid = t.messages[0].id;
+    const react = { emoji: "✅", on: true };
+
+    const view = browser(shares.create({ wiki: "alpha", kind: "view" }));
+    await view.join("Vi");
+    expect((await view.post(`/api/wikis/alpha/messages/${mid}/reactions`, react)).status).toBe(403);
+
+    const share = shares.create({ wiki: "alpha", kind: "comment", duration: "1h" });
+    const bo = browser(share, "198.51.100.2");
+    await bo.join("Bo");
+    expect((await bo.post(`/api/wikis/beta/messages/${mid}/reactions`, react)).status).toBe(404);
+    expect((await bo.post("/api/wikis/alpha/messages/999/reactions", react)).status).toBe(404);
+    expect((await bo.post(`/api/wikis/alpha/messages/${mid}/reactions`, { emoji: "💩", on: true })).status).toBe(400);
+    expect(
+      (await bo.post(`/api/wikis/alpha/messages/${mid}/reactions`, react, { origin: "https://evil.example" })).status,
+    ).toBe(403);
+
+    // A message the owner hid doesn't exist for guests.
+    await owner(`/api/wikis/alpha/messages/${mid}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", origin: "http://localhost:4400" },
+      body: JSON.stringify({ hidden: true }),
+    });
+    expect((await bo.post(`/api/wikis/alpha/messages/${mid}/reactions`, react)).status).toBe(404);
+    expect(listThreads(alpha())[0].messages[0].reactions).toBeUndefined();
+
+    clock += 3_600_000;
+    expect((await bo.post(`/api/wikis/alpha/messages/${mid}/reactions`, react)).status).toBe(410);
+  });
+
+  it("count against the guest's write limits", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const b = browser(share);
+    await b.join("Ana");
+    const t = await posted(b.post("/api/wikis/alpha/threads", { page: "plan", quote, body: "Hi" }));
+    const flip = (on: boolean) =>
+      b.post(`/api/wikis/alpha/messages/${t.messages[0].id}/reactions`, { emoji: "👀", on });
+    for (let i = 1; i < LIMITS.writes.capacity; i++) expect((await flip(i % 2 === 1)).status).toBe(200);
+    expect((await flip(true)).status).toBe(429);
+  });
+});
+
+describe("pictures on comments", () => {
+  const PNG = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), Buffer.alloc(64, 1)]);
+  /** A guest's upload: their cookie, this site's Origin unless told otherwise. */
+  const upload = (share: Share, b: ReturnType<typeof browser>, data: Buffer, type = "image/png", origin = HOST) =>
+    guestApp.request(`${HOST}/s/${share.token}/api/wikis/alpha/attachments`, {
+      method: "POST",
+      headers: { "cf-connecting-ip": "203.0.113.7", cookie: b.cookie, "content-type": type, origin },
+      body: new Uint8Array(data),
+    });
+  const owner = (path: string, init?: RequestInit) => ownerApp.request(`http://127.0.0.1:4400${path}`, init);
+
+  it("upload, go on a change, and show only to those who can see it", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const ana = browser(share);
+    await ana.join("Ana");
+    const res = await upload(share, ana, PNG);
+    expect(res.status).toBe(201);
+    const { file } = (await res.json()) as { file: string };
+    expect(file).toMatch(/^[0-9A-Z]{26}\.png$/);
+    // Not attached yet: nobody can fetch it through the link.
+    expect((await ana.get(`/api/wikis/alpha/attachments/${file}`)).status).toBe(404);
+
+    const t = await ana.post("/api/wikis/alpha/threads", {
+      page: "plan",
+      quote: { exact: "", prefix: "", suffix: "" },
+      body: "Make it like this",
+      images: [file],
+    });
+    expect(t.status).toBe(201);
+    expect(((await t.json()) as Thread).messages[0].images).toEqual([file]);
+    const got = await ana.get(`/api/wikis/alpha/attachments/${file}`);
+    expect(got.status).toBe(200);
+    expect(got.headers.get("content-type")).toBe("image/png");
+    expect((await owner(`/api/wikis/alpha/attachments/${file}`)).status).toBe(200);
+
+    // A name that isn't one, or a picture that was never uploaded.
+    expect((await ana.get("/api/wikis/alpha/attachments/..%2Fwiki.db")).status).toBe(404);
+    const fake = { page: "plan", quote, body: "x", images: ["0123456789ABCDEFGHJKMNPQRS.png"] };
+    expect((await ana.post("/api/wikis/alpha/threads", fake)).status).toBe(400);
+  });
+
+  it("need a comment link, the link's own wiki, a real picture and this site's Origin", async () => {
+    const view = shares.create({ wiki: "alpha", kind: "view" });
+    const vi = browser(view);
+    await vi.join("Vi");
+    expect((await upload(view, vi, PNG)).status).toBe(403);
+
+    const share = shares.create({ wiki: "alpha", kind: "comment", duration: "1h" });
+    const bo = browser(share);
+    await bo.join("Bo");
+    const other = await guestApp.request(`${HOST}/s/${share.token}/api/wikis/beta/attachments`, {
+      method: "POST",
+      headers: { "cf-connecting-ip": "203.0.113.7", cookie: bo.cookie, "content-type": "image/png", origin: HOST },
+      body: new Uint8Array(PNG),
+    });
+    expect(other.status).toBe(404);
+    expect((await upload(share, bo, Buffer.from("<svg onload=alert(1)>"), "image/svg+xml")).status).toBe(415);
+    expect((await upload(share, bo, Buffer.from("not a png at all"), "image/png")).status).toBe(400);
+    expect((await upload(share, bo, PNG, "image/png", "https://evil.example")).status).toBe(403);
+    expect((await upload(share, bo, Buffer.alloc(7 * 1024 * 1024))).status).toBe(413);
+    clock += 3_600_000;
+    expect((await upload(share, bo, PNG)).status).toBe(410);
+  });
+
+  it("stop at the guest's daily budget for pictures", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const b = browser(share);
+    await b.join("Ana");
+    const big = Buffer.concat([PNG, Buffer.alloc(5 * 1024 * 1024)]);
+    let status = 201;
+    for (let i = 0; i < 60 && status === 201; i++) status = (await upload(share, b, big)).status;
+    expect(status).toBe(429);
+  });
+});
+
+describe("removing a change", () => {
+  const del = (share: Share, b: ReturnType<typeof browser>, path: string, origin = HOST) =>
+    guestApp.request(`${HOST}/s/${share.token}/api${path}`, {
+      method: "DELETE",
+      headers: { "cf-connecting-ip": "203.0.113.7", cookie: b.cookie, origin },
+    });
+  const ownerDelete = (id: number) =>
+    ownerApp.request(`http://127.0.0.1:4400/api/wikis/alpha/threads/${id}`, {
+      method: "DELETE",
+      headers: { origin: "http://localhost:4400" },
+    });
+  const change = { page: "plan", quote: { exact: "", prefix: "", suffix: "" }, body: "Add a map" };
+
+  it("is for whoever started it, and the host; then it's gone for everyone but kept", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const ana = browser(share);
+    await ana.join("Ana");
+    const bo = browser(share, "198.51.100.2");
+    await bo.join("Bo");
+    const mine = (await (await ana.post("/api/wikis/alpha/threads", change)).json()) as Thread;
+    const theirs = (await (await bo.post("/api/wikis/alpha/threads", change)).json()) as Thread;
+
+    expect((await del(share, ana, `/wikis/alpha/threads/${theirs.id}`)).status).toBe(403);
+    expect((await del(share, ana, `/wikis/alpha/threads/${mine.id}`, "https://evil.example")).status).toBe(403);
+    expect((await del(share, ana, `/wikis/beta/threads/${mine.id}`)).status).toBe(404);
+    expect((await del(share, ana, `/wikis/alpha/threads/${mine.id}`)).status).toBe(204);
+    expect((await del(share, ana, `/wikis/alpha/threads/${mine.id}`)).status).toBe(404);
+
+    const seen = ((await (await bo.get("/api/wikis/alpha/threads")).json()) as { threads: Thread[] }).threads;
+    expect(seen.map((t) => t.id)).toEqual([theirs.id]);
+    expect(listThreads(alpha()).map((t) => t.id)).toEqual([theirs.id]);
+    expect(waitingForAgent(listThreads(alpha())).map((t) => t.id)).toEqual([theirs.id]);
+    // Kept in the database, marked, for backups and sync.
+    expect(listThreads(alpha(), { removed: true }).find((t) => t.id === mine.id)?.removedAt).toBeTruthy();
+
+    // The host removes anyone's.
+    expect((await ownerDelete(theirs.id)).status).toBe(204);
+    expect(listThreads(alpha())).toEqual([]);
+    expect((await ownerDelete(999)).status).toBe(404);
+  });
+
+  it("can't happen through a view link", async () => {
+    const t = await createThreadAs("Ana");
+    const view = shares.create({ wiki: "alpha", kind: "view" });
+    const vi = browser(view);
+    await vi.join("Vi");
+    expect((await del(view, vi, `/wikis/alpha/threads/${t}`)).status).toBe(403);
+  });
+
+  async function createThreadAs(name: string) {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const b = browser(share);
+    await b.join(name);
+    return ((await (await b.post("/api/wikis/alpha/threads", change)).json()) as Thread).id;
+  }
 });

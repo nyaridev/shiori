@@ -52,7 +52,7 @@
   text-decoration: none;
 }
 .sh-special-link:hover {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .sh-special-summary {
   flex-basis: 100%;
@@ -136,7 +136,7 @@
   text-decoration: none;
 }
 .sh-task-section:hover {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .sh-special-answer {
   color: var(--tone-good);
@@ -159,7 +159,7 @@
   font-size: var(--t-sm);
 }
 .sh-missing-links a {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 /* The toolbox (Toolbox.tsx): page kits, page fields. */
@@ -283,4 +283,87 @@
   .sh-fm-field {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Decisions (Special:Decisions): a timeline down the left, one decision per stop. */
+.sh-decisions {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0 0 0 var(--s-4);
+  border-left: 2px solid var(--border);
+  list-style: none;
+}
+.sh-decision {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: var(--s-3);
+  align-items: start;
+}
+.sh-decision::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: calc(-1 * var(--s-4) - 6px);
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--tone-good);
+}
+.sh-decision-day {
+  padding-top: 2px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+.sh-decision-body {
+  display: grid;
+  gap: 2px;
+  padding: var(--s-2) var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sh-decision-answer {
+  margin: 0;
+  color: var(--tone-good);
+  font-weight: 600;
+}
+.sh-decision-answer::before {
+  content: "→ ";
+}
+@media (max-width: 560px) {
+  .sh-decision {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-1);
+  }
+}
+
+/* Statuses and types on Special:Categories, each linking to its pages. */
+.sh-facets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.sh-facet {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-2) var(--s-1) var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--t-sm);
+  font-weight: 550;
+  text-decoration: none;
+}
+.sh-facet:hover {
+  border-color: var(--accent-line);
+}
+.sh-facet:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
 }

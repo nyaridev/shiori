@@ -4,20 +4,34 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
-import type { LiveEvent, SharesState } from "../shared/api.ts";
+import { type LiveEvent, REACTIONS, type SharesState } from "../shared/api.ts";
 import { addAnswer, listAnswers, setAnswerHidden } from "./answers.ts";
+import { ATTACHMENT_LIMITS, ATTACHMENT_NAME, attachmentsDir, hasAttachment, saveAttachment } from "./attachments.ts";
 import { designRoutes } from "./designRoutes.ts";
+import { PICTURE_MIME } from "./designs.ts";
 import { serveFile } from "./files.ts";
+import { forgetGit, gitInfo } from "./git.ts";
+import { historyOf, versionOf } from "./history.ts";
 import type { Live } from "./live.ts";
 import { type Registry, toCard, type Wiki } from "./registry.ts";
-import { search } from "./search.ts";
+import { filterFrom, notesOf, search, searchNotes } from "./search.ts";
 import { cleanName } from "./sharing/guest.ts";
 import { type Presence, placeOf, presenceFor, withTitles } from "./sharing/presence.ts";
 import { DEFAULT_HOST, type Shares } from "./sharing/shares.ts";
 import type { Tunnel } from "./sharing/tunnel.ts";
-import { addMessage, createThread, getThread, listThreads, setHidden, setStatus } from "./threads.ts";
+import {
+  addMessage,
+  createThread,
+  getThread,
+  listThreads,
+  react,
+  removeThread,
+  setHidden,
+  setStatus,
+} from "./threads.ts";
 import { isToolboxFile, kitsOf, renderElements } from "./toolbox.ts";
 import { answerProblem, createWikiData, type WikiData } from "./wikiData.ts";
 
@@ -29,10 +43,22 @@ const newAnswerSchema = z.strictObject({
   choice: z.string().min(1).nullable().default(null),
   body: z.string().trim().default(""),
 });
-const newThreadSchema = z.strictObject({ page: z.string(), quote: quoteSchema, body: z.string().trim().min(1) });
+/** Pictures attached to a new comment: files uploaded first, through the attachments route. */
+export const imagesSchema = z.array(z.string().regex(ATTACHMENT_NAME)).max(ATTACHMENT_LIMITS.perMessage).default([]);
+const newThreadSchema = z.strictObject({
+  page: z.string(),
+  quote: quoteSchema,
+  body: z.string().trim().min(1),
+  images: imagesSchema,
+});
+const attachmentBody = bodyLimit({
+  maxSize: ATTACHMENT_LIMITS.bytes,
+  onError: (c) => c.json({ error: "the picture is too big" }, 413),
+});
 const messageSchema = z.strictObject({ body: z.string().trim().min(1) });
 const statusSchema = z.strictObject({ status: z.enum(["open", "resolved", "wontfix"]) });
 const hiddenSchema = z.strictObject({ hidden: z.boolean() });
+export const reactionSchema = z.strictObject({ emoji: z.enum(REACTIONS), on: z.boolean() });
 const newShareSchema = z.strictObject({
   wiki: z.string(),
   kind: z.enum(["view", "comment"]),
@@ -128,10 +154,47 @@ export function buildApp({
     return c.json({ groups: corpusOf(w).images });
   });
 
+  // Git (ADR-0008): where the wiki is kept, and each page's history, read from git on this PC.
+  live.subscribe((e) => {
+    if (e.type === "git" || e.type === "pages") forgetGit(registry.get(e.wiki)?.root);
+  });
+  app.get("/api/wikis/:id/git", async (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    return c.json(await gitInfo(w.root));
+  });
+
+  app.get("/api/wikis/:id/history", async (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const history = await historyOf(w, data, c.req.query("path") ?? "");
+    return history ? c.json(history) : c.json({ error: "no such page" }, 404);
+  });
+
+  app.get("/api/wikis/:id/history/:version", async (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const version = await versionOf(w, data, c.req.query("path") ?? "", c.req.param("version"));
+    return version ? c.json(version) : c.json({ error: "no such version" }, 404);
+  });
+
+  // Pages, narrowed by status, type or tag; and the comments and answers that match.
   app.get("/api/wikis/:id/search", (c) => {
     const w = wikiOr404(c);
     if (w instanceof Response) return w;
-    return c.json({ hits: search(corpusOf(w).search, c.req.query("q") ?? "") });
+    const q = (c.req.query("q") ?? "").slice(0, 200);
+    const { pages } = corpusOf(w);
+    const isOpen = (p: string, q: string) => pages.get(p)?.questions.find((x) => x.id === q)?.status === "open";
+    const notes = notesOf(listThreads(w.root), listAnswers(w.root), isOpen);
+    return c.json({
+      hits: search(
+        corpusOf(w).search,
+        q,
+        20,
+        filterFrom((k) => c.req.query(k)),
+      ),
+      notes: searchNotes(notes, q, (p) => pages.get(p)),
+    });
   });
 
   // A wiki's pictures. `_dev` is docs/, for the element examples on /dev/ui; it's the app's own folder, so nothing
@@ -172,7 +235,27 @@ export function buildApp({
     if (w instanceof Response) return w;
     const body = newThreadSchema.safeParse(await c.req.json().catch(() => null));
     if (!body.success) return c.json({ error: "bad request" }, 400);
-    return c.json(createThread(w.root, body.data.page, body.data.quote, body.data.body), 201);
+    const { page, quote, body: text, images } = body.data;
+    if (!images.every((f) => hasAttachment(w.root, f))) return c.json({ error: "no such picture" }, 400);
+    return c.json(createThread(w.root, page, quote, text, "user", images), 201);
+  });
+
+  // Pictures for comments (attachments.ts): uploaded first, then named in the new thread.
+  app.post("/api/wikis/:id/attachments", attachmentBody, async (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const type = c.req.header("content-type") ?? "";
+    if (!PICTURE_MIME.includes(type)) return c.json({ error: "add a PNG, JPEG, WebP or GIF picture" }, 415);
+    const saved = saveAttachment(w.root, type, Buffer.from(await c.req.arrayBuffer()));
+    return typeof saved === "string" ? c.json({ error: saved }, 400) : c.json(saved, 201);
+  });
+
+  app.get("/api/wikis/:id/attachments/:file", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const file = c.req.param("file");
+    if (!ATTACHMENT_NAME.test(file)) return c.json({ error: "not found" }, 404);
+    return serveFile(c, attachmentsDir(w.root), file, { cache: false });
   });
 
   app.post("/api/wikis/:id/threads/:tid/messages", async (c) => {
@@ -194,6 +277,13 @@ export function buildApp({
     return c.json(setStatus(w.root, id, body.data.status));
   });
 
+  // The host removes any thread (a change request they or a guest made). It's kept, marked, and gone for everyone.
+  app.delete("/api/wikis/:id/threads/:tid", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    return removeThread(w.root, Number(c.req.param("tid"))) ? c.body(null, 204) : c.notFound();
+  });
+
   // Moderation (ADR-0003): the owner hides a guest's message or answer from guests and the inbox, or shows it again.
   const hide = async (c: Context, apply: (root: string, id: number, hidden: boolean) => unknown) => {
     const w = wikiOr404(c);
@@ -206,6 +296,16 @@ export function buildApp({
     return c.json(result);
   };
   app.patch("/api/wikis/:id/messages/:mid", (c) => hide(c, setHidden));
+
+  // Reactions on a message: the owner adds one or takes it back.
+  app.post("/api/wikis/:id/messages/:mid/reactions", async (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const body = reactionSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: "bad request" }, 400);
+    const t = react(w.root, Number(c.req.param("mid")), body.data.emoji, "user", body.data.on);
+    return t ? c.json(t) : c.notFound();
+  });
   app.patch("/api/wikis/:id/answers/:mid", (c) => hide(c, setAnswerHidden));
 
   /** The element reference (docs/elements.md), rendered for the /dev/ui page. */

@@ -2,9 +2,18 @@ import type { ReactNode } from "react";
 
 export type BadgeTone = "neutral" | "accent" | "good" | "warn" | "bad";
 
-export function Badge({ tone = "neutral", children }: { tone?: BadgeTone; children: ReactNode }) {
+export function Badge({
+  tone = "neutral",
+  title,
+  children,
+}: {
+  tone?: BadgeTone;
+  /** What the badge means, on hover. */
+  title?: string;
+  children: ReactNode;
+}) {
   return (
-    <span className="sh-badge" data-tone={tone}>
+    <span className="sh-badge" data-tone={tone} title={title}>
       {children}
     </span>
   );

@@ -17,12 +17,14 @@ import {
   type BadgeTone,
   Callout,
   type CalloutTone,
+  CheckMark,
   Dialog,
   DialogContent,
   DialogTrigger,
   HoverCard,
   Icon,
   Kbd,
+  type TabItem,
   Tabs,
 } from "../../ui/index.ts";
 import { PageIcon } from "../PageIcon.tsx";
@@ -111,6 +113,14 @@ function headingWith(Tag: "h2" | "h3") {
   };
 }
 
+/** A table that scrolls sideways inside its panel when it's wider than the page (phones). */
+export const TableEl = ({ children, ...rest }: Props<object>) => (
+  // biome-ignore lint/a11y/noNoninteractiveTabindex: a region that scrolls must be reachable by keyboard.
+  <section className="sh-table-wrap" tabIndex={0} aria-label="Table">
+    <table {...rest}>{children}</table>
+  </section>
+);
+
 export const H2El = headingWith("h2");
 export const H3El = headingWith("h3");
 
@@ -144,16 +154,19 @@ export const RowEl = ({ children }: Props) => <div className="sh-infobox-row">{c
 export const KeyEl = ({ children }: Props) => <span className="sh-infobox-key">{children}</span>;
 export const ValueEl = ({ children }: Props) => <span className="sh-infobox-value">{children}</span>;
 
-export const TabEl = ({ children }: Props<{ label?: string }>) => <>{children}</>;
+type TabProps = Props<{ label?: string; tone?: TabItem["tone"] }>;
+
+export const TabEl = ({ children }: TabProps) => <>{children}</>;
 
 export function TabsEl({ children }: Props) {
-  const tabs = Children.toArray(children).filter(isValidElement) as ReactElement<Props<{ label?: string }>>[];
+  const tabs = Children.toArray(children).filter(isValidElement) as ReactElement<TabProps>[];
   return (
     <Tabs
       items={tabs.map((t, i) => ({
         value: String(i),
         label: t.props.label || `Tab ${i + 1}`,
         content: t.props.children,
+        tone: t.props.tone,
       }))}
     />
   );
@@ -309,7 +322,7 @@ export function TaskBox({ type, checked }: { type?: string; checked?: boolean })
   if (type !== "checkbox") return null;
   return (
     <span className="sh-task" data-checked={checked || undefined} role="img" aria-label={checked ? "done" : "open"}>
-      {checked && <Icon name="check" size={12} />}
+      {checked && <CheckMark size={13} />}
     </span>
   );
 }

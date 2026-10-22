@@ -13,6 +13,12 @@ export interface PageInfo {
   hideAnswer: (id: number, hidden: boolean) => Promise<void>;
   /** The page's comment threads (for the Discussion panel). */
   threads: Threads;
+  /** Opens a thread in the comments rail (a drawer on narrow screens). */
+  activate: (id: number) => void;
+  /** Sections (by anchor) that changed since this viewer last opened the page (seen.ts). */
+  changed: Set<string>;
+  /** An older version of the page (ADR-0008): shown as it was, with nothing to answer or comment on. */
+  readOnly?: boolean;
 }
 
 export const PageContext = createContext<PageInfo | null>(null);

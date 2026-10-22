@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { Thread } from "../shared/api.ts";
 import { renderMarkdown } from "./markdown/render.ts";
-import { fold, indexPage, marksIn, type SearchDoc, search, snippet, terms } from "./search.ts";
+import { fold, indexPage, marksIn, notesOf, type SearchDoc, search, searchNotes, snippet, terms } from "./search.ts";
 
 const ctx = { wikiId: "demo", pageDir: "", pageExists: () => true, fileExists: () => true };
 
@@ -62,5 +63,70 @@ describe("search", () => {
       [0, 7],
       [12, 19],
     ]);
+  });
+});
+
+describe("search filters", () => {
+  const tagged = [
+    doc("a", "Alpha plan", "The plan.", { status: "active", type: "Plan", tags: ["Plan", "core"] }),
+    doc("b", "Beta plan", "Another plan.", { status: "idea", type: "Feature", tags: ["core"] }),
+    doc("c", "Gamma", "No match here.", { status: "active", type: "Plan" }),
+  ];
+
+  it("narrow matches by status, type and tag, ignoring case and accents", () => {
+    expect(search(tagged, "plan", 20, { status: "active" }).map((h) => h.path)).toEqual(["a"]);
+    expect(search(tagged, "plan", 20, { type: "feature" }).map((h) => h.path)).toEqual(["b"]);
+    expect(search(tagged, "plan", 20, { tag: "CORE" }).map((h) => h.path)).toEqual(["a", "b"]);
+  });
+
+  it("list every page that passes when there's a filter but no words", () => {
+    expect(search(tagged, "", 20, { status: "active" }).map((h) => h.title)).toEqual(["Alpha plan", "Gamma"]);
+    expect(search(tagged, "", 20)).toEqual([]);
+  });
+});
+
+describe("searching comments and answers", () => {
+  const thread = (id: number, page: string, status: Thread["status"], bodies: string[]): Thread => ({
+    id,
+    page,
+    quote: { exact: "the roadmap", prefix: "", suffix: "" },
+    status,
+    createdAt: "",
+    resolvedAt: null,
+    messages: bodies.map((body, i) => ({ id: id * 10 + i, author: "user", body, createdAt: "" })),
+  });
+  const notes = notesOf(
+    [thread(1, "plan", "resolved", ["Move the launch", "Done"]), thread(2, "plan", "open", ["Launch in May?"])],
+    [
+      {
+        id: 1,
+        page: "plan",
+        question: "q1",
+        choice: "Steam",
+        body: "Launch there first",
+        author: "user",
+        createdAt: "",
+      },
+    ],
+    (_, q) => q === "q1",
+  );
+  const pageOf = (p: string) => (p === "plan" ? { title: "Plan" } : undefined);
+
+  it("find every word in a thread's quote and messages, or an answer's pick and note; open ones first", () => {
+    const hits = searchNotes(notes, "launch", pageOf);
+    expect(hits.map((h) => [h.kind, h.ref, h.open])).toEqual([
+      ["comment", "2", true],
+      ["answer", "q1", true],
+      ["comment", "1", false],
+    ]);
+    expect(searchNotes(notes, "roadmap move", pageOf).map((h) => h.ref)).toEqual(["1"]);
+    expect(searchNotes(notes, "steam", pageOf)[0]).toMatchObject({
+      title: "Plan",
+      snippet: "Steam · Launch there first",
+    });
+  });
+
+  it("skip notes on pages that are gone", () => {
+    expect(searchNotes(notes, "launch", () => undefined)).toEqual([]);
   });
 });

@@ -4,8 +4,12 @@ import { useMemo } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import * as home from "../home/blocks.tsx";
 import { CodeBlock } from "./code.tsx";
+import { DataTableEl } from "./DataTable.tsx";
+import { DiagramEl } from "./Diagram.tsx";
 import * as el from "./elements.tsx";
+import { SectionEl } from "./Section.tsx";
 import * as uv from "./universal.tsx";
+import "katex/dist/katex.min.css";
 import "./planning.css";
 import "./prose.css";
 
@@ -14,6 +18,7 @@ const components = {
   img: el.ImgEl,
   pre: CodeBlock,
   h2: el.H2El,
+  table: el.TableEl,
   h3: el.H3El,
   input: el.TaskBox,
   "sh-callout": el.CalloutEl,
@@ -41,6 +46,7 @@ const components = {
   "sh-progress": el.ProgressEl,
   "sh-related": uv.RelatedEl,
   "sh-question": uv.QuestionEl,
+  "sh-suggestion": uv.QuestionEl,
   "sh-children": uv.ChildrenEl,
   "sh-toc": uv.TocEl,
   "sh-status": uv.StatusEl,
@@ -59,6 +65,9 @@ const components = {
   "sh-discussions": home.DiscussionsEl,
   "sh-directory": home.DirectoryEl,
   "sh-designs": home.DesignsEl,
+  "sh-section": SectionEl,
+  "sh-diagram": DiagramEl,
+  "sh-table": DataTableEl,
   "sh-unknown": el.UnknownEl,
 } as unknown as Components;
 

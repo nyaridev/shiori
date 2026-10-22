@@ -1,10 +1,9 @@
-// The bottom of a page, as on a wiki website: cards for the pages under it, what's new (home), what links here, its
-// categories, the previous and next pages in sidebar order, and when it was last edited.
+// The bottom of a page: the questions and suggestions it doesn't place itself, cards for the pages under it, what's
+// new (home), its related pages, and last its Changes panel, where people ask for changes to the whole page.
 import { Link } from "react-router";
-import type { PageData, PageEntry, PageLink } from "../../shared/api.ts";
+import type { PageData, PageEntry, PageLink, Question } from "../../shared/api.ts";
 import { PageDiscussion } from "../comments/PageDiscussion.tsx";
 import { ago } from "../lib/time.ts";
-import { Icon } from "../ui/index.ts";
 import { usePage } from "./PageContext.ts";
 import { pageHref, specialHref } from "./PageHead.tsx";
 import { PageIcon } from "./PageIcon.tsx";
@@ -34,22 +33,6 @@ export function PageCard({ wikiId, page }: { wikiId: string; page: PageLink }) {
     <div className="sh-section-card" data-folder="">
       {body}
     </div>
-  );
-}
-
-function Neighbour({ wikiId, page, dir }: { wikiId: string; page: PageLink; dir: "prev" | "next" }) {
-  return (
-    <Link to={pageHref(wikiId, page.path)} className="sh-pager-link" data-dir={dir}>
-      <span className="sh-pager-hint">
-        {dir === "prev" && <Icon name="arrowLeft" size={12} />}
-        {dir === "prev" ? "Previous" : "Next"}
-        {dir === "next" && <Icon name="arrowRight" size={12} />}
-      </span>
-      <span className="sh-pager-title">
-        <PageIcon icon={page.icon} className="sh-icon-gap" />
-        {page.title}
-      </span>
-    </Link>
   );
 }
 
@@ -98,27 +81,33 @@ function RecentlyUpdated({ wikiId, index }: { wikiId: string; index: PageEntry[]
   );
 }
 
+/** A page's questions or suggestions that it doesn't place itself, open ones first. */
+function Decisions({ id, title, list }: { id: string; title: string; list: Question[] }) {
+  if (!list.length) return null;
+  return (
+    <section className="sh-foot-block" id={id} aria-labelledby={`sh-${id}-title`}>
+      <h2 id={`sh-${id}-title`} className="sh-sections-title">
+        {title}
+      </h2>
+      <div className="sh-question-list">
+        {list.map((q) => (
+          <QuestionCard key={q.id} question={q} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function PageFoot({ wikiId, page, index }: { wikiId: string; page: PageData; index?: PageEntry[] }) {
   const home = page.path === "";
   const ctx = usePage();
-  // Questions the page doesn't place itself collect here: open ones first.
   const unplaced = page.questions
     .filter((q) => !page.placed.questions.includes(q.id))
     .sort((a, b) => Number(a.status === "resolved") - Number(b.status === "resolved"));
   return (
     <footer className="sh-page-foot">
-      {unplaced.length > 0 && (
-        <section className="sh-foot-block" id="questions" aria-labelledby="sh-questions-title">
-          <h2 id="sh-questions-title" className="sh-sections-title">
-            Questions
-          </h2>
-          <div className="sh-question-list">
-            {unplaced.map((q) => (
-              <QuestionCard key={q.id} question={q} />
-            ))}
-          </div>
-        </section>
-      )}
+      <Decisions id="questions" title="Questions" list={unplaced.filter((q) => q.kind === "question")} />
+      <Decisions id="suggestions" title="Suggestions" list={unplaced.filter((q) => q.kind === "suggestion")} />
       {page.children.length > 0 && !page.placed.children && (
         <section className="sh-sections" aria-label={home ? "Sections" : "In this section"}>
           <h2 className="sh-sections-title">{home ? "Sections" : "In this section"}</h2>
@@ -130,7 +119,6 @@ export function PageFoot({ wikiId, page, index }: { wikiId: string; page: PageDa
         </section>
       )}
       {home && index && <RecentlyUpdated wikiId={wikiId} index={index} />}
-      {ctx && <PageDiscussion threads={ctx.threads} />}
       {page.related.length > 0 && !page.placed.related && (
         <section className="sh-foot-block" aria-labelledby="sh-related-title">
           <h2 id="sh-related-title" className="sh-sections-title">
@@ -139,51 +127,7 @@ export function PageFoot({ wikiId, page, index }: { wikiId: string; page: PageDa
           <Related wikiId={wikiId} page={page} />
         </section>
       )}
-      {page.backlinks.length > 0 && (
-        <section className="sh-foot-block" aria-labelledby="sh-backlinks-title">
-          <h2 id="sh-backlinks-title" className="sh-sections-title">
-            What links here
-          </h2>
-          <div className="sh-chips">
-            {page.backlinks.map((b) => (
-              <PageChip key={b.path} wikiId={wikiId} page={b} />
-            ))}
-          </div>
-        </section>
-      )}
-      {page.tags.length > 0 && (
-        <nav className="sh-categories" aria-label="Categories">
-          <Link to={specialHref(wikiId, "categories")} className="sh-categories-label">
-            Categories
-          </Link>
-          {page.tags.map((tag) => (
-            <Link key={tag} to={specialHref(wikiId, "categories", tag)} className="sh-category">
-              {tag}
-            </Link>
-          ))}
-        </nav>
-      )}
-      {(page.prev || page.next) && (
-        <nav className="sh-pager" aria-label="Previous and next pages">
-          {page.prev && <Neighbour wikiId={wikiId} page={page.prev} dir="prev" />}
-          {page.next && <Neighbour wikiId={wikiId} page={page.next} dir="next" />}
-        </nav>
-      )}
-      {page.updatedAt && (
-        <p className="sh-last-edited">
-          This page was last edited{" "}
-          <time dateTime={page.updatedAt} title={new Date(page.updatedAt).toLocaleString()}>
-            {ago(page.updatedAt)}
-          </time>{" "}
-          ({new Date(page.updatedAt).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" })})
-          {page.file && (
-            <>
-              {" "}
-              · <code>{page.file}</code>
-            </>
-          )}
-        </p>
-      )}
+      {ctx && <PageDiscussion threads={ctx.threads} />}
     </footer>
   );
 }

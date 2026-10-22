@@ -19,15 +19,43 @@ function find(node: Root | RootContent, tag: string): Element[] {
 
 describe("renderMarkdown", () => {
   it("colors code blocks in known languages with the theme's variables, and leaves others plain", () => {
-    const { hast, problems } = renderMarkdown("```luau\nlocal hp = 20 -- full\n```\n\n```mermaid\ngraph TD\n```", ctx);
+    const { hast, problems } = renderMarkdown("```luau\nlocal hp = 20 -- full\n```\n\n```ini\n[game]\n```", ctx);
     const [luau, other] = find(hast, "pre");
     expect(luau.properties).toMatchObject({ className: ["sh-code"], dataLang: "luau" });
     const styles = find(luau, "span").map((s) => String(s.properties.style ?? ""));
     expect(styles).toContain("color:var(--code-token-keyword)");
     expect(styles.some((s) => s.includes("--code-token-comment"))).toBe(true);
-    expect(other.properties).toMatchObject({ className: ["sh-code"], dataLang: "mermaid" });
+    expect(other.properties).toMatchObject({ className: ["sh-code"], dataLang: "ini" });
     expect(find(other, "span")).toEqual([]);
     expect(problems).toEqual([]);
+  });
+
+  it("hands a mermaid fence to the app as a diagram, with its source", () => {
+    const { hast, problems } = renderMarkdown("```mermaid\nflowchart LR\n  a --> b\n```\n\n```mermaid\n```", ctx);
+    const diagrams = find(hast, "sh-diagram");
+    expect(diagrams).toHaveLength(2);
+    expect(diagrams[0].children).toEqual([{ type: "text", value: "flowchart LR\n  a --> b" }]);
+    expect(find(hast, "pre")).toEqual([]);
+    expect(problems).toEqual(["line 6: diagram: the block is empty"]);
+  });
+
+  it("typesets $$math$$ in a sentence and in a block, but leaves a lone $ alone", () => {
+    const md = "Costs $5 and $10, and $$E = mc^2$$.\n\n$$\n\\frac{a}{b}\n$$\n\n```math\nx^2\n```";
+    const { hast, problems } = renderMarkdown(md, ctx);
+    const classes = (el: Element) => (el.properties.className as string[] | undefined) ?? [];
+    const inline = find(hast, "span").filter((s) => classes(s).includes("sh-math"));
+    expect(inline.map((s) => s.properties.dataTex)).toEqual(["E = mc^2"]);
+    const blocks = find(hast, "div").filter((d) => classes(d).includes("sh-math-block"));
+    expect(blocks.map((d) => d.properties.dataTex)).toEqual(["\\frac{a}{b}", "x^2"]);
+    expect(JSON.stringify(hast)).toContain("Costs $5 and $10, and ");
+    expect(find(hast, "math")).toHaveLength(3);
+    expect(problems).toEqual([]);
+  });
+
+  it("reports a formula KaTeX can't read, and still shows it", () => {
+    const { hast, problems } = renderMarkdown("Broken: $$\\frac{a$$", ctx);
+    expect(problems[0]).toMatch(/^line 1: math: /);
+    expect(JSON.stringify(hast)).toContain("katex-error");
   });
 
   it("turns directives into ld elements with their label", () => {
@@ -42,6 +70,18 @@ describe("renderMarkdown", () => {
     const keys = find(hast, "sh-key").map((k) => (k.children[0] as { value: string }).value);
     expect(keys).toEqual(["Health", "Speed"]);
     expect(find(hast, "sh-value")[1].children.some((c) => c.type === "element" && c.tagName === "strong")).toBe(true);
+  });
+
+  it("gives a tab its label and an optional tone", () => {
+    const md = ["::::tabs", ":::tab[Ideas]", "A", ":::", ':::tab[Suggestions]{tone="good"}', "B", ":::", "::::"];
+    const { hast, problems } = renderMarkdown(md.join("\n"), ctx);
+    expect(find(hast, "sh-tab").map((t) => [t.properties.label, t.properties.tone])).toEqual([
+      ["Ideas", undefined],
+      ["Suggestions", "good"],
+    ]);
+    expect(problems).toEqual([]);
+    const pink = ["::::tabs", ':::tab[X]{tone="pink"}', "A", ":::", "::::"].join("\n");
+    expect(renderMarkdown(pink, ctx).problems[0]).toContain("tone");
   });
 
   it("splits columns on ---", () => {

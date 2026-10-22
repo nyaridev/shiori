@@ -1,6 +1,36 @@
 // File formats of a wiki folder. Agents write these files; the server and `pnpm wiki check` validate them.
 import { z } from "zod";
 
+/** A day, written `2026-11-15` (YAML may read it as a date). */
+const day = z.union([
+  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "write a day as 2026-11-15"),
+  z.date().transform((d) => d.toISOString().slice(0, 10)),
+]);
+
+/** A question or a suggestion on a page: the same shape, answered the same way. */
+const decisionSchema = z.object({
+  id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/i, "use letters, digits and dashes, as q1"),
+  text: z.string().min(1),
+  options: z.array(z.union([z.string(), z.number()]).transform(String)).optional(),
+  status: z.enum(["open", "resolved"]).default("open"),
+  answer: z.string().optional(),
+  /** When it should be decided by. */
+  due: day.optional(),
+  /** When the agent decided it, for the decisions timeline. */
+  decided: day.optional(),
+});
+
+/**
+ * A wiki's `settings.json`: how many open questions and suggestions a page may have at once. Each wiki picks its
+ * own; without the file, both are 6.
+ */
+export const settingsSchema = z.strictObject({
+  maxQuestions: z.number().int().min(0).max(50).default(6),
+  maxSuggestions: z.number().int().min(0).max(50).default(6),
+});
+export type Settings = z.infer<typeof settingsSchema>;
+export const DEFAULT_SETTINGS: Settings = settingsSchema.parse({});
+
 export const WIKI_SCHEMA = 1;
 
 export const wikiIdSchema = z
@@ -82,20 +112,15 @@ export const frontmatterSchema = z.looseObject({
   /** `false` hides "On this page" (for short pages). */
   toc: z.boolean().optional(),
   /**
-   * Open decisions on this page. People answer them in the app (picking an option, adding a note); the agent writes
-   * the decision back as `status: resolved` and `answer`.
+   * Open decisions on this page: questions about what the page describes now. People answer them in the app (picking
+   * an option, adding a note); the agent writes the decision back as `status: resolved`, `answer` and `decided`.
    */
-  questions: z
-    .array(
-      z.object({
-        id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/i, "use letters, digits and dashes, as q1"),
-        text: z.string().min(1),
-        options: z.array(z.union([z.string(), z.number()]).transform(String)).optional(),
-        status: z.enum(["open", "resolved"]).default("open"),
-        answer: z.string().optional(),
-      }),
-    )
-    .optional(),
+  questions: z.array(decisionSchema).optional(),
+  /**
+   * The agent's suggestions for this page, written while reviewing it: something new to add or a way to improve
+   * what's there. People answer them like questions; they show in green, below the questions.
+   */
+  suggestions: z.array(decisionSchema).optional(),
   /** A layout from the wiki's `layouts/` that arranges this page (ADR-0006). */
   layout: z.string().min(1).optional(),
   /** The design this page was made from, as `<collection>/<id>`; a layout's `design` block shows it. */
@@ -148,8 +173,14 @@ export const FRONTMATTER_FIELDS: { key: keyof Frontmatter; what: string; example
   { key: "toc", what: "false hides “On this page” (for short pages).", example: "toc: false" },
   {
     key: "questions",
-    what: "Open decisions. People answer them on the page; the agent writes back status: resolved and answer.",
-    example: 'questions:\n  - id: q1\n    text: "Steam or itch.io first?"\n    options: [Steam, itch.io]',
+    what: "Open decisions, with an optional due date. People answer them on the page; the agent writes back status: resolved, answer and the day it decided.",
+    example:
+      'questions:\n  - id: q1\n    text: "Steam or itch.io first?"\n    options: [Steam, itch.io]\n    due: 2026-11-15\n  - id: q2\n    text: "Weekly or monthly updates?"\n    status: resolved\n    answer: "Weekly, on Fridays"\n    decided: 2026-10-20',
+  },
+  {
+    key: "suggestions",
+    what: "The agent's ideas for the page, written while reviewing it: what to add or improve. Same fields as questions; they show in green, below the questions.",
+    example: 'suggestions:\n  - id: s1\n    text: "Add a weekly leaderboard?"\n    options: [Yes, Later, No]',
   },
   {
     key: "layout",

@@ -1,13 +1,20 @@
 // Search inside a wiki: Ctrl+P (⌘P) or "/" opens it. Results update as you type; arrows move, Enter opens the page
-// at the matching heading, which flashes so the eye finds it.
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+// at the matching heading, which flashes so the eye finds it. Pages can be narrowed by status, type and tag (with no
+// words, that lists every page that fits), and comments and answers that match come after the pages.
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import type { Marks, SearchHit, WikiDetail } from "../../shared/api.ts";
+import type { Marks, NoteHit, SearchFilter, SearchHit, WikiDetail } from "../../shared/api.ts";
 import { api } from "../lib/api.ts";
-import { cx, Dialog, DialogContent, Icon, Kbd, ScrollArea } from "../ui/index.ts";
+import { Badge, cx, Dialog, DialogContent, Icon, Kbd, ScrollArea, Select } from "../ui/index.ts";
 import { pageHref } from "./PageHead.tsx";
 import "./search.css";
 import { PageIcon } from "./PageIcon.tsx";
+import { useWikiIndex } from "./WikiIndexContext.ts";
+
+/** "Any" in a filter's menu. */
+const ANY = "_any";
+
+type Result = { kind: "page"; hit: SearchHit } | { kind: "note"; note: NoteHit };
 
 /** Wait before asking the server, so a fast typist sends one request, not one per key. */
 const DEBOUNCE = 90;
@@ -65,21 +72,40 @@ export function SearchPalette({
 }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<SearchHit[] | null>(null);
+  const [filter, setFilter] = useState<SearchFilter>({});
+  const [results, setResults] = useState<Result[] | null>(null);
   const [active, setActive] = useState(0);
   const list = useRef<HTMLDivElement>(null);
 
+  // What the filters can pick from: the statuses, types and tags the wiki's pages use.
+  const index = useWikiIndex();
+  const choices = useMemo(() => {
+    const pages = (index?.index.pages ?? []).filter((p) => !p.hidden);
+    const sorted = (values: (string | undefined)[]) =>
+      [...new Set(values.filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b));
+    return {
+      status: sorted(pages.map((p) => p.status)),
+      type: sorted(pages.map((p) => p.type)),
+      tag: sorted(pages.flatMap((p) => p.tags)),
+    };
+  }, [index]);
+  const filtering = !!(filter.status || filter.type || filter.tag);
+
   useEffect(() => {
     const q = query.trim();
-    if (!open || !q) {
-      setHits(null);
+    if (!open || (!q && !filtering)) {
+      setResults(null);
       return;
     }
     const abort = new AbortController();
     const timer = setTimeout(() => {
-      api.search(wiki.id, q, abort.signal).then(
+      api.search(wiki.id, q, filter, abort.signal).then(
         (found) => {
-          setHits(found);
+          setResults([
+            ...found.hits.map((hit) => ({ kind: "page" as const, hit })),
+            // Comments and answers belong to no status, type or tag: they show only without filters.
+            ...(filtering ? [] : found.notes.map((note) => ({ kind: "note" as const, note }))),
+          ]);
           setActive(0);
         },
         () => {},
@@ -89,23 +115,32 @@ export function SearchPalette({
       clearTimeout(timer);
       abort.abort();
     };
-  }, [query, open, wiki.id]);
+  }, [query, open, wiki.id, filter, filtering]);
 
   useEffect(() => {
     list.current?.querySelector(`[data-index="${active}"]`)?.scrollIntoView({ block: "nearest" });
   }, [active]);
 
-  const go = (hit: SearchHit) => {
+  const go = (result: Result) => {
     onOpenChange(false);
-    navigate(`${pageHref(wiki.id, hit.path)}${hit.section ? `#${hit.section.id}` : ""}`);
-    reveal(hit.path, hit.section?.id);
+    if (result.kind === "page") {
+      const { hit } = result;
+      navigate(`${pageHref(wiki.id, hit.path)}${hit.section ? `#${hit.section.id}` : ""}`);
+      reveal(hit.path, hit.section?.id);
+      return;
+    }
+    // A comment opens in the comments rail; an answer shows on its question.
+    const { note } = result;
+    const target = note.kind === "comment" ? `comment-${note.ref}` : `question-${note.ref}`;
+    navigate(`${pageHref(wiki.id, note.path)}#${target}`);
+    if (note.kind === "answer") reveal(note.path, target);
   };
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    const n = hits?.length ?? 0;
+    const n = results?.length ?? 0;
     if (e.key === "ArrowDown" && n) setActive((i) => (i + 1) % n);
     else if (e.key === "ArrowUp" && n) setActive((i) => (i - 1 + n) % n);
-    else if (e.key === "Enter" && hits?.[active]) go(hits[active]);
+    else if (e.key === "Enter" && results?.[active]) go(results[active]);
     else return;
     e.preventDefault();
   };
@@ -125,51 +160,79 @@ export function SearchPalette({
             placeholder={`Search ${wiki.title}…`}
             aria-label={`Search ${wiki.title}`}
             role="combobox"
-            aria-expanded={!!hits?.length}
+            aria-expanded={!!results?.length}
             aria-controls="sh-search-results"
-            aria-activedescendant={hits?.length ? `sh-search-hit-${active}` : undefined}
+            aria-activedescendant={results?.length ? `sh-search-hit-${active}` : undefined}
             autoComplete="off"
             spellCheck={false}
           />
           <Kbd>Esc</Kbd>
         </div>
+        {(choices.status.length > 0 || choices.type.length > 0 || choices.tag.length > 0) && (
+          <fieldset className="sh-search-filters">
+            <legend className="sh-sr-only">Narrow the pages</legend>
+            {(["status", "type", "tag"] as const).map((key) =>
+              choices[key].length ? (
+                <Select
+                  key={key}
+                  label={`Filter by ${key}`}
+                  value={filter[key] ?? ANY}
+                  onChange={(v) => setFilter((f) => ({ ...f, [key]: v === ANY ? undefined : v }))}
+                  options={[
+                    { value: ANY, label: `Any ${key}` },
+                    ...choices[key].map((v) => ({
+                      value: v,
+                      label: key === "tag" ? `#${v}` : key === "status" ? v[0].toUpperCase() + v.slice(1) : v,
+                    })),
+                  ]}
+                />
+              ) : null,
+            )}
+            {filtering && (
+              <button type="button" className="sh-search-clear" onClick={() => setFilter({})}>
+                Clear
+              </button>
+            )}
+          </fieldset>
+        )}
         <ScrollArea className="sh-search-results">
-          {!q && <p className="sh-search-empty">Search titles, headings and text across every page.</p>}
-          {q && hits?.length === 0 && <p className="sh-search-empty">No pages match “{q}”.</p>}
-          {!!hits?.length && (
+          {!q && !filtering && (
+            <p className="sh-search-empty">Search titles, headings, text, comments and answers across the wiki.</p>
+          )}
+          {(q || filtering) && results?.length === 0 && (
+            <p className="sh-search-empty">{q ? `Nothing matches “${q}”.` : "No page fits these filters."}</p>
+          )}
+          {!!results?.length && (
             <div ref={list} id="sh-search-results" className="sh-search-list" role="listbox" aria-label="Results">
-              {hits.map((hit, i) => (
-                // biome-ignore lint/a11y/useKeyWithClickEvents: the input above drives the keyboard (combobox).
-                <div
-                  key={hit.path}
-                  id={`sh-search-hit-${i}`}
-                  data-index={i}
-                  role="option"
-                  tabIndex={-1}
-                  aria-selected={i === active}
-                  className={cx("sh-search-hit", i === active && "is-active")}
-                  onMouseMove={() => setActive(i)}
-                  onClick={() => go(hit)}
-                >
-                  <PageIcon icon={hit.icon} fallback="page" className="sh-search-icon" />
-                  <span className="sh-search-body">
-                    <span className="sh-search-title">
-                      <Marked text={hit.title} marks={hit.titleMarks} />
-                      {hit.section && (
-                        <span className="sh-search-section">
-                          <Icon name="chevronRight" size={12} />
-                          <Marked text={hit.section.heading} marks={hit.section.marks} />
-                        </span>
-                      )}
-                    </span>
-                    {hit.snippet && (
-                      <span className="sh-search-snippet">
-                        <Marked text={hit.snippet} marks={hit.marks} />
-                      </span>
-                    )}
-                  </span>
-                </div>
-              ))}
+              {results.map((result, i) => {
+                const first = i === 0 || results[i - 1].kind !== result.kind;
+                const group = first && (
+                  <div key={`group-${result.kind}`} className="sh-search-group" role="presentation">
+                    {result.kind === "page" ? "Pages" : "Comments and answers"}
+                  </div>
+                );
+                const option = (
+                  // biome-ignore lint/a11y/useKeyWithClickEvents: the input above drives the keyboard (combobox).
+                  <div
+                    key={
+                      result.kind === "page"
+                        ? result.hit.path
+                        : `${result.note.kind}:${result.note.path}:${result.note.ref}`
+                    }
+                    id={`sh-search-hit-${i}`}
+                    data-index={i}
+                    role="option"
+                    tabIndex={-1}
+                    aria-selected={i === active}
+                    className={cx("sh-search-hit", i === active && "is-active")}
+                    onMouseMove={() => setActive(i)}
+                    onClick={() => go(result)}
+                  >
+                    {result.kind === "page" ? <PageHit hit={result.hit} /> : <NoteRow note={result.note} />}
+                  </div>
+                );
+                return group ? [group, option] : option;
+              })}
             </div>
           )}
         </ScrollArea>
@@ -183,5 +246,48 @@ export function SearchPalette({
         </footer>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function PageHit({ hit }: { hit: SearchHit }) {
+  return (
+    <>
+      <PageIcon icon={hit.icon} fallback="page" className="sh-search-icon" />
+      <span className="sh-search-body">
+        <span className="sh-search-title">
+          <Marked text={hit.title} marks={hit.titleMarks} />
+          {hit.section && (
+            <span className="sh-search-section">
+              <Icon name="chevronRight" size={12} />
+              <Marked text={hit.section.heading} marks={hit.section.marks} />
+            </span>
+          )}
+        </span>
+        {hit.snippet && (
+          <span className="sh-search-snippet">
+            <Marked text={hit.snippet} marks={hit.marks} />
+          </span>
+        )}
+      </span>
+    </>
+  );
+}
+
+function NoteRow({ note }: { note: NoteHit }) {
+  return (
+    <>
+      <span className="sh-search-icon sh-search-note-icon">
+        <Icon name={note.kind === "comment" ? "comment" : "check"} size={16} />
+      </span>
+      <span className="sh-search-body">
+        <span className="sh-search-title">
+          {note.kind === "comment" ? "Comment" : "Answer"} on {note.title}
+          {!note.open && <Badge>{note.kind === "comment" ? "Closed" : "Decided"}</Badge>}
+        </span>
+        <span className="sh-search-snippet">
+          <Marked text={note.snippet} marks={note.marks} />
+        </span>
+      </span>
+    </>
   );
 }

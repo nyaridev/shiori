@@ -2,7 +2,8 @@
   --sidebar: 264px;
   --rail: 300px;
   --head: 52px;
-  --page-width: 1180px;
+  /* The page column: narrow enough to read comfortably, with its padding. */
+  --page-width: 800px;
   display: grid;
   grid-template-columns: var(--sidebar) minmax(0, 1fr) var(--rail);
   /* The header (WikiHeader.tsx) across the whole window, then the sidebar, the page and the rail under it. */
@@ -23,6 +24,8 @@
 }
 .sh-wiki-sidebar {
   grid-column: 1;
+  display: flex;
+  flex-direction: column;
 }
 .sh-wiki-main {
   grid-row: 2;
@@ -47,12 +50,16 @@
   padding: var(--s-6) var(--s-6) 30vh;
 }
 
-/* Rail */
+/* Rail (PageRail.tsx): quiet, part of the page rather than a column of its own: no background or edge (a drawer, on
+   narrow screens and the home page, gets both back). */
 .sh-wiki-rail {
+  border-left: var(--bw) solid transparent;
+  background: var(--bg);
   display: grid;
   align-content: start;
   gap: var(--s-6);
-  padding: var(--s-6) var(--s-4) var(--s-6);
+  /* The same room as the sidebar's at the top and sides, so both start just under the header. */
+  padding: var(--s-3) var(--s-3) var(--s-6);
 }
 .sh-wiki-rail-close {
   display: none;
@@ -66,17 +73,120 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+/* The pill over the rail that swaps the contents for the comments and back, then the one that's showing. */
+.sh-wiki-rail .sh-scroll-view > div {
+  display: grid;
+  align-content: start;
+  gap: var(--s-3);
+}
+.sh-rail-pill {
+  display: inline-flex;
+  justify-self: start;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: var(--bw) solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-soft);
+  font: inherit;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.sh-rail-pill:hover {
+  border-color: var(--accent-line);
+  color: var(--text);
+}
+.sh-rail-pill:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+/* A block's heading (RailSection.tsx): a small label, which folds it; its chevron shows when you're there to fold,
+   or when it's folded. */
+.sh-rail-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: 26px;
+}
+.sh-rail-strip .sh-rail-title {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.sh-rail-strip .sh-rail-title:hover {
+  color: var(--text);
+}
+.sh-rail-strip .sh-rail-title:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-rail-strip .sh-fold {
+  opacity: 0;
+  transition:
+    opacity var(--fast) var(--ease),
+    rotate 220ms var(--glide);
+}
+.sh-rail-strip:hover .sh-fold,
+.sh-rail-strip:focus-within .sh-fold,
+.sh-rail-strip .sh-fold[data-folded] {
+  opacity: 1;
+}
+.sh-rail-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--hover);
+  color: var(--text-soft);
+  font-size: 0.6875rem;
+  letter-spacing: 0;
+  line-height: 18px;
+  text-align: center;
+}
+.sh-rail-strip .sh-segmented {
+  padding: 2px;
+  border-color: transparent;
+  background: none;
+}
+.sh-rail-strip .sh-segmented-item {
+  padding: 2px 8px;
+}
+.sh-rail-body {
+  padding-top: var(--s-2);
+}
+/* The contents: a thin line down the entries, the one being read marked on it by a mark that slides (Toc.tsx). */
+.sh-toc-list {
+  margin-left: 1px;
+}
 .sh-toc ul {
   list-style: none;
-  margin: var(--s-2) 0 0;
+  margin: 0;
   padding: 0;
   border-left: var(--bw) solid var(--border);
 }
+.sh-toc-mark {
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+/* A part under a section: set in so its number sits under its section's name. */
 .sh-toc li[data-depth="3"] {
-  padding-left: var(--s-3);
+  padding-left: 1.6em;
 }
 .sh-toc a {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   margin-left: calc(-1 * var(--bw));
   padding: 3px var(--s-3);
   border-left: 2px solid transparent;
@@ -84,13 +194,35 @@
   font-size: var(--t-sm);
   text-decoration: none;
   line-height: 1.4;
+  transition: color var(--fast) var(--ease);
+}
+/* Each entry's number (1., 1.1), in a column of its own so the names line up. */
+.sh-toc-number {
+  flex: none;
+  min-width: 1.6em;
+  color: color-mix(in oklab, var(--muted) 75%, transparent);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  transition: color var(--fast) var(--ease);
+}
+.sh-toc li[data-depth="3"] .sh-toc-number {
+  min-width: 2.2em;
+  font-weight: 600;
+}
+.sh-toc-text {
+  min-width: 0;
 }
 .sh-toc a:hover {
   color: var(--text);
 }
 .sh-toc a.is-current {
-  border-left-color: var(--accent);
   color: var(--text);
+  font-weight: 600;
+}
+.sh-toc a.is-current .sh-toc-number,
+.sh-toc a:hover .sh-toc-number {
+  color: var(--accent-ink);
 }
 
 /* Arriving from the deck: the card's layer fades away over the page while its parts settle in. */
@@ -155,7 +287,8 @@
   .sh-wiki-rail-close {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: calc(-1 * var(--s-4));
+    /* Its own row (the rail's gap less a little): what follows starts below it, never under it. */
+    margin-bottom: calc(-1 * var(--s-3));
   }
 }
 
@@ -192,63 +325,47 @@
   }
 }
 
-/* Home mode: the home page is a wide portal. The sidebar and the rail open as drawers from the header. */
+/* The home page: wide beside the sidebar, its banner and panels (home/) up to a comfortable width; the rail opens
+   from the header. */
 .sh-wiki[data-home] {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: var(--sidebar) minmax(0, 1fr);
 }
 .sh-wiki[data-home] .sh-wiki-main {
-  grid-column: 1;
   max-width: none;
-  padding: 0 0 30vh;
+  padding: var(--s-5) var(--s-6) 30vh;
 }
-.sh-wiki[data-home] .sh-wiki-sidebar,
+.sh-wiki-main[data-home] > *,
+.sh-wiki-main[data-home] .sh-page-body {
+  max-width: 1240px;
+  margin-inline: auto;
+}
 .sh-wiki[data-home] .sh-wiki-rail {
   position: fixed;
   top: 0;
-  height: 100vh;
-  z-index: 25;
-  background: var(--surface);
-  box-shadow: var(--shadow-2);
-  transition: translate 220ms var(--ease);
-}
-.sh-wiki[data-home] .sh-wiki-sidebar {
-  left: 0;
-  width: min(300px, 86vw);
-  translate: -100% 0;
-}
-.sh-wiki[data-home] .sh-wiki-rail {
   right: 0;
+  height: 100vh;
   width: min(360px, 100vw);
+  z-index: 20;
   padding-top: var(--s-4);
   border-left: var(--bw) solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
   translate: 100% 0;
+  transition: translate 220ms var(--ease);
 }
-.sh-wiki[data-home] .sh-wiki-sidebar[data-open],
 .sh-wiki[data-home] .sh-wiki-rail[data-open] {
   translate: 0 0;
 }
 .sh-wiki[data-home] .sh-wiki-rail-close {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: calc(-1 * var(--s-4));
-}
-.sh-wiki[data-home] .sh-scrim {
-  display: block;
-  position: fixed;
-  inset: 0;
-  z-index: 24;
-  border: 0;
-  background: rgb(0 0 0 / 0.4);
-}
-.sh-wiki-main[data-home] .sh-page-body {
-  /* Over the hero's fading edge. */
-  position: relative;
-  max-width: 1320px;
-  margin: calc(-1 * var(--s-5)) auto 0;
-  padding: 0 var(--s-6);
+  margin-bottom: calc(-1 * var(--s-3));
 }
 @media (max-width: 860px) {
-  .sh-wiki-main[data-home] .sh-page-body {
-    padding: 0 var(--s-4);
+  .sh-wiki[data-home] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sh-wiki[data-home] .sh-wiki-main {
+    padding: var(--s-4) var(--s-4) 30vh;
   }
 }

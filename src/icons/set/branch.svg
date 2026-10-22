@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#e8b86d" stroke-linecap="round" stroke-linejoin="round"><title>branch</title>
+<path class="ts" fill="none" stroke="#7c643f" stroke-width="2.6" d="M6.5 6v12.5M17.5 9.5c0 4.3-4.2 6-11 6.5"/>
+<circle cx="6.5" cy="5" r="3"/>
+<circle cx="6.5" cy="19" r="3"/>
+<circle cx="17.5" cy="7" r="3"/>
+</svg>

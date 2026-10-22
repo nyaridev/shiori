@@ -52,7 +52,7 @@
   text-decoration: none;
 }
 .sh-viewer-info a:hover {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 /* The strip: the wiki's pictures in reading order, a group per page. */
