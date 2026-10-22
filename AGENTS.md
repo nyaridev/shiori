@@ -65,6 +65,7 @@ history, math, diagrams and data tables, 0009 question lists at scale).
 | `src/dev/` | `/dev/ui` (`UiPage.tsx`): every primitive and element in the default theme, and links to `Screens.tsx`: `/dev/screens/<name>` previews each special screen (guest name prompt, link ended, blocked, name forgotten, unreachable, wiki unavailable, empty deck, error page, not found) by rendering the real component with sample data. A new special screen gets a row in `SCREENS` |
 | `src/shell/` | The error page |
 | `wikis/_template/` | Template for new wikis, with `kits/` (page kits every wiki can use). Every other folder in `wikis/` is git-ignored |
+| `assets/brand/` | The README's banners, dark and light |
 | `docs/` | `elements.md` (element reference, shown on `/dev/ui`; its images are in `assets/`, served as wiki `_dev`), `adr/` |
 
 ## Rules

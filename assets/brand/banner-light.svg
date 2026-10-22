@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-labelledby="t d">
+  <title id="t">Shiori</title>
+  <desc id="d">Wikis that agents write and people read. A deck of project wikis; pages take comments, not edits.</desc>
+  <rect width="1280" height="320" rx="24" fill="#f7f6f2"/>
+  <g fill="#c8902f"><rect x="110.0" y="113.3" width="33.3" height="93.3" rx="10.0" fill-opacity="0.4"/><rect x="166.7" y="80.0" width="46.7" height="160.0" rx="13.3"/><rect x="236.7" y="113.3" width="33.3" height="93.3" rx="10.0" fill-opacity="0.4"/></g>
+  <path d="M378 120.5Q370 114.8 360 114.8A20 14 0 0 0 360 142.8A20 14 0 0 1 360 170.8Q349 170.8 341 165M416 75.6V170.8M416 142.8A28 28 0 0 1 472 142.8V170.8M518 114.8V170.8M551 142.8A28 28 0 1 0 607 142.8A28 28 0 1 0 551 142.8ZM652 114.8V170.8M652 142.8A28 28 0 0 1 694 118.6M738 114.8V170.8" fill="none" stroke="#0f1012" stroke-width="22.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#0f1012"><circle cx="518" cy="76.7" r="13.4"/><circle cx="738" cy="76.7" r="13.4"/></g>
+  <text x="332" y="266" fill="#5c5c57" font-family="'Segoe UI', Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22">Wikis that agents write and people read.</text>
+  <g font-family="'JetBrains Mono', Consolas, Menlo, monospace" font-size="16" fill="#5c5c57" text-anchor="end">
+    <text x="1180" y="150">agents write</text>
+    <text x="1180" y="182">people comment</text>
+  </g>
+  <rect x="1194" y="134" width="6" height="56" rx="3" fill="#c8902f"/>
+</svg>
