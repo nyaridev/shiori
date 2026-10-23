@@ -28,6 +28,16 @@ http://localhost:4410 with only the template wiki. Needs Node 25+ and pnpm.
 
 Agents work through `pnpm shiori` (new wikis, pages, the comment inbox, checks): see [AGENTS.md](AGENTS.md).
 
+## A wiki for your project
+
+Open your agent (Claude Code, Codex, Cursor…) in this folder and ask for a wiki for your project, saying where it
+lives: *"Make a Shiori wiki for my game in `D:/games/my-game/wiki`"*. [AGENTS.md](AGENTS.md) → Making a wiki has the
+steps it follows: it asks how the wiki should look (made for the project, your colors, or the default), makes it
+there and puts it on the deck, and adds a few lines to your project's `CLAUDE.md`. From then on, agents working on
+the project don't edit the wiki: they note each change in its journal, and you ask when to bring the journal in, so
+the wiki is checked against the project before it changes. For a project that already exists, it reads the project
+first and writes the whole wiki from it.
+
 ## Sharing
 
 The Share button in a wiki's header makes a temporary link to view it, or view and comment. It needs the built app,

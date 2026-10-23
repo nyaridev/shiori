@@ -34,10 +34,12 @@ every change to a wiki.
 
 ### Making a wiki
 
-1. **Where.** A wiki for one project lives with it, outside this app: a game home's `wiki/` (beside `game/`, outside
-   git), or the folder the owner names. `pnpm shiori new <id> --title "…" --at <folder>` makes it there and links it
-   (`wikis.local.json`), so it's on the deck. A wiki inside a committed repo would carry this PC's paths (its
-   `AGENTS.md` names the Shiori folder), so ask before putting one there.
+1. **Where.** Ask the owner, unless they said. A wiki for one project lives with that project, not in this app's
+   folder: a `wiki/` folder inside it (`my-game/wiki/`), or beside it when the project's repo should hold only its
+   code (`my-game/game/` and `my-game/wiki/`). `pnpm shiori new <id> --title "…" --at <folder>` makes it there and
+   links it in `wikis.local.json` (this PC's list, never committed), so it's on the deck. Without `--at` it goes in
+   this app's `wikis/`, which suits a wiki with no project. The wiki's `AGENTS.md` names this Shiori folder by its
+   full path, so a wiki committed in its project's repo carries that path: say so when the owner picks that.
 2. **Its look.** Before making it, ask the owner which they want:
    - **Made for the project** (recommend this): you design the theme from what the project is: its name, genre,
      setting, art and mood. Pick the palette (dark or light page, `bg`, `surface`, `raised`, `border`, `muted`, and
@@ -47,10 +49,12 @@ every change to a wiki.
    - **Their own:** colors or a mood they describe, turned into `theme.json` the same way.
    - **The default:** the template's palette (`mist`), as `new` makes it.
 3. **Connect the project** when there is one, so the agents building it keep the journal (ADR-0013) instead of
-   changing the wiki. Claude Code loads every `CLAUDE.md` from the session's folder up to the drive, but a folder
-   beside it (a game home's `wiki/` next to `game/`) never, so the rule goes in the project's own `CLAUDE.md`: the
-   game home's for a game (sessions on `game/` load it too), else the project's root one. Add this, with the path from
-   that file to the wiki:
+   changing the wiki. Claude Code loads every `CLAUDE.md` from a session's folder up to the drive, and a subfolder's
+   only once it touches a file there; a folder beside the session's never. So the rule goes in a `CLAUDE.md` every
+   session on the project loads: the project's root one when the wiki is inside it; when the wiki sits beside it, the
+   one in the folder that holds both (sessions on the project load it as a parent), or the project's own with the
+   path to the wiki (`../wiki/`). When the project also has an `AGENTS.md` for other agents, add the same lines there
+   (they may not follow `@` imports; the two lines carry the rule). Add this, with the path from that file to the wiki:
 
    ```md
    ## Wiki
@@ -62,10 +66,10 @@ every change to a wiki.
    ```
 
    The import loads the journal's rules into every session on the project. A session opened on a folder that doesn't
-   hold the wiki (`game/`) asks once to allow it, as it's outside that folder; the lines above it hold the rule either
-   way. Then fill in the wiki's `JOURNAL.md` → The project: its folder from the wiki, and **Last merged** as today
-   (with the project's commit when it's in git). Add to its "What this project records" what this kind of project
-   needs (a Roblox game: remotes, DataStore keys, asset ids).
+   hold the wiki (`my-game/game/`) asks once to allow it, as it's outside that folder; the lines above it hold the
+   rule either way. Then fill in the wiki's `JOURNAL.md` → The project: its folder from the wiki, and **Last
+   merged** as today (with the project's commit when it's in git). Add to its "What this project records" what this
+   kind of project needs (a Roblox game: remotes, DataStore keys, asset ids).
 4. **An existing project:** read it before writing: its instructions, README, design docs, code and data (configs,
    item tables, levels), assets and git log. Plan the sections from what it really has, replace the template's
    example pages, and write every page from the project's own values, checked in its code, with footnotes for the
