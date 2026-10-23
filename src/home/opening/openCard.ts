@@ -4,7 +4,7 @@
 // do smoothly: a radial motion blur, chromatic fringes, a warp tunnel of light streaks, and a light at the end that
 // floods the window. The wiki (prefetched, so it's complete on its first frame) renders under the white, and the
 // flash fades off it.
-import { themeVars } from "../../../shared/theme.ts";
+import { PALETTES, themeVars } from "../../../shared/theme.ts";
 import { api } from "../../lib/api.ts";
 import { prime } from "../../lib/cache.ts";
 import { viewerMode } from "../../lib/viewerMode.ts";
@@ -20,7 +20,8 @@ const HANDOFF = 0.2;
 const OVERSHOOT = 2.6;
 /** How long the flash takes to fade off the wiki (ms). */
 const FADE = 650;
-const FALLBACK_BG = "#0f1012";
+/** The default theme's page, when the wiki's own doesn't arrive in time. */
+const FALLBACK_BG = PALETTES.dark.bg;
 
 interface Options {
   slots: (HTMLElement | null)[];

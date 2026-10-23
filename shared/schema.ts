@@ -316,3 +316,35 @@ export const FRONTMATTER_FIELDS: { key: keyof Frontmatter; what: string; example
     example: 'related:\n  - Goals\n  - to: Audience & market\n    kind: "Competitor of"',
   },
 ];
+
+/**
+ * A development journal entry (ADR-0013): `journal/<day>-<name>.md` in a wiki, written by agents working on the
+ * project, never by the app. It says what changed in the project for the wiki to pick up later.
+ */
+export const JOURNAL_STATUSES = ["open", "merged", "dropped"] as const;
+export const JOURNAL_KINDS = ["added", "changed", "removed", "fixed"] as const;
+const listOf = z.union([
+  z.array(z.string().min(1)),
+  z
+    .string()
+    .min(1)
+    .transform((s) => [s]),
+]);
+export const journalEntrySchema = z.looseObject({
+  title: z.string().min(1),
+  date: day,
+  /** `open` until it's in the wiki (`merged`), or the change was undone or never shipped (`dropped`). */
+  status: z.enum(JOURNAL_STATUSES).default("open"),
+  kind: z.enum(JOURNAL_KINDS).optional(),
+  /** The build or release the change is in. */
+  version: z.union([z.string(), z.number()]).transform(String).optional(),
+  /** The project's commit, when it's in git. */
+  commit: z.union([z.string(), z.number()]).transform(String).optional(),
+  /** The wiki's pages it touches, by wikilink name; a page still to write is a name too. */
+  pages: listOf.default([]),
+  /** The project's files the change is in, from the project's root. */
+  files: listOf.default([]),
+  /** When it went into the wiki. */
+  merged: day.optional(),
+});
+export type JournalEntry = z.infer<typeof journalEntrySchema>;

@@ -3,20 +3,21 @@
 :root {
   color-scheme: dark;
 
-  /* Base: a theme can change these */
-  --bg: #0f1012;
-  --surface: #17181c;
-  --raised: #212328;
-  --border: #2f3238;
+  /* Base: a theme can change these. The default theme is the template's palette (`mist` in shared/palettes.ts, which
+     shared/theme.ts's PALETTES.dark takes); keep the two the same. */
+  --bg: #101419;
+  --surface: #161b20;
+  --raised: #1d2228;
+  --border: #2e343a;
   --text: #e9e7e2;
-  --muted: #8e9198;
-  --accent: #e8b86d;
+  --muted: #a2a8af;
+  --accent: #a8ceff;
   --accent-text: #1c1407;
-  /* Two more accents that contrast with the first (a theme's accent2 and accent3; without them, the accent). The
-     second marks structure: section rules, the sidebar's labels and strips, box titles. The third marks small
-     highlights: list bullets, quotes, the second tone of page icons. */
-  --accent-2: var(--accent);
-  --accent-3: var(--accent);
+  /* Two more accents that contrast with the first (a theme's accent2 and accent3). The second marks structure:
+     section rules, the sidebar's labels and strips, box titles. The third marks small highlights: list bullets,
+     quotes, the second tone of page icons. */
+  --accent-2: #fbbb87;
+  --accent-3: #9bdda8;
   --r-sm: 6px;
   --r-md: 9px;
   --r-lg: 14px;
@@ -87,9 +88,23 @@
   --fast: 120ms;
 }
 
-/* The deck is always dark and unthemed. */
+/* The deck is always dark and unthemed, in Shiori's own sand, like its brand. The tokens made from the accent are
+   made again here, since on :root they were made from the default theme's. */
 .deck-scope {
   --bg: #08080a;
+  --surface: #17181c;
+  --raised: #212328;
+  --border: #2f3238;
   --text: #f1efe9;
   --muted: #8a8a90;
+  --accent: #e8b86d;
+  --accent-text: #1c1407;
+  --accent-2: var(--accent);
+  --accent-3: var(--accent);
+  --accent-ink: var(--accent);
+  --accent-soft: color-mix(in oklab, var(--accent) 16%, transparent);
+  --accent-line: color-mix(in oklab, var(--accent) 45%, transparent);
+  --accent-hover: color-mix(in oklab, var(--accent) 88%, var(--text));
+  --border-field: color-mix(in oklab, var(--border) 55%, var(--text));
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-line);
 }

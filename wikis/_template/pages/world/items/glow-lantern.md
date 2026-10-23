@@ -12,6 +12,13 @@ infobox:
   Rarity: ':badge[Common]{tone="neutral"}'
   Value: 15
   Asset id: "rbxassetid://0"
+suggestions:
+  - id: relight
+    text: "Should a lantern a swarm put out relight on its own once the moths are gone?"
+    options: [Yes, "No, players relight it", Later]
+    status: resolved
+    answer: "Yes"
+    decided: 2026-10-23
 ---
 
 A small lantern that burns [[Lantern oil]]. [[Wren]] sells them at her stall in the [[Old Grove]].
@@ -56,6 +63,12 @@ Refilling it costs :private[2 coins; we may raise it] a few coins.
 :::changelog[Mobile]
 - 0.3: Hold the lantern button to cover it, as :kbd[F] does on PC.
 - 0.2: Added.
+:::
+
+## Incoming changes
+
+:::private[Decided, not built yet]
+- [ ] A lantern a swarm put out relights on its own once the moths are gone. *Suggestion relight, 2026-10-23: "Yes".*
 :::
 
 ## References

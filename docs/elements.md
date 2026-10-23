@@ -216,7 +216,9 @@ questions:
 
 The agent's ideas for a page, in green: what to add or improve, where questions ask about what's there. The agent
 writes 3 to 6 after reviewing a page (within the wiki's `settings.json`), with the same fields as questions; people
-answer them the same way, and they collect under "Suggestions", below the questions.
+answer them the same way, and they collect under "Suggestions", below the questions. Once decided, what an answer
+asks for waits in the page's `## Incoming changes`, a private list of tasks, until it's built; the page's text
+changes only then.
 
 ```md
 ---

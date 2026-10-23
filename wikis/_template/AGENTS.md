@@ -23,6 +23,7 @@ their content with the project's own, rename or delete what doesn't fit, and add
 | `layouts/` | Page layouts: how a kind of page is arranged (see Layouts and designs) |
 | `designs/` | What people drew and described in the app, one folder per design. Written by the app; commit it, never edit it by hand |
 | `kits/` | Starting points for kinds of pages (`pnpm shiori kits`). Add your own `<name>.md` for kinds this project repeats; `{{page.title}}` and `{{page.date}}` are filled in |
+| `JOURNAL.md`, `journal/` | The development journal: what changed in the project, waiting to go into the wiki (see The journal) |
 | `data/` | Written by the app: the comments database and smaller copies of pictures. Never edit or commit it |
 
 ## Writing pages
@@ -60,7 +61,8 @@ their content with the project's own, rename or delete what doesn't fit, and add
     options when that helps (`[Yes, Later, No]`). Replace stale ones instead of piling up.
   - Keep each page within `settings.json` (`maxQuestions`, `maxSuggestions`): decide or drop old ones before adding.
   - To decide, set its `status: resolved`, `answer: "…"` and `decided:` with today's date (Special:Decisions lists
-    them by that day). For an accepted suggestion, make the change on the page as well.
+    them by that day). **Don't change the page's text for it:** what the answer asks for goes into the page's
+    Incoming changes (below) until it's built. A "No" or a "not now" adds nothing there.
 - The app adds the rest around the body: breadcrumbs, the last-updated time and reading time, cards for the pages
   under a page ("In this section"), its related pages, and the Changes panel at the bottom. The sidebar's Tools link
   to Needs your attention, Recent changes, Tasks (every `- [ ]` in the wiki), All pages, Categories, Questions and
@@ -94,9 +96,10 @@ their content with the project's own, rename or delete what doesn't fit, and add
   a page a `##`, and use `###` inside one; text before the first `##` stays an open intro.
 - **How an article ends.** A page players read (an item, a creature, a place, a mechanic) ends like a game wiki's
   article, in this order: `## Notes` (what to know that the sections above don't say), `## Tips`, `## See also`
-  only when there's more to read than the related pages, `## History` with a `:::changelog`, `## References` (left
-  empty: the footnotes fill it), then a navbox of the pages around it (`::navbox{from="world"}`). Cite numbers,
-  measurements and anything a reader might doubt with a footnote. Leave out a section that would be empty.
+  only when there's more to read than the related pages, `## History` with a `:::changelog`, `## Incoming changes`
+  while something is decided and not built (see Incoming changes), `## References` (left empty: the footnotes fill
+  it), then a navbox of the pages around it (`::navbox{from="world"}`). Cite numbers, measurements and anything a
+  reader might doubt with a footnote. Leave out a section that would be empty.
 - Links: write wikilinks. `[[Goals]]` finds a page by path, file name or title, from anywhere; `[[plan/goals|our
   goals]]` sets the text and `[[Goals#Targets]]` links a section. In tables, escape the bar: `[[goals\|Goals]]`.
   A wikilink to a page that doesn't exist yet is a red link: use it on purpose for pages worth writing later
@@ -395,6 +398,51 @@ pages show as plain pages there.
 reports `public` settings that name nothing, and a front page that features a page that isn't public. Run both after
 changing what's public, and say what changed.
 
+## Incoming changes
+
+A page says what is, never what's only decided. When the owner asks you to resolve answered questions and
+suggestions, decide each one in the frontmatter (above), and put what it changes in the page's **Incoming changes**
+instead of its text:
+
+```md
+## Incoming changes
+
+:::private[Decided, not built yet]
+- [ ] A lantern a swarm put out relights on its own once the moths are gone. *Suggestion relight, 2026-10-23: "Yes".*
+- [ ] Wren's stall stays open at night, lit by her lantern. *Question stall-hours, 2026-10-23: "Open at night".*
+:::
+```
+
+- **One task per change**, in words someone can build from: what it is, with the numbers the answer gave, then which
+  question or suggestion (its id), the day and the answer. When an answer changes another page, the item goes on
+  that page.
+- **Where:** after `## History` and before `## References`, all of it inside `:::private`, so the public wiki never
+  shows it (its heading goes with it). Make the section with its first item; remove it with its last.
+- The items are tasks, so Special:Tasks lists them with the wiki's other `- [ ]`: everything decided and not built,
+  across the wiki.
+
+**Building them**, when the owner asks to implement what was answered:
+
+1. Gather the open items from every page's Incoming changes.
+2. **If the owner didn't say which first, don't start.** Group them by the section or system they change (combat,
+   the economy, a place…) and give a numbered list in the order you'd build them, each with its page, what it is, a
+   size (small, medium, large) and why it's there: what others depend on comes first, then what does most for the
+   project's goal and its players, then quick wins; what's unclear or risky goes last, with what still needs
+   deciding. Ask which to build, and build in that order only once the owner says so.
+3. **With a project** (`JOURNAL.md` → The project), build it in the project, not the wiki: each change gets its
+   journal entry, which names the page and item it builds. The item stays in Incoming changes until that entry is
+   merged; merging writes it into the page's text and History, and takes the item out.
+4. **Without one** (a plan, research), building it is writing it into the page: do that, add its History line if the
+   page has one, and take the item out.
+
+## The journal
+
+When this wiki describes a project that's being built (a game, an app), the agents building it don't change the
+wiki: they write what changed in `journal/`, one entry per change, and the owner asks when to bring it in.
+`JOURNAL.md` has the rules for both sides: what an entry holds, what this project records in every entry (a list
+that grows with the wiki), and how to merge the journal into the pages, checking each entry against the project's
+code and data first. `pnpm shiori journal {{id}}` lists what's waiting.
+
 ## History
 
 When the wiki is in git, every page has a History (from "Updated …" under its title): each commit that changed it,
@@ -430,6 +478,7 @@ Run these from the Shiori folder (`{{shiori}}`):
 | `pnpm shiori sync {{id}}` | When this wiki is on more than one PC: pulls, merges every PC's comments, commits this PC's `sync/` file and `designs/`, and pushes. Only when the owner asks. Thread numbers (`#12`) are each PC's own |
 | `pnpm shiori designs {{id}} [collection] [--all]` | Designs ready for a page (`show`, `done`: see Layouts and designs) |
 | `pnpm shiori backup {{id}}` / `restore {{id}}` | Save comments and answers to `backup.json` / load them back |
+| `pnpm shiori journal {{id}} [--all]` | The journal's entries waiting for the wiki, with their pages and files (see The journal) |
 | `pnpm shiori public {{id}}` | What the public wiki shows and leaves out (see The public wiki) |
 | `pnpm shiori export {{id}} [--out <file.zip>]` | The public wiki as a static site; only when the owner asks |
 

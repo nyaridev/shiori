@@ -7,6 +7,7 @@ import { importData, readBackup, writeBackup } from "../server/backup.ts";
 import { buildCorpus } from "../server/corpus.ts";
 import { type Design, getDesign, listDesigns, updateDesign } from "../server/designs.ts";
 import { mediaProblems } from "../server/files.ts";
+import { journalProblems } from "../server/journal.ts";
 import { listKits, newPage } from "../server/kits.ts";
 import { loadLayouts } from "../server/layouts.ts";
 import { listPages, renderPage } from "../server/pages.ts";
@@ -22,6 +23,7 @@ import { DEFAULT_PALETTE, NEW_WIKI_PALETTES, PALETTE_NAMES, type PaletteName } f
 import { isPageComment } from "../shared/quote.ts";
 import { wikiIdSchema } from "../shared/schema.ts";
 import { boards, report, reports } from "./boards.ts";
+import { journal } from "./journal.ts";
 import { exportPublic, publicProblems, showPublic } from "./public.ts";
 import { sheet, sheets } from "./sheets.ts";
 
@@ -65,6 +67,8 @@ const HELP = `Shiori CLI
   pnpm shiori sheet <id> <name> export [--json <file>] [--luau <file>] [--apply]
                                                    Write the values for the game; --apply makes them the
                                                    file's defaults
+  pnpm shiori journal <id> [--all]                   The development journal (ADR-0013): what changed in the
+                                                   project and isn't in the wiki yet (--all: merged ones too)
   pnpm shiori public <id>                            The public wiki (ADR-0011): which pages go public and what
                                                    stays out of it
   pnpm shiori export <id> [--out <file.zip>] [--dir <folder>]
@@ -232,7 +236,12 @@ const commands: Record<string, () => void> = {
     const targets = args[0] ? [wikiById(args[0])] : wikis;
     let count = 0;
     for (const w of targets) {
-      const problems = [...w.problems, ...mediaProblems(w.root), ...allSheetProblems(w.root)];
+      const problems = [
+        ...w.problems,
+        ...mediaProblems(w.root),
+        ...allSheetProblems(w.root),
+        ...journalProblems(w.root),
+      ];
       const pages = listPages(w);
       if (!pages.some((p) => p.path === "")) problems.push("pages/index.md (the home page) is missing");
       const layouts = loadLayouts(w);
@@ -278,8 +287,9 @@ const commands: Record<string, () => void> = {
     if (q) {
       console.log(
         `\n${q} question${q === 1 ? "" : "s"} or suggestion${q === 1 ? "" : "s"} answered. Decide, then write it into` +
-          " the page's frontmatter: its `status: resolved`, `answer: …` and `decided: <today>`. For an accepted" +
-          " suggestion, make the change on the page too.",
+          " the page's frontmatter: its `status: resolved`, `answer: …` and `decided: <today>`. Don't change the" +
+          " page's text for it: what the answer asks for goes into the page's `## Incoming changes`, private, until" +
+          " it's built (the wiki's AGENTS.md → Incoming changes).",
       );
     }
   },
@@ -462,6 +472,7 @@ const commands: Record<string, () => void> = {
       fail,
     ),
 
+  journal: () => journal(wikiById(args[0]), values.all),
   public: () => showPublic(wikiById(args[0])),
   export: () => {
     exportPublic(wikiById(args[0]), { out: values.out, dir: values.dir }, fail).catch((e) => fail(String(e)));

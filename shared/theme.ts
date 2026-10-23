@@ -1,6 +1,7 @@
 // A wiki's `theme.json` only nudges the app's design tokens: colors, corner shape, borders, shadows and fonts.
 // Layout and behavior never change. Every value is a preset or a hex color, so a theme can't inject CSS.
 import { z } from "zod";
+import { DEFAULT_PALETTE, NEW_WIKI_PALETTES } from "./palettes.ts";
 
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/, "use a #rrggbb color");
 
@@ -42,18 +43,15 @@ export type Theme = z.infer<typeof themeSchema>;
 
 export const DEFAULT_THEME: Theme = themeSchema.parse({});
 
+/**
+ * What a theme starts from in each mode: the template's palette (`mist`) by night, and its accents as they read by
+ * day, so a wiki without colors of its own looks like a new one. tokens.css has the night values.
+ */
 export const PALETTES: Record<Theme["mode"], ThemeColors> = {
   dark: {
-    bg: "#0f1012",
-    surface: "#17181c",
-    raised: "#212328",
-    border: "#2f3238",
     text: "#e9e7e2",
-    muted: "#8e9198",
-    accent: "#e8b86d",
     accentText: "#1c1407",
-    accent2: "#e8b86d",
-    accent3: "#e8b86d",
+    ...NEW_WIKI_PALETTES[DEFAULT_PALETTE],
   },
   light: {
     bg: "#f5f3ee",
@@ -62,10 +60,11 @@ export const PALETTES: Record<Theme["mode"], ThemeColors> = {
     border: "#dedad1",
     text: "#1f1d1a",
     muted: "#6f6a62",
-    accent: "#a35915",
+    // The template's accents as they read by day.
+    accent: "#4b6e99",
     accentText: "#fffaf3",
-    accent2: "#a35915",
-    accent3: "#a35915",
+    accent2: "#ba7e4c",
+    accent3: "#579766",
   },
 };
 
