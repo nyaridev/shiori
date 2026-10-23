@@ -4,7 +4,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { PAGE_STATUSES, type PageStatus } from "../../../shared/schema.ts";
-import { Badge } from "../../ui/index.ts";
+import { Badge, Icon } from "../../ui/index.ts";
 import { usePage } from "../PageContext.ts";
 import { PageCard } from "../PageFoot.tsx";
 import { pageHref } from "../PageHead.tsx";
@@ -62,7 +62,7 @@ export function ChildrenEl({ layout = "cards" }: Props<{ layout?: string }>) {
   );
 }
 
-/** Contents inside the article, numbered like Wikipedia's (1, 1.1, 2…). */
+/** Contents inside the article, numbered like Wikipedia's (1., 1.1., 2.), in a box whose header folds it. */
 export function TocEl() {
   const ctx = usePage();
   if (!ctx) return <Placeholder>The page's contents show here.</Placeholder>;
@@ -70,19 +70,27 @@ export function TocEl() {
   const entries = ctx.page.toc.map((e, i) => ({ ...e, number: numbers[i] }));
   if (!entries.length) return null;
   return (
-    <nav className="sh-inline-toc" aria-label="Contents">
-      <p className="sh-inline-toc-title">Contents</p>
-      <ol>
-        {entries.map((e) => (
-          <li key={e.id} data-depth={e.depth}>
-            <a href={`#${e.id}`}>
-              <span className="sh-inline-toc-number">{e.number}</span>
-              {e.text}
-            </a>
-          </li>
-        ))}
-      </ol>
-    </nav>
+    <details className="sh-inline-toc" open>
+      <summary className="sh-inline-toc-title">
+        <Icon name="contents" size={16} />
+        <span>Contents</span>
+        <span className="sh-inline-toc-chevron">
+          <Icon name="chevronDown" size={16} />
+        </span>
+      </summary>
+      <nav aria-label="Contents">
+        <ol>
+          {entries.map((e) => (
+            <li key={e.id} data-depth={e.depth}>
+              <a href={`#${e.id}`}>
+                <span className="sh-inline-toc-number">{e.number}.</span>
+                <span className="sh-inline-toc-text">{e.text}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    </details>
   );
 }
 

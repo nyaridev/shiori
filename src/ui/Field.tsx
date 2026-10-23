@@ -17,7 +17,7 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
 
 /**
  * A text field for longer writing. A pill-shaped grip in the middle of its bottom edge makes it taller or shorter
- * (drag), and a double-click on the grip puts it back to its first size.
+ * (drag), up to its CSS max-height, and a double-click on the grip puts it back to its first size.
  */
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea(
   { className, rows = 3, ...rest },
@@ -40,11 +40,13 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
     const grip = e.currentTarget;
     const startY = e.clientY;
     const startHeight = field.offsetHeight;
-    // Never shorter than the field's own minimum (its rows, or the CSS min-height).
-    const least = Number.parseFloat(getComputedStyle(field).minHeight) || 0;
+    // Never shorter than the field's own minimum (its rows, or the CSS min-height), nor taller than its maximum.
+    const style = getComputedStyle(field);
+    const least = Number.parseFloat(style.minHeight) || 0;
+    const most = Number.parseFloat(style.maxHeight) || Number.POSITIVE_INFINITY;
     grip.setPointerCapture(e.pointerId);
     const move = (ev: globalThis.PointerEvent) => {
-      field.style.height = `${Math.max(least, startHeight + ev.clientY - startY)}px`;
+      field.style.height = `${Math.min(most, Math.max(least, startHeight + ev.clientY - startY))}px`;
     };
     const stop = () => {
       grip.removeEventListener("pointermove", move);

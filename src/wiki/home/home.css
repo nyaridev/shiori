@@ -36,7 +36,7 @@
   gap: var(--s-2);
   margin: 0;
   padding: var(--s-2) var(--s-4);
-  border-bottom: var(--bw) solid var(--border);
+  border-bottom: 2px solid var(--accent-2);
   background: color-mix(in oklab, var(--accent) 12%, var(--raised));
   color: var(--text);
   font-family: var(--font-heading);
@@ -513,12 +513,12 @@ a.sh-git-badge:hover .sh-git-name {
   }
 }
 
-/* A panel page's banner (PanelHero.tsx): without a picture, a wash of the accent; the current milestone stands out. */
+/* A panel page's banner (PanelHero.tsx): without a picture, a wash of the accents; the current milestone stands out. */
 .sh-panel-hero .sh-hero-banner-art[data-plain] {
   min-height: 220px;
   background:
     radial-gradient(90% 120% at 100% 0%, color-mix(in oklab, var(--accent) 30%, transparent) 0%, transparent 60%),
-    radial-gradient(70% 90% at 0% 100%, color-mix(in oklab, var(--accent) 14%, transparent) 0%, transparent 70%),
+    radial-gradient(70% 90% at 0% 100%, color-mix(in oklab, var(--accent-3) 18%, transparent) 0%, transparent 70%),
     linear-gradient(160deg, color-mix(in oklab, var(--accent) 10%, var(--surface)), var(--surface));
 }
 .sh-panel-hero .sh-hero-banner-stats {

@@ -20,6 +20,7 @@ export const ENGLISH: Words = {
   skip: "Skip to the page",
   day: "Day",
   night: "Night",
+  recent: "Recently updated",
 };
 
 export const wordsOf = (settings: PublicSettings): Words => ({ ...ENGLISH, ...settings.words });

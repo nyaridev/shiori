@@ -51,6 +51,17 @@ export function PublicSummary({ wikiId }: { wikiId: string }) {
         Readers can't comment or see the home page, the roadmap, questions, designs or anything marked private.
         {left.length > 0 && ` Left out of its pages: ${left.join(", ")}.`}
       </p>
+      {(report.layout.frame.length > 0 || report.layout.front || report.layout.pages.length > 0) && (
+        <p className="sh-share-quiet">
+          Its own layout:{" "}
+          {[
+            ...report.layout.frame,
+            ...(report.layout.front ? ["its front page"] : []),
+            ...(report.layout.pages.length ? [`page layouts (${report.layout.pages.join(", ")})`] : []),
+          ].join(" · ")}
+          .
+        </p>
+      )}
       {report.pages.length === 0 && (
         <Callout tone="note" title="No page is public yet">
           <p>

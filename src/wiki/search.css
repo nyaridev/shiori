@@ -130,10 +130,6 @@
   border-color: var(--border-strong);
   color: var(--text-soft);
 }
-.sh-sidebar-search .sh-kbd {
-  margin-left: auto;
-}
-
 /* The heading a search result opened, flashed once so the eye finds it. */
 .sh-found {
   border-radius: var(--r-sm);

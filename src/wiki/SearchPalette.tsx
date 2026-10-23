@@ -19,8 +19,6 @@ type Result = { kind: "page"; hit: SearchHit } | { kind: "note"; note: NoteHit }
 /** Wait before asking the server, so a fast typist sends one request, not one per key. */
 const DEBOUNCE = 90;
 
-export const shortcutLabel = () => (/Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘P" : "Ctrl P");
-
 /** True when a key press belongs to a text field, not to the page. */
 export const typing = (target: EventTarget | null) =>
   target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));

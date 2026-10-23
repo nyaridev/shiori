@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { NEW_WIKI_PALETTES } from "./palettes.ts";
 import { contrast, DEFAULT_THEME, INK, MUTED_INK, PALETTES, themeColors, themeSchema, themeVars } from "./theme.ts";
 
 describe("themes", () => {
@@ -122,6 +123,38 @@ describe("colors that must read", () => {
     for (const tone of ["good", "warn"]) {
       expect(light[`--dot-${tone}`]).not.toBe(light[`--tone-${tone}`]);
       expect(contrast(light[`--dot-${tone}`], "#000000")).toBeGreaterThan(contrast(light[`--tone-${tone}`], "#000000"));
+    }
+  });
+});
+
+describe("the second and third accents", () => {
+  const modes = ["dark", "light"] as const;
+
+  it("follow the accent when a theme sets only that, in both modes", () => {
+    const theme = themeSchema.parse({ colors: { accent: "#6fb3d4" } });
+    for (const mode of modes) {
+      const c = themeColors(theme, mode);
+      expect([c.accent2, c.accent3]).toEqual([c.accent, c.accent]);
+    }
+  });
+
+  it("keep a theme's own in its mode, and stand out from the other mode's background", () => {
+    const theme = themeSchema.parse({ colors: { accent: "#7cc4ff", accent2: "#ff8f5a", accent3: "#f7d046" } });
+    const own = themeVars(theme);
+    expect([own["--accent-2"], own["--accent-3"]]).toEqual(["#ff8f5a", "#f7d046"]);
+    const day = themeColors(theme, "light");
+    for (const c of [day.accent2, day.accent3]) expect(contrast(c, PALETTES.light.bg)).toBeGreaterThanOrEqual(3);
+  });
+
+  it("read as text on every background of every new wiki's palette, by day and by night", () => {
+    for (const [name, colors] of Object.entries(NEW_WIKI_PALETTES)) {
+      const theme = themeSchema.parse({ colors });
+      for (const mode of modes) {
+        const vars = themeVars(theme, mode);
+        for (const ink of ["--accent-ink", "--accent-2-ink", "--accent-3-ink", "--muted"])
+          for (const bg of ["--bg", "--surface", "--raised"])
+            expect(contrast(vars[ink], vars[bg]), `${name} ${mode}: ${ink} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+      }
     }
   });
 });

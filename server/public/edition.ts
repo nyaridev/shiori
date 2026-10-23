@@ -7,10 +7,12 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, posix } from "node:path";
 import type { Element, Root } from "hast";
 import type { NavNode, PageData, PublicReport } from "../../shared/api.ts";
+import { type Frame, frameSchema } from "../../shared/schema.ts";
 import { type FontKey, type Mode, themeColors, themeVars } from "../../shared/theme.ts";
 import type { Corpus } from "../corpus.ts";
 import { pictureAt, publicPicture } from "../files.ts";
 import { ICON_NAME, ICONS_DIR, iconSet } from "../icons.ts";
+import { FRONT_LAYOUT, loadLayouts } from "../layouts.ts";
 import { resolveFile } from "../markdown/links.ts";
 import { buildNav, type PageFile, pageFinder, readingOrder } from "../pages.ts";
 import { APP_ROOT } from "../paths.ts";
@@ -26,18 +28,9 @@ import {
   staticHtml,
   tocNav,
 } from "./html.ts";
+import { frontArticle, pageLayout, picturesIn } from "./layout.ts";
 import { fieldKey, isPrivateFile, isPublicPage, publicSettings, unusedPatterns } from "./rules.ts";
-import {
-  article,
-  crumbs,
-  encodePath,
-  frontArticle,
-  pager,
-  rootOf,
-  type SiteInfo,
-  sectionBlock,
-  shell,
-} from "./site.ts";
+import { article, crumbs, encodePath, pager, rootOf, type SiteInfo, sectionBlock, shell } from "./site.ts";
 import { noneRemoved, type StripContext, stripFragment, stripPage } from "./strip.ts";
 import { wordsOf } from "./words.ts";
 
@@ -130,15 +123,33 @@ export const APP_STYLES = [
   "src/wiki/markdown/code.css",
   "src/wiki/markdown/diagram.css",
   "src/wiki/home/home.css",
+  "src/wiki/layout/layout.css",
 ];
 
-/** The site's stylesheet: its fonts, the app's styles, the wiki's theme in both day and night, then the layout. */
-function stylesheet(wiki: Wiki, fontCss: string): string {
+/**
+ * The site's stylesheet: its fonts, the app's styles, the wiki's theme in both day and night, then the frame, and a
+ * picture backdrop (ADR-0012) as a URL from `_site/`.
+ */
+function stylesheet(wiki: Wiki, fontCss: string, backdrop: string | null): string {
   const app = APP_STYLES.map((f) => `/* ${f} */\n${readFileSync(join(APP_ROOT, f), "utf8")}`);
   const modes = (["dark", "light"] as Mode[]).map(
     (mode) => `:root[data-mode="${mode}"]{${cssVars(themeVars(wiki.theme, mode))}}`,
   );
-  return [fontCss, ...app, ...modes, readFileSync(join(ASSETS, "site.css"), "utf8")].join("\n");
+  // The file's name is percent-encoded (`encodePath`), so it can't close the string.
+  const picture = backdrop ? [`body.pw{--pw-backdrop-image:url("../${encodePath(backdrop)}")}`] : [];
+  return [fontCss, ...app, ...modes, readFileSync(join(ASSETS, "site.css"), "utf8"), ...picture].join("\n");
+}
+
+/** The frame's presets that differ from the defaults, for the owner: "width: wide". */
+function frameSummary(frame: Frame): string[] {
+  const plain = frameSchema.parse({});
+  const out: string[] = [];
+  for (const key of ["width", "sidebar", "backdrop"] as const)
+    if (frame[key] !== plain[key]) out.push(`${key}: ${frame[key]}`);
+  if (frame.cards.picture !== plain.cards.picture) out.push(`cards: ${frame.cards.picture}`);
+  if (frame.cards.shape) out.push(`card pictures: ${frame.cards.shape}`);
+  if (frame.footer) out.push("footer text");
+  return out;
 }
 
 /** The wiki's icon as the browser tab's, in its accent. */
@@ -315,7 +326,16 @@ export function buildEdition(wiki: Wiki, files: PageFile[], corpus: Corpus): Edi
     diagrams: false,
     version: "",
     math: false,
+    frame: settings.frame,
   };
+  const layouts = loadLayouts(wiki);
+  for (const p of layouts.problems) if (p.startsWith(`layouts/${FRONT_LAYOUT}.json`)) problems.push(p);
+  const backdrop = settings.frame.backdrop.startsWith("/")
+    ? (settingPicture("frame.backdrop", settings.frame.backdrop) ?? null)
+    : null;
+  // A picture backdrop that can't go falls back to the slate.
+  if (settings.frame.backdrop.startsWith("/") && !backdrop) site.frame = { ...settings.frame, backdrop: "slate" };
+  const usedLayouts = new Set<string>();
   const logo = settingPicture("logo", settings.logo);
   site.logo = logo
     ? { src: encodePath(logo) }
@@ -358,8 +378,8 @@ export function buildEdition(wiki: Wiki, files: PageFile[], corpus: Corpus): Edi
 
     // The infobox (PageInfobox): its picture and the rows that aren't private, their values cleaned like the page.
     let infobox: Element | null = null;
+    const image = p.infobox?.image?.startsWith("/") ? ctx.fileHref(p.infobox.image) : null;
     if (p.infobox) {
-      const image = p.infobox.image?.startsWith("/") ? ctx.fileHref(p.infobox.image) : null;
       if (p.infobox.image && image === null) removed.pictures++;
       const rows = p.infobox.rows.filter((r) => {
         const hidden = ctx.privateFields.has(fieldKey(r.label));
@@ -428,8 +448,16 @@ export function buildEdition(wiki: Wiki, files: PageFile[], corpus: Corpus): Edi
     const icon = iconFor(p.icon);
     const banner = p.banner?.startsWith("/") ? pictureFile(p.banner) : null;
     if (p.banner && !banner) removed.pictures++;
+    // A page layout made for the public wiki too (ADR-0012) arranges the page; any other leaves it plain.
+    const laid = pageLayout(p.layout, {
+      tree: body.tree,
+      ctx: body.ctx,
+      infobox,
+      pictures: [...new Set([...(image ? [image] : []), ...picturesIn(body.tree)])],
+    });
+    if (laid && p.layout) usedLayouts.add(p.layout.name);
     const main =
-      html(crumbs(trail) ?? h("span")) +
+      html(crumbs(trail, p.title) ?? h("span")) +
       article({
         title: p.title,
         icon: iconOf(icon ? (icon.includes("/") ? root + encodePath(icon) : icon) : undefined, "sh-page-icon"),
@@ -442,9 +470,14 @@ export function buildEdition(wiki: Wiki, files: PageFile[], corpus: Corpus): Edi
         infobox,
         prose:
           (toc.length >= 3 && !hasTag(stripped, "sh-toc") ? html(tocNav(toc, words) ?? h("span")) : "") + body.html,
+        layout: laid?.html,
         foot: [
-          children.length && !p.placed.children ? sectionBlock(words.inSection, pageCards(children)) : null,
-          related.length && !p.placed.related ? sectionBlock(words.related, relatedChips(related)) : null,
+          children.length && !p.placed.children && !laid?.placed.children
+            ? sectionBlock(words.inSection, pageCards(children))
+            : null,
+          related.length && !p.placed.related && !laid?.placed.related
+            ? sectionBlock(words.related, relatedChips(related))
+            : null,
           pager(words, prev, next),
         ],
       });
@@ -486,7 +519,7 @@ export function buildEdition(wiki: Wiki, files: PageFile[], corpus: Corpus): Edi
     "mono",
   ]);
   const own: [string, string][] = [
-    ["_site/style.css", stylesheet(wiki, font.css)],
+    ["_site/style.css", stylesheet(wiki, font.css, backdrop)],
     ...["site.js", "mode.js"].map((name): [string, string] => [
       `_site/${name}`,
       readFileSync(join(ASSETS, name), "utf8"),
@@ -510,10 +543,28 @@ export function buildEdition(wiki: Wiki, files: PageFile[], corpus: Corpus): Edi
       path: "",
       title: site.title,
       description: site.tagline || undefined,
-      main: frontArticle(site, {
+      main: frontArticle(layouts.front, {
+        site,
         banner: banner ? encodePath(banner) : undefined,
-        prose: frontBody?.html ?? "",
+        text: frontBody ? { tree: frontBody.tree, ctx: frontBody.ctx } : undefined,
         start,
+        page: (ref) => {
+          const found = find(ref).page;
+          return found ? startLink(found.path) : null;
+        },
+        recent: [...publicPaths]
+          .flatMap((path) => {
+            const updatedAt = pageOf(path)?.updatedAt;
+            const link = updatedAt ? startLink(path) : null;
+            return link && updatedAt ? [{ ...link, updatedAt }] : [];
+          })
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+        stats: nav.flatMap((n) => {
+          const count = (x: NavNode): number => (x.isPage ? 1 : 0) + x.children.reduce((s, c) => s + count(c), 0);
+          const total = count(n);
+          return total ? [{ title: n.title, count: total }] : [];
+        }),
+        problems,
       }),
     }),
   });
@@ -562,6 +613,11 @@ export function buildEdition(wiki: Wiki, files: PageFile[], corpus: Corpus): Edi
       removed,
       pictures: media.size,
       problems,
+      layout: {
+        frame: frameSummary(settings.frame),
+        front: !!layouts.front,
+        pages: [...usedLayouts].sort(),
+      },
     },
   };
 }

@@ -51,7 +51,38 @@ export const PUBLIC_WORDS = [
   "skip",
   "day",
   "night",
+  "recent",
 ] as const;
+
+/**
+ * The public wiki's frame (ADR-0012): presets around its pages. Each picks classes in its stylesheet, nothing more;
+ * without them, the site looks as ADR-0011 made it.
+ */
+export const frameSchema = z.strictObject({
+  /** The page card's width: 50rem, 42rem, 64rem, or the window's. */
+  width: z.enum(["standard", "narrow", "wide", "full"]).default("standard"),
+  /** Where the sections card sits; `none` makes it the menu drawer phones use, on every screen. */
+  sidebar: z.enum(["left", "right", "none"]).default("left"),
+  /** Behind the cards: a slate, the theme's background, the accent washed in, or a public picture from the wiki root. */
+  backdrop: z
+    .union([
+      z.enum(["slate", "page", "tint"]),
+      z
+        .string()
+        .regex(/^\/[^\s"'()\\]+\.(png|jpe?g|webp|gif|svg|avif)$/i, "slate, page, tint or a picture as /assets/bg.png"),
+    ])
+    .default("slate"),
+  /** Section and page cards' pictures: fit inside or crop to fill, and their shape. */
+  cards: z
+    .strictObject({
+      picture: z.enum(["contain", "cover"]).default("contain"),
+      shape: z.enum(["square", "wide", "tall"]).optional(),
+    })
+    .default({ picture: "contain" }),
+  /** A line in the footer bar beside the wiki's name; plain text. */
+  footer: z.string().min(1).max(200).optional(),
+});
+export type Frame = z.infer<typeof frameSchema>;
 
 /**
  * The public wiki (ADR-0011): a read-only edition for players and other readers, exported as a static site or shared
@@ -85,6 +116,8 @@ export const publicSchema = z.strictObject({
   privateFiles: z.array(z.string().min(1).max(200)).max(200).default([]),
   /** Code blocks are left out of the public wiki unless this is true. Diagrams and math stay. */
   code: z.boolean().default(false),
+  /** The frame around the pages (ADR-0012). */
+  frame: frameSchema.default(frameSchema.parse({})),
 });
 export type PublicSettings = z.infer<typeof publicSchema>;
 export const DEFAULT_PUBLIC: PublicSettings = publicSchema.parse({});

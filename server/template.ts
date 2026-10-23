@@ -2,13 +2,15 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
+import { NEW_WIKI_PALETTES, type Palette } from "../shared/palettes.ts";
 import { slashes } from "./paths.ts";
 
 export interface TemplateVars {
   id: string;
   title: string;
   tagline: string;
-  accent: string;
+  /** The theme's colors (`{{bg}}`, `{{accent}}`, `{{accent2}}`…). */
+  palette: Palette;
   shiori: string;
 }
 
@@ -23,7 +25,7 @@ function fill(dir: string, vars: TemplateVars) {
     id: vars.id,
     title: esc(vars.title),
     tagline: esc(vars.tagline),
-    accent: vars.accent,
+    ...vars.palette,
     shiori: slashes(vars.shiori),
   };
   for (const name of readdirSync(dir)) {
@@ -55,8 +57,8 @@ export const PREVIEW_VARS = (appRoot: string): TemplateVars => ({
   id: "template",
   title: "Template",
   tagline: "The default wiki every new project starts from",
-  // A calm blue, so the template doesn't look like the app's own sand-colored chrome.
-  accent: "#74a7e6",
+  // Not the app's own sand-colored chrome, so it's clear what the theme changes.
+  palette: NEW_WIKI_PALETTES.frost,
   shiori: appRoot,
 });
 

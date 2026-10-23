@@ -24,6 +24,9 @@ const colorsSchema = z.strictObject({
   muted: hex,
   accent: hex,
   accentText: hex,
+  /** Two more accents that contrast with the first: section rules and labels (2), small highlights (3). */
+  accent2: hex,
+  accent3: hex,
 });
 export type ThemeColors = z.infer<typeof colorsSchema>;
 
@@ -49,6 +52,8 @@ export const PALETTES: Record<Theme["mode"], ThemeColors> = {
     muted: "#8e9198",
     accent: "#e8b86d",
     accentText: "#1c1407",
+    accent2: "#e8b86d",
+    accent3: "#e8b86d",
   },
   light: {
     bg: "#f5f3ee",
@@ -59,6 +64,8 @@ export const PALETTES: Record<Theme["mode"], ThemeColors> = {
     muted: "#6f6a62",
     accent: "#a35915",
     accentText: "#fffaf3",
+    accent2: "#a35915",
+    accent3: "#a35915",
   },
 };
 
@@ -87,6 +94,8 @@ const CSS_NAMES: Record<keyof ThemeColors, string> = {
   muted: "--muted",
   accent: "--accent",
   accentText: "--accent-text",
+  accent2: "--accent-2",
+  accent3: "--accent-3",
 };
 
 export type Mode = Theme["mode"];
@@ -180,19 +189,33 @@ function onAccent(
 
 /**
  * A theme's colors, in its own mode or in the one the viewer picked (the header's day/night switch). In the other
- * mode the wiki keeps its accent, shapes and fonts on that mode's palette: its own backgrounds and text were chosen
- * for the other mode, and the accent is pulled toward the text until it stands out from the background again. In
- * both, the accent is then fitted to the text on it (`onAccent`).
+ * mode the wiki keeps its accents, shapes and fonts on that mode's palette: its own backgrounds and text were chosen
+ * for the other mode, and each accent is pulled toward the text until it stands out from the background again. In
+ * both, the accent is then fitted to the text on it (`onAccent`). A theme without its second or third accent uses
+ * its first in their place.
  */
 export function themeColors(theme: Theme, mode: Mode = theme.mode): ThemeColors {
   const base = PALETTES[mode];
+  const own = theme.colors;
   if (mode === theme.mode) {
-    const colors = { ...base, ...theme.colors };
-    return { ...colors, ...onAccent(colors.accent, mode, colors.text, theme.colors.accentText) };
+    const colors = { ...base, ...own };
+    const fitted = onAccent(colors.accent, mode, colors.text, own.accentText);
+    return {
+      ...colors,
+      ...fitted,
+      accent2: own.accent2 ?? fitted.accent,
+      accent3: own.accent3 ?? fitted.accent,
+    };
   }
-  const own = theme.colors.accent;
-  if (!own) return base;
-  return { ...base, ...onAccent(readable(own, base.text, [base.bg], 3), mode, base.text) };
+  if (!own.accent && !own.accent2 && !own.accent3) return base;
+  const stand = (c: string) => readable(c, base.text, [base.bg], 3);
+  const fitted = onAccent(stand(own.accent ?? base.accent), mode, base.text);
+  return {
+    ...base,
+    ...fitted,
+    accent2: own.accent2 ? stand(own.accent2) : fitted.accent,
+    accent3: own.accent3 ? stand(own.accent3) : fitted.accent,
+  };
 }
 
 /**
@@ -226,6 +249,8 @@ export function themeVars(theme: Theme, mode: Mode = theme.mode): Record<string,
   // (3:1), since it's also a fill.
   const backgrounds = [colors.bg, colors.surface, colors.raised];
   vars["--accent-ink"] = readable(colors.accent, colors.text, backgrounds, INK);
+  vars["--accent-2-ink"] = readable(colors.accent2, colors.text, backgrounds, INK);
+  vars["--accent-3-ink"] = readable(colors.accent3, colors.text, backgrounds, INK);
   // Quieter text (dates, counts, hints) still reads: AA on each background, whatever muted shade the theme picked.
   vars["--muted"] = readable(colors.muted, colors.text, backgrounds, MUTED_INK);
   for (const [tone, color] of Object.entries(TONES[mode]))

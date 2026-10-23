@@ -26,12 +26,12 @@
 .sh-prose hr {
   display: flow-root;
 }
-/* Sections: the rule under each starts with a short stroke of the accent. */
+/* Sections: the rule under each is in the second accent, and starts with a bolder stroke of it. */
 .sh-prose h2 {
   margin: var(--s-7) 0 var(--s-3);
   padding-bottom: var(--s-2);
-  border-bottom: var(--bw) solid var(--border);
-  background: linear-gradient(var(--accent), var(--accent)) left bottom / 36px 2px no-repeat;
+  border-bottom: var(--bw) solid var(--accent-2-line);
+  background: linear-gradient(var(--accent-2), var(--accent-2)) left bottom / 48px 3px no-repeat;
   font-size: var(--t-xl);
 }
 /* On a plain page each `##` section (Section.tsx) reads like a wiki's: the heading over a thin line, with the
@@ -50,7 +50,8 @@
   align-items: center;
   gap: var(--s-2);
   padding: 6px 0;
-  border-bottom: var(--bw) solid var(--border);
+  border-bottom: var(--bw) solid var(--accent-2-line);
+  background: linear-gradient(var(--accent-2), var(--accent-2)) left bottom / 48px 3px no-repeat;
 }
 .sh-prose .sh-section-head > h2 {
   flex: 1;
@@ -168,7 +169,7 @@
   margin-top: 2px;
 }
 .sh-prose li::marker {
-  color: var(--muted);
+  color: var(--accent-3);
 }
 .sh-prose li:has(> .sh-task) {
   list-style: none;
@@ -222,7 +223,7 @@
 
 .sh-prose blockquote {
   padding: var(--s-1) var(--s-4);
-  border-left: 3px solid var(--border-strong);
+  border-left: 3px solid var(--accent-3-line);
   color: var(--muted);
   font-style: italic;
 }

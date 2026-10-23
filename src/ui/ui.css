@@ -129,10 +129,12 @@
   border-color: var(--accent-line);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
+/* Dragged taller, a text field stops at a limit and scrolls past it. */
 .sh-textarea {
   display: block;
   resize: none;
   min-height: 72px;
+  max-height: min(320px, 50vh);
   padding-bottom: var(--s-3);
 }
 /* The grip along a text field's bottom edge (Field.tsx), a long pill in the middle: drag to resize, double-click for

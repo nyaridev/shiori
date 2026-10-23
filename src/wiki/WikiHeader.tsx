@@ -11,10 +11,9 @@ import { PresenceBar } from "../presence/PresenceBar.tsx";
 import { LiveBadge } from "../sharing/LiveBadge.tsx";
 import { ShareDialog } from "../sharing/ShareDialog.tsx";
 import { openToolbox } from "../toolbox/open.ts";
-import { Icon, IconButton, Kbd, Tooltip } from "../ui/index.ts";
+import { Icon, IconButton, Tooltip } from "../ui/index.ts";
 import { pageHref } from "./PageHead.tsx";
 import { PageIcon } from "./PageIcon.tsx";
-import { shortcutLabel } from "./SearchPalette.tsx";
 import "./header.css";
 import { ReadingProgress } from "./ReadingProgress.tsx";
 
@@ -70,7 +69,6 @@ export function WikiHeader({
       <button type="button" className="sh-head-search" onClick={onSearch}>
         <Icon filled name="search" size={15} />
         <span className="sh-head-search-text">Search {wiki.title}</span>
-        <Kbd>{shortcutLabel()}</Kbd>
       </button>
       <div className="sh-head-end">
         {guest && (

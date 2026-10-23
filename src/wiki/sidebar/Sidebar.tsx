@@ -5,10 +5,9 @@
 import { type ReactNode, useId } from "react";
 import { NavLink } from "react-router";
 import type { WikiDetail } from "../../../shared/api.ts";
-import { cx, Glider, Icon, Kbd, ScrollArea } from "../../ui/index.ts";
+import { cx, Glider, Icon, ScrollArea } from "../../ui/index.ts";
 import { pageHref } from "../PageHead.tsx";
 import { PageIcon } from "../PageIcon.tsx";
-import { shortcutLabel } from "../SearchPalette.tsx";
 import { useSeenPages } from "../seen.ts";
 import { useWikiIndex } from "../WikiIndexContext.ts";
 import { useFolded } from "./folded.ts";
@@ -57,7 +56,6 @@ export function Sidebar({
           <button type="button" className="sh-sidebar-search" onClick={onSearch}>
             <Icon name="search" size={14} />
             Search
-            <Kbd>{shortcutLabel()}</Kbd>
           </button>
           <ul className="sh-nav sh-nav-pinned">
             <li>

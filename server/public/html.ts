@@ -263,30 +263,48 @@ export function relatedChips(groups: { kind: string; pages: PublicLink[] }[]): E
   );
 }
 
-/** The page's contents in the article, numbered like Wikipedia's (TocEl). */
+/**
+ * The page's contents in the article, numbered like Wikipedia's (1., 1.1.), in a box whose header folds it (TocEl).
+ * A `<details>`, so it folds without the script.
+ */
 export function tocNav(toc: TocEntry[], words: Words): Element | null {
   if (!toc.length) return null;
   let major = 0;
   let minor = 0;
   return h(
-    "nav",
-    { className: ["sh-inline-toc"], ariaLabel: words.contents },
-    h("p", { className: ["sh-inline-toc-title"] }, words.contents),
+    "details",
+    { className: ["sh-inline-toc"], open: true },
     h(
-      "ol",
-      {},
-      toc.map((e) => {
-        if (e.depth === 2) {
-          major++;
-          minor = 0;
-        } else minor++;
-        const n = e.depth === 2 ? `${major}` : `${Math.max(major, 1)}.${minor}`;
-        return h(
-          "li",
-          { dataDepth: String(e.depth) },
-          h("a", { href: `#${e.id}` }, h("span", { className: ["sh-inline-toc-number"] }, n), e.text),
-        );
-      }),
+      "summary",
+      { className: ["sh-inline-toc-title"] },
+      uiIcon("contents", 16),
+      h("span", {}, words.contents),
+      h("span", { className: ["sh-inline-toc-chevron"] }, uiIcon("chevronDown", 16)),
+    ),
+    h(
+      "nav",
+      { ariaLabel: words.contents },
+      h(
+        "ol",
+        {},
+        toc.map((e) => {
+          if (e.depth === 2) {
+            major++;
+            minor = 0;
+          } else minor++;
+          const n = e.depth === 2 ? `${major}.` : `${Math.max(major, 1)}.${minor}.`;
+          return h(
+            "li",
+            { dataDepth: String(e.depth) },
+            h(
+              "a",
+              { href: `#${e.id}` },
+              h("span", { className: ["sh-inline-toc-number"] }, n),
+              h("span", { className: ["sh-inline-toc-text"] }, e.text),
+            ),
+          );
+        }),
+      ),
     ),
   );
 }

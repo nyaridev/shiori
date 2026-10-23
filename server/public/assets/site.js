@@ -129,6 +129,21 @@
       setMenu(false);
   });
 
+  // The sidebar's cards remember being folded, per site; the one holding the open page always stays open.
+  const foldKey = `pw-nav-folded:${document.title.split(" — ").pop()}`;
+  let folded = [];
+  try {
+    folded = JSON.parse(localStorage.getItem(foldKey) || "[]");
+  } catch {}
+  for (const card of document.querySelectorAll(".pw-nav-card")) {
+    if (folded.includes(card.dataset.nav) && !card.hasAttribute("data-here")) card.open = false;
+    card.addEventListener("toggle", () => {
+      const rest = folded.filter((k) => k !== card.dataset.nav);
+      folded = card.open ? rest : [...rest, card.dataset.nav];
+      store(foldKey, JSON.stringify(folded));
+    });
+  }
+
   // ── Spoilers ──────────────────────────────────────────────────────────────────────────────────────────────────
   const all = document.getElementById("pw-spoilers");
   const spoilerBlocks = () => document.querySelectorAll("details.sh-spoiler");
@@ -373,6 +388,12 @@
         input.focus();
       }
     });
+    // The front page's search block (ADR-0012) opens the header's search.
+    for (const big of document.querySelectorAll("[data-pw-search]"))
+      big.addEventListener("click", () => {
+        input.scrollIntoView({ block: "nearest" });
+        input.focus();
+      });
   }
 
   // ── Diagrams ──────────────────────────────────────────────────────────────────────────────────────────────────

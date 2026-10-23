@@ -3,8 +3,12 @@
     <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="{{accent}}"/>
       <stop offset="0.7" stop-color="{{accent}}" stop-opacity="0.28"/>
-      <stop offset="1" stop-color="#0c0c0f" stop-opacity="0"/>
+      <stop offset="1" stop-color="{{bg}}" stop-opacity="0"/>
     </linearGradient>
+    <radialGradient id="ember" cx="0.15" cy="1" r="0.75">
+      <stop offset="0" stop-color="{{accent2}}" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="{{accent2}}" stop-opacity="0"/>
+    </radialGradient>
     <radialGradient id="glow" cx="0.5" cy="0.42" r="0.5">
       <stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/>
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
@@ -14,8 +18,9 @@
       <stop offset="1" stop-color="#ffffff" stop-opacity="0.7"/>
     </linearGradient>
   </defs>
-  <rect width="600" height="900" fill="#0c0c0f"/>
+  <rect width="600" height="900" fill="{{bg}}"/>
   <rect width="600" height="900" fill="url(#fade)"/>
+  <rect width="600" height="900" fill="url(#ember)"/>
   <rect width="600" height="900" fill="url(#glow)"/>
   <g fill="none" stroke="#ffffff" stroke-width="2.5">
     <circle cx="300" cy="380" r="120" stroke-opacity="0.34"/>
@@ -27,8 +32,8 @@
   <g transform="translate(300 380)" fill="url(#sigil)">
     <path d="M0 -150 L18 -18 L150 0 L18 18 L0 150 L-18 18 L-150 0 L-18 -18 Z" fill-opacity="0.92"/>
     <path d="M0 -80 L10 -10 L80 0 L10 10 L0 80 L-10 10 L-80 0 L-10 -10 Z" transform="rotate(45)" fill-opacity="0.6"/>
-    <circle r="9" fill="#0c0c0f" fill-opacity="0.55"/>
-    <circle r="4" fill="#ffffff"/>
+    <circle r="9" fill="{{bg}}" fill-opacity="0.55"/>
+    <circle r="4" fill="{{accent3}}"/>
   </g>
   <g fill="#ffffff">
     <circle cx="300" cy="190" r="4" fill-opacity="0.7"/>

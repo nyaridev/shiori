@@ -5,7 +5,7 @@ import { visit } from "unist-util-visit";
 import type { NavNode, PageData, PageLink } from "../shared/api.ts";
 import { type Frontmatter, frontmatterSchema, issues, type PageStatus } from "../shared/schema.ts";
 import { ICON_NAME, iconSet } from "./icons.ts";
-import { type Layouts, loadLayouts } from "./layouts.ts";
+import { FRONT_LAYOUT, type Layouts, loadLayouts } from "./layouts.ts";
 import { splitFrontmatter } from "./markdown/frontmatter.ts";
 import { fileUrl, type LinkContext, resolveFile } from "./markdown/links.ts";
 import { renderMarkdown } from "./markdown/render.ts";
@@ -328,9 +328,11 @@ export function renderPage(
     if (!found) {
       const broken = layouts.problems.some((p) => p.startsWith(`layouts/${fm.layout}.json`));
       problems.push(
-        broken
-          ? `frontmatter: layout: layouts/${fm.layout}.json has problems (pnpm shiori check lists them)`
-          : `frontmatter: layout: there's no layouts/${fm.layout}.json`,
+        fm.layout === FRONT_LAYOUT
+          ? "frontmatter: layout: layouts/front.json is the public wiki's front page, not a page layout"
+          : broken
+            ? `frontmatter: layout: layouts/${fm.layout}.json has problems (pnpm shiori check lists them)`
+            : `frontmatter: layout: there's no layouts/${fm.layout}.json`,
       );
     } else {
       layout = { name: fm.layout, ...found };

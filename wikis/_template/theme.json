@@ -1,7 +1,14 @@
 {
   "mode": "dark",
   "colors": {
-    "accent": "{{accent}}"
+    "bg": "{{bg}}",
+    "surface": "{{surface}}",
+    "raised": "{{raised}}",
+    "border": "{{border}}",
+    "muted": "{{muted}}",
+    "accent": "{{accent}}",
+    "accent2": "{{accent2}}",
+    "accent3": "{{accent3}}"
   },
   "radius": "small",
   "border": "thin",

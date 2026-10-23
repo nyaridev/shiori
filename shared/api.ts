@@ -494,6 +494,9 @@ export interface PublicReport {
   pictures: number;
   /** Anything in wiki.json's `public` that names nothing, or a picture that can't go. */
   problems: string[];
+  /** The layout the wiki chose (ADR-0012): frame presets that differ from the defaults, its own front page, and the
+   *  page layouts drawn on the public wiki. */
+  layout: { frame: string[]; front: boolean; pages: string[] };
 }
 
 /** Someone who joined through a link, as the owner sees them. */

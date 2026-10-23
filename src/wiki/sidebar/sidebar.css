@@ -73,7 +73,7 @@ a.sh-nav-link.active > svg {
 }
 .sh-nav-heading,
 .sh-nav-link[data-group] {
-  color: var(--muted);
+  color: var(--accent-2-ink);
   font-size: var(--t-xs);
   font-weight: 650;
   letter-spacing: 0.05em;
@@ -141,7 +141,7 @@ a.sh-nav-link.active > svg {
   border: 0;
   border-radius: var(--r-sm);
   background: none;
-  color: var(--muted);
+  color: var(--accent-2-ink);
   font: inherit;
   font-size: var(--t-xs);
   font-weight: 650;
@@ -288,9 +288,9 @@ a.sh-nav-link.active > svg {
   align-items: center;
   margin-bottom: 2px;
   padding-right: 2px;
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--accent-2);
   border-radius: var(--r-sm);
-  background: color-mix(in oklab, var(--accent) 14%, var(--raised));
+  background: color-mix(in oklab, var(--accent) 12%, var(--raised));
 }
 .sh-side-strip > .sh-nav-link,
 .sh-side-tabpanel .sh-nav-group > .sh-nav-row > .sh-nav-link {
@@ -305,7 +305,7 @@ a.sh-nav-link.active > svg {
 /* A group inside a section: a quieter strip. */
 .sh-side-tabpanel .sh-nav-group > .sh-nav-row {
   border-left-width: 2px;
-  background: color-mix(in oklab, var(--accent) 7%, var(--raised));
+  background: color-mix(in oklab, var(--accent) 6%, var(--raised));
 }
 .sh-side-strip > a.sh-nav-link:hover,
 .sh-side-tabpanel .sh-nav-group > .sh-nav-row > a.sh-nav-link:hover {
@@ -323,7 +323,7 @@ a.sh-nav-link.active > svg {
 .sh-side-tabpanel > .sh-collapse > .sh-nav {
   margin: var(--s-2) 0 var(--s-1) 1px;
   padding-left: var(--s-2);
-  border-left: var(--bw) solid color-mix(in oklab, var(--accent) 35%, var(--border));
+  border-left: var(--bw) solid color-mix(in oklab, var(--accent-2) 35%, var(--border));
 }
 .sh-side-tabpanel > .sh-collapse > .sh-nav > li + li {
   margin-top: 2px;

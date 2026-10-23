@@ -6,8 +6,18 @@
 :root {
   --pw-head: 56px;
   --pw-nav: 264px;
-  --pw-max: 1320px;
   --pw-page: color-mix(in oklab, var(--surface) 40%, var(--bg));
+  /* Behind the cards: the theme's background by day; by night a muted slate, as on classic wikis. */
+  --pw-backdrop: var(--bg);
+}
+:root[data-mode="dark"] {
+  --pw-backdrop: #343b5b;
+}
+/* The slate in the hue of the wiki's own background, as light as #343b5b and greyer; a grey theme gets a grey one. */
+@supports (color: oklch(from red l c h)) {
+  :root[data-mode="dark"] {
+    --pw-backdrop: oklch(from var(--bg) 0.36 min(0.028, c) h);
+  }
 }
 
 /* The app fills the window; a website scrolls as usual. Its scrollbar is the app's, drawn over the page by site.js
@@ -27,9 +37,16 @@ html:not(.pw-js) {
 html:not(.pw-js)::-webkit-scrollbar {
   display: block;
 }
+/* The header, the cards and the footer in a column as tall as the window, so a short page's footer stays at the bottom. */
 body.pw {
+  /* The page card's width; the whole frame (header included) is the sidebar, the gap and this, centered. Set here,
+     not on :root, so the frame's presets on the body (below) change both. */
+  --pw-content: 50rem;
+  --pw-max: calc(var(--pw-nav) + var(--s-5) + var(--pw-content) + 2 * var(--s-4));
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
-  background: var(--bg);
+  background: var(--pw-backdrop);
 }
 
 .pw-skip {
@@ -208,48 +225,82 @@ html[data-mode="light"] .pw-sun {
   grid-template-columns: var(--pw-nav) minmax(0, 1fr);
   align-items: start;
   gap: var(--s-5);
+  width: 100%;
   max-width: var(--pw-max);
   margin: 0 auto;
   padding: var(--s-5) var(--s-4) var(--s-7);
 }
 
-/* The sidebar: the app's tree, in a card of its own. */
+/* The sidebar: a column of cards (Pages, then one per section), each with a header that folds it. The column
+   scrolls on its own when it's taller than the window. */
 .pw-nav {
   position: sticky;
   top: calc(var(--pw-head) + var(--s-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
   max-height: calc(100vh - var(--pw-head) - var(--s-6));
   overflow: auto;
-  padding: var(--s-3);
+  /* Room for the cards' shadows inside the scrolling column. */
+  padding: 1px 1px var(--s-1);
+  scrollbar-width: thin;
+}
+.pw-nav-card {
+  flex: none;
+  overflow: hidden;
   border: var(--bw) solid var(--border);
   border-radius: var(--r-lg);
   background: var(--surface);
   box-shadow: var(--shadow-1);
-  scrollbar-width: thin;
 }
-.pw-nav-section {
-  margin-top: var(--s-3);
-  padding-top: var(--s-3);
-  border-top: var(--bw) solid var(--border);
-}
-.pw-nav-label {
-  margin: 0 0 var(--s-1);
-  padding: 2px var(--s-2);
-  color: var(--muted);
-  font-size: var(--t-xs);
+.pw-nav-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  background: color-mix(in oklab, var(--accent) 7%, var(--raised));
+  color: var(--text);
+  font-family: var(--font-heading);
   font-weight: 650;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
 }
-.pw-nav-label a {
+.pw-nav-head::-webkit-details-marker {
+  display: none;
+}
+.pw-nav-head:hover {
+  background: color-mix(in oklab, var(--accent) 12%, var(--raised));
+}
+.pw-nav-card[open] > .pw-nav-head {
+  border-bottom: var(--bw) solid var(--accent-2-line);
+}
+.pw-nav-title,
+.pw-nav-title > a,
+.pw-nav-title > span {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  min-width: 0;
   color: inherit;
   text-decoration: none;
 }
-.pw-nav-label a:hover,
-.pw-nav-label a.active {
+.pw-nav-title > a:hover,
+.pw-nav-title > a.active {
   color: var(--accent-ink);
+}
+.pw-nav-chevron {
+  display: inline-flex;
+  margin-left: auto;
+  color: var(--muted);
+  transition: rotate 200ms var(--ease);
+}
+.pw-nav-card[open] .pw-nav-chevron {
+  rotate: 180deg;
+}
+.pw-nav-card > .sh-nav {
+  margin: 0;
+  padding: var(--s-2);
 }
 /* The open page: its name in the accent with the tint and edge of the app's sliding marker. */
 .pw-nav a.sh-nav-link:hover {
@@ -269,6 +320,20 @@ html[data-mode="light"] .pw-sun {
 }
 .pw-crumbs ol {
   margin-bottom: var(--s-2);
+}
+/* By night the crumbs sit on the lighter slate, where the muted grey fades: they take the text's color, softened. */
+:root[data-mode="dark"] .pw-crumbs :is(ol, a, span) {
+  color: color-mix(in oklab, var(--text) 82%, var(--pw-backdrop));
+}
+:root[data-mode="dark"] .pw-crumbs a:hover {
+  background: color-mix(in oklab, var(--text) 12%, transparent);
+  color: var(--text);
+}
+/* The page itself, last in the crumbs: bold, in the text's full color. */
+.pw-crumbs .pw-crumbs-here,
+:root[data-mode="dark"] .pw-crumbs .pw-crumbs-here {
+  color: var(--text);
+  font-weight: 650;
 }
 .pw-article {
   display: flow-root;
@@ -300,8 +365,62 @@ html[data-mode="light"] .pw-sun {
   object-fit: cover;
   border-radius: var(--r-lg) var(--r-lg) 0 0;
 }
+/* The front page (layout.ts): its blocks in a grid of areas, from `layouts/front.json` or the built-in one (the
+   name and tagline, the banner across the card, the text, then "Where to start"). Narrow screens stack them. */
+.pw-front-grid {
+  display: grid;
+  grid-template-areas: var(--areas);
+  grid-template-columns: var(--columns);
+  gap: var(--s-5);
+  align-items: start;
+}
+.pw-area {
+  grid-area: var(--area);
+  min-width: 0;
+}
 .pw-front .sh-page-title {
   font-size: clamp(1.9rem, 1.4rem + 1.6vw, 2.6rem);
+}
+.pw-front .pw-front-head {
+  margin: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+/* The banner: across the card when its area spans the row, a rounded picture when it shares one. */
+.pw-front-banner {
+  display: block;
+  width: 100%;
+  height: clamp(160px, 26vw, 340px);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  object-fit: cover;
+}
+.pw-area[data-wide] > .pw-front-banner {
+  width: calc(100% + 2 * var(--s-6));
+  margin: 0 calc(-1 * var(--s-6));
+  border-inline: 0;
+  border-radius: 0;
+}
+.pw-area > .sh-prose > :first-child {
+  margin-top: 0;
+}
+.pw-area > .sh-prose > :last-child {
+  margin-bottom: 0;
+}
+/* Its first paragraph leads, a little larger and brighter. */
+.pw-front-intro > p:first-child {
+  color: var(--text);
+  font-size: var(--t-lg);
+}
+/* A block's title (Where to start, Recently updated…): a section like the page's own, its heading over the second
+   accent's rule. */
+.pw-area-title {
+  margin: 0 0 var(--s-4);
+  padding-bottom: var(--s-2);
+  border-bottom: var(--bw) solid var(--accent-2-line);
+  background: linear-gradient(var(--accent-2), var(--accent-2)) left bottom / 48px 3px no-repeat;
+  color: var(--text);
+  font-size: var(--t-xl);
 }
 
 /* Section cards with the page's picture on top (the front page's sections, a section's pages). */
@@ -331,7 +450,35 @@ html[data-mode="light"] .pw-sun {
   display: none;
 }
 .pw-start-grid {
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+/* A block that sets its columns (`columns` in layouts/front.json). */
+.pw-start-grid.pw-columns {
+  grid-template-columns: repeat(var(--pw-columns), minmax(0, 1fr));
+}
+.pw-front .pw-card-picture {
+  aspect-ratio: 1;
+}
+
+/* The front page's search block: a large box that opens the header's search (site.js). */
+.pw-search-big {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--s-4);
+  border: var(--bw) solid var(--border-field);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-lg);
+  text-align: left;
+  cursor: text;
+}
+.pw-search-big:hover {
+  border-color: var(--accent-line);
 }
 
 /* Previous and next, at the page's end. */
@@ -351,11 +498,15 @@ html[data-mode="light"] .pw-sun {
   text-transform: uppercase;
 }
 
+/* The footer: a bar across the page like the header, under the cards. */
 .pw-site-foot {
   display: flex;
   justify-content: center;
   gap: var(--s-2);
-  padding: 0 var(--s-4) var(--s-6);
+  margin-top: auto;
+  padding: var(--s-4);
+  border-top: var(--bw) solid var(--border);
+  background: var(--surface);
   color: var(--muted);
   font-size: var(--t-xs);
 }
@@ -428,6 +579,101 @@ html.pw-spoilers-shown .sh-spoiler-inline > span {
   right: var(--s-4);
 }
 
+/* ── The frame's presets (ADR-0012): `public.frame` in wiki.json, as the body's attributes ─────────────────────── */
+
+body.pw[data-width="narrow"] {
+  --pw-content: 42rem;
+}
+body.pw[data-width="wide"] {
+  --pw-content: 64rem;
+}
+body.pw[data-sidebar="none"] {
+  --pw-max: calc(var(--pw-content) + 2 * var(--s-4));
+}
+body.pw[data-width="full"] {
+  --pw-max: 100%;
+}
+body.pw[data-backdrop="page"] {
+  --pw-backdrop: var(--bg);
+}
+body.pw[data-backdrop="tint"] {
+  --pw-backdrop: color-mix(in oklab, var(--accent) 16%, var(--bg));
+}
+/* A picture behind the cards (its URL is set at the end of the stylesheet), over the slate while it loads. */
+body.pw[data-backdrop="picture"] {
+  background: var(--pw-backdrop) var(--pw-backdrop-image, none) center / cover fixed no-repeat;
+}
+/* On a picture the crumbs sit on a strip of the page's own color, so they read whatever is under them. */
+body.pw[data-backdrop="picture"] .pw-crumbs ol {
+  display: inline-flex;
+  padding: 2px var(--s-2);
+  border-radius: var(--r-md);
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+}
+body.pw[data-cards="cover"] .sh-section-card .pw-card-picture img {
+  object-fit: cover;
+}
+body.pw[data-card-shape="square"] .pw-card-picture {
+  aspect-ratio: 1;
+}
+body.pw[data-card-shape="wide"] .pw-card-picture {
+  aspect-ratio: 16 / 9;
+}
+body.pw[data-card-shape="tall"] .pw-card-picture {
+  aspect-ratio: 3 / 4;
+}
+/* The sections card on the right, on screens wide enough for it to sit beside the page. */
+@media (min-width: 1041px) {
+  body.pw[data-sidebar="right"] .pw-body {
+    grid-template-columns: minmax(0, 1fr) var(--pw-nav);
+  }
+  body.pw[data-sidebar="right"] .pw-nav {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  body.pw[data-sidebar="right"] .pw-main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+}
+/* No sidebar: the sections are the menu drawer phones use, on every screen. */
+body.pw[data-sidebar="none"] .pw-menu {
+  display: inline-flex;
+}
+body.pw[data-sidebar="none"] .pw-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+body.pw[data-sidebar="none"] .pw-nav {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  width: min(320px, 86vw);
+  max-height: none;
+  padding: var(--s-3);
+  background: var(--pw-backdrop);
+  border-radius: 0 var(--r-lg) var(--r-lg) 0;
+  box-shadow: var(--shadow-2);
+  translate: -105% 0;
+  visibility: hidden;
+  transition:
+    translate 180ms var(--ease),
+    visibility 0s 180ms;
+}
+html.pw-menu-open body.pw[data-sidebar="none"] .pw-nav {
+  translate: 0 0;
+  visibility: visible;
+  transition: translate 180ms var(--ease);
+}
+html.pw-menu-open body.pw[data-sidebar="none"]::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: color-mix(in oklab, var(--bg) 60%, transparent);
+}
+
 /* ── Narrow screens: search on a row of its own, the sidebar a drawer ────────────────────────────────────────── */
 
 @media (max-width: 1040px) {
@@ -455,6 +701,8 @@ html.pw-spoilers-shown .sh-spoiler-inline > span {
     z-index: 40;
     width: min(320px, 86vw);
     max-height: none;
+    padding: var(--s-3);
+    background: var(--pw-backdrop);
     border-radius: 0 var(--r-lg) var(--r-lg) 0;
     box-shadow: var(--shadow-2);
     translate: -105% 0;
@@ -485,12 +733,28 @@ html.pw-spoilers-shown .sh-spoiler-inline > span {
     width: calc(100% + 2 * var(--s-4));
     margin: calc(-1 * var(--s-5)) calc(-1 * var(--s-4)) var(--s-4);
   }
+  .pw-area[data-wide] > .pw-front-banner {
+    width: calc(100% + 2 * var(--s-4));
+    margin: 0 calc(-1 * var(--s-4));
+  }
   .pw-spoilers-label,
   .sh-head-tagline {
     display: none;
   }
-  .pw-start-grid {
+  .pw-start-grid,
+  .pw-start-grid.pw-columns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* The front page's areas stack in reading order where columns would be too narrow; a stacked banner spans the card. */
+@media (max-width: 860px) {
+  .pw-front-grid {
+    grid-template-areas: none;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pw-area {
+    grid-area: auto;
   }
 }
 

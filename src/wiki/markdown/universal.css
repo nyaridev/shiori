@@ -73,41 +73,71 @@
   margin: var(--s-4) 0;
 }
 
-/* Inline contents, as on Wikipedia and Fandom. */
+/* Inline contents, as on Wikipedia and Fandom: a box with a header that folds it (a <details>, so it folds without
+   scripts). Each entry's number (1., 1.1.) sits right before its text, and a part is set in under its section. */
 .sh-inline-toc {
   display: inline-block;
-  min-width: 220px;
+  min-width: 240px;
+  max-width: 100%;
   margin: var(--s-3) 0;
-  padding: var(--s-3) var(--s-4);
   border: var(--bw) solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
 }
-.sh-prose .sh-inline-toc-title {
-  margin: 0 0 var(--s-2);
+.sh-inline-toc-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
   color: var(--text);
   font-weight: 650;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.sh-inline-toc-title::-webkit-details-marker {
+  display: none;
+}
+.sh-inline-toc-title:hover {
+  background: var(--hover);
+}
+.sh-inline-toc[open] > .sh-inline-toc-title {
+  border-bottom: var(--bw) solid var(--border);
+  border-radius: var(--r-md) var(--r-md) 0 0;
+}
+.sh-inline-toc-chevron {
+  display: inline-flex;
+  margin-left: auto;
+  padding-left: var(--s-4);
+  color: var(--muted);
+  transition: rotate 200ms var(--ease);
+}
+.sh-inline-toc[open] .sh-inline-toc-chevron {
+  rotate: 180deg;
 }
 .sh-prose .sh-inline-toc ol {
   margin: 0;
-  padding: 0;
+  padding: var(--s-2) var(--s-3) var(--s-3);
   list-style: none;
 }
 .sh-inline-toc li[data-depth="3"] {
-  padding-left: var(--s-4);
+  padding-left: 1.3em;
 }
 .sh-inline-toc a {
+  display: flex;
+  gap: 0.4em;
   color: var(--accent-ink);
   font-size: var(--t-sm);
   text-decoration: none;
 }
-.sh-inline-toc a:hover {
+.sh-inline-toc a:hover .sh-inline-toc-text {
   text-decoration: underline;
 }
 .sh-inline-toc-number {
-  display: inline-block;
-  min-width: 2em;
+  flex: none;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Steps */
@@ -249,7 +279,7 @@
 .sh-quote {
   margin: var(--s-4) 0;
   padding: var(--s-3) var(--s-4);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--accent-3);
   border-radius: 0 var(--r-md) var(--r-md) 0;
   background: var(--surface);
 }

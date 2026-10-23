@@ -1,5 +1,5 @@
 // The public wiki (ADR-0011): only public pages go in, and nothing private reaches any of its files.
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { inflateRawSync } from "node:zlib";
@@ -271,5 +271,105 @@ describe("the site", () => {
     const body = method === 8 ? inflateRawSync(data) : data;
     const expected = await readEditionFile(w, e.files.get(name.slice("game/".length)) as never);
     expect(Buffer.from(body).equals(Buffer.from(expected as string | Uint8Array))).toBe(true);
+  });
+});
+
+describe("the wiki's own layout (ADR-0012)", () => {
+  const frontLayout = (blocks: Record<string, unknown>) =>
+    write("layouts/front.json", JSON.stringify({ areas: Object.keys(blocks).map((a) => [a]), blocks }));
+
+  it("puts the frame's presets on the body, and the footer's text as text", () => {
+    const e = build(
+      sampleWiki({ frame: { width: "wide", sidebar: "none", cards: { picture: "cover" }, footer: "Fan <b>made</b>" } }),
+    );
+    const rat = page(e, "mobs/rat.html");
+    expect(rat).toContain(
+      '<body class="pw" data-width="wide" data-sidebar="none" data-backdrop="slate" data-cards="cover">',
+    );
+    expect(rat).toContain("Fan &#x3C;b>made&#x3C;/b>");
+    expect(e.report.layout.frame).toEqual(["width: wide", "sidebar: none", "cards: cover", "footer text"]);
+  });
+
+  it("takes a public picture as the backdrop, and never a private one", () => {
+    const style = (e: Edition) => page(e, "_site/style.css");
+    const ok = build(sampleWiki({ frame: { backdrop: "/assets/rat.svg" } }));
+    expect(style(ok)).toContain('--pw-backdrop-image:url("../_media/assets/rat.svg")');
+    expect(page(ok, "index.html")).toContain('data-backdrop="picture"');
+
+    const hidden = build(sampleWiki({ frame: { backdrop: "/assets/private/next.svg" } }));
+    expect(style(hidden)).not.toContain("--pw-backdrop-image:url(");
+    expect(page(hidden, "index.html")).toContain('data-backdrop="slate"');
+    expect([...hidden.files.keys()].some((f) => f.includes("private"))).toBe(false);
+    expect(hidden.report.problems).toContain('public.frame.backdrop: "/assets/private/next.svg" is missing or private');
+  });
+
+  it("draws its own front page, and never features, lists or counts a private page", () => {
+    write("pages/about.md", "The game, in short.\n\n## Team\n\n:::private\nTeam plans for the sequel.\n:::\n");
+    frontLayout({
+      title: { type: "title" },
+      team: { type: "section", heading: "Team" },
+      featured: { type: "pages", title: "Featured", pages: ["mobs/rat", "notes", "mobs/boss"] },
+      recent: { type: "recent" },
+      stats: { type: "stats" },
+      search: { type: "search" },
+    });
+    const e = build(sampleWiki());
+    const front = page(e, "index.html");
+    expect(front).toContain("Featured");
+    expect(front).toContain('href="mobs/rat.html"');
+    expect(front).toContain("data-pw-search");
+    // The private section, page and boss stay out, and the section's area closes up.
+    for (const secret of ["Team plans", "notes.html", "boss.html", "Secret notes", 'data-block="section"'])
+      expect(front).not.toContain(secret);
+    expect(e.report.problems).toEqual(
+      expect.arrayContaining([
+        'layouts/front.json: "notes" isn\'t a public page',
+        'layouts/front.json: "mobs/boss" isn\'t a public page',
+      ]),
+    );
+    expect(e.report.layout.front).toBe(true);
+  });
+
+  it("arranges a page by a layout made for the public wiki, without its app-only blocks", () => {
+    write(
+      "layouts/mob.json",
+      JSON.stringify({
+        public: true,
+        areas: [
+          ["design", "facts"],
+          ["body", "facts"],
+          ["questions", "questions"],
+        ],
+        blocks: {
+          design: { type: "design" },
+          facts: { type: "infobox" },
+          body: { type: "body" },
+          questions: { type: "questions", title: "Open questions" },
+        },
+      }),
+    );
+    const rat = (text: string) => write("pages/mobs/rat.md", text);
+    const w = sampleWiki();
+    rat(readFileSync(join(root, "pages/mobs/rat.md"), "utf8").replace("title: Rat\n", "title: Rat\nlayout: mob\n"));
+    const e = build(w);
+    const html = page(e, "mobs/rat.html");
+    expect(html).toContain('class="sh-layout" data-layout="mob"');
+    expect(html).toContain('data-block="infobox"');
+    expect(html).toContain("Health");
+    for (const secret of ["Bigger?", "Open questions", 'data-block="design"', "RatAI.lua", "every 90 seconds"])
+      expect(html).not.toContain(secret);
+    expect(e.report.layout.pages).toEqual(["mob"]);
+  });
+
+  it("leaves a page plain when its layout isn't made for the public wiki", () => {
+    write("layouts/mob.json", JSON.stringify({ areas: [["body"]], blocks: { body: { type: "body" } } }));
+    const w = sampleWiki();
+    write(
+      "pages/mobs/rat.md",
+      readFileSync(join(root, "pages/mobs/rat.md"), "utf8").replace("title: Rat\n", "title: Rat\nlayout: mob\n"),
+    );
+    const html = page(build(w), "mobs/rat.html");
+    expect(html).not.toContain("sh-layout");
+    expect(html).toContain("Rats live in");
   });
 });

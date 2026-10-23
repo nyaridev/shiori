@@ -12,6 +12,11 @@
   --muted: #8e9198;
   --accent: #e8b86d;
   --accent-text: #1c1407;
+  /* Two more accents that contrast with the first (a theme's accent2 and accent3; without them, the accent). The
+     second marks structure: section rules, the sidebar's labels and strips, box titles. The third marks small
+     highlights: list bullets, quotes, the second tone of page icons. */
+  --accent-2: var(--accent);
+  --accent-3: var(--accent);
   --r-sm: 6px;
   --r-md: 9px;
   --r-lg: 14px;
@@ -32,13 +37,19 @@
   --accent-hover: color-mix(in oklab, var(--accent) 88%, var(--text));
   /* The accent as text (links, the open page): a theme sets a shade that reads on its backgrounds (shared/theme.ts). */
   --accent-ink: var(--accent);
+  --accent-2-ink: var(--accent-2);
+  --accent-3-ink: var(--accent-3);
+  --accent-2-soft: color-mix(in oklab, var(--accent-2) 16%, transparent);
+  --accent-2-line: color-mix(in oklab, var(--accent-2) 45%, transparent);
+  --accent-3-soft: color-mix(in oklab, var(--accent-3) 16%, transparent);
+  --accent-3-line: color-mix(in oklab, var(--accent-3) 45%, transparent);
   /* Field outlines must stand out from the page (3:1), more than the borders that only divide. */
   --border-field: color-mix(in oklab, var(--border) 55%, var(--text));
   --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-line);
-  /* Page icons (src/icons/): filled shapes in the accent, a softer second tone, and details cut out in the background
-     (themes keep the accent readable on it). */
+  /* Page icons (src/icons/): filled shapes in the accent, a second tone from the third accent, and details cut out in
+     the background (themes keep the accents readable on it). */
   --icon-ink: var(--accent);
-  --icon-tint: color-mix(in oklab, var(--accent) 50%, var(--bg));
+  --icon-tint: color-mix(in oklab, var(--accent-3) 60%, var(--bg));
   --icon-detail: var(--bg);
 
   /* Status colors. A theme sets good, warn and bad in shades that read as text on it (shared/theme.ts); these are

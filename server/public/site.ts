@@ -5,7 +5,8 @@
 // any static host and the public link.
 import type { Element } from "hast";
 import type { NavNode } from "../../shared/api.ts";
-import { glyph, h, html, iconOf, type PublicLink, pageCards, uiIcon } from "./html.ts";
+import type { Frame } from "../../shared/schema.ts";
+import { glyph, h, html, iconOf, type PublicLink, uiIcon } from "./html.ts";
 import type { Words } from "./words.ts";
 
 export interface SiteInfo {
@@ -28,6 +29,24 @@ export interface SiteInfo {
   math: boolean;
   /** A hash of the site's own scripts, styles and search index, after their URLs, so browsers never keep old ones. */
   version: string;
+  /** The frame's presets (ADR-0012); a picture backdrop is drawn by the stylesheet. */
+  frame: Frame;
+}
+
+/** The frame's presets as the body's attributes, which `site.css` reads. Only preset names, never the wiki's text. */
+function frameAttributes(frame: Frame): string {
+  const backdrop = frame.backdrop.startsWith("/") ? "picture" : frame.backdrop;
+  const attrs: Record<string, string | undefined> = {
+    "data-width": frame.width,
+    "data-sidebar": frame.sidebar,
+    "data-backdrop": backdrop,
+    "data-cards": frame.cards.picture,
+    "data-card-shape": frame.cards.shape,
+  };
+  return Object.entries(attrs)
+    .filter(([, v]) => v)
+    .map(([k, v]) => ` ${k}="${v}"`)
+    .join("");
 }
 
 export interface ShellPage {
@@ -142,7 +161,11 @@ function header(site: SiteInfo, root: string): Element {
   );
 }
 
-/** The sidebar: home and the loose top pages first, then each top section under its own label, as the app's tree. */
+/**
+ * The sidebar, as a fandom wiki's: a column of cards, each with a header that folds it (a `<details>`, so it folds
+ * without the script). Home and the loose top pages in the first, then a card per top section, its pages as the app's
+ * tree. The card that holds the open page is always open.
+ */
 function sidebar(site: SiteInfo, root: string, current: string | null): Element {
   const href = (path: string) => root + encodePath(site.fileOf(path));
   const icon = (n: NavNode) =>
@@ -184,27 +207,36 @@ function sidebar(site: SiteInfo, root: string, current: string | null): Element 
       site.words.home,
     ),
   );
+  const holds = (n: NavNode): boolean => n.path === current || n.children.some(holds);
+  const card = (key: string, title: Element | string, list: Element[], here: boolean) =>
+    h(
+      "details",
+      { className: ["pw-nav-card"], open: true, dataNav: key, ...(here ? { dataHere: "" } : {}) },
+      h(
+        "summary",
+        { className: ["pw-nav-head"] },
+        h("span", { className: ["pw-nav-title"] }, title),
+        h("span", { className: ["pw-nav-chevron"] }, uiIcon("chevronDown", 16)),
+      ),
+      h("ul", { className: ["sh-nav"] }, list),
+    );
   return h(
     "nav",
     { className: ["pw-nav"], id: "pw-nav", ariaLabel: site.words.pages },
-    h("ul", { className: ["sh-nav", "pw-nav-top"] }, home, loose.map(item)),
+    card("", site.words.pages, [home, ...loose.map(item)], current === "" || loose.some(holds)),
     sections.map((s) =>
-      h(
-        "section",
-        { className: ["pw-nav-section"] },
-        h(
-          "p",
-          { className: ["pw-nav-label"] },
-          s.isPage
-            ? h(
-                "a",
-                { href: href(s.path), ...(s.path === current ? { ariaCurrent: "page", className: ["active"] } : {}) },
-                icon(s),
-                s.title,
-              )
-            : s.title,
-        ),
-        h("ul", { className: ["sh-nav"] }, s.children.map(item)),
+      card(
+        s.path,
+        s.isPage
+          ? h(
+              "a",
+              { href: href(s.path), ...(s.path === current ? { ariaCurrent: "page", className: ["active"] } : {}) },
+              icon(s),
+              s.title,
+            )
+          : h("span", {}, icon(s), s.title),
+        s.children.map(item),
+        holds(s),
       ),
     ),
   );
@@ -244,6 +276,7 @@ export function shell(site: SiteInfo, page: ShellPage): string {
       "footer",
       { className: ["pw-site-foot"] },
       h("span", {}, site.title),
+      ...(site.frame.footer ? [h("span", { ariaHidden: "true" }, "·"), h("span", {}, site.frame.footer)] : []),
       h("span", { ariaHidden: "true" }, "·"),
       h("span", {}, "Made with Shiori"),
     ),
@@ -259,7 +292,7 @@ export function shell(site: SiteInfo, page: ShellPage): string {
 <head>
 ${head}
 </head>
-<body class="pw">
+<body class="pw"${frameAttributes(site.frame)}>
 ${body}
 ${scripts}
 </body>
@@ -267,14 +300,18 @@ ${scripts}
 `;
 }
 
-/** Breadcrumbs (the app's Crumbs): the front page, then the sections above the page. */
-export function crumbs(trail: { title: string; href: string | null }[]): Element | null {
+/** Breadcrumbs (the app's Crumbs): the front page, the sections above the page, then the page itself in bold. */
+export function crumbs(trail: { title: string; href: string | null }[], current?: string): Element | null {
   if (!trail.length) return null;
   const items: Element[] = [];
   trail.forEach((t, i) => {
     if (i > 0) items.push(uiIcon("chevronRight", 12));
     items.push(h("li", {}, t.href ? h("a", { href: t.href }, t.title) : h("span", {}, t.title)));
   });
+  if (current) {
+    items.push(uiIcon("chevronRight", 12));
+    items.push(h("li", {}, h("span", { className: ["pw-crumbs-here"], ariaCurrent: "page" }, current)));
+  }
   return h("nav", { className: ["sh-crumbs", "pw-crumbs"], ariaLabel: "Breadcrumb" }, h("ol", {}, items));
 }
 
@@ -289,6 +326,8 @@ export interface ArticleParts {
   /** The infobox beside the text. */
   infobox?: Element | null;
   prose: string;
+  /** A page arranged by its layout (ADR-0012): the grid, drawn in place of the text and its infobox. */
+  layout?: string;
   /** Under the text: the pages in this section, related pages, previous and next. */
   foot?: (Element | null)[];
 }
@@ -316,45 +355,12 @@ export function article(parts: ArticleParts): string {
           ),
         ),
       ),
-      h("div", { className: ["sh-prose"] }, parts.infobox ?? null, raw(parts.prose)),
+      parts.layout ? raw(parts.layout) : h("div", { className: ["sh-prose"] }, parts.infobox ?? null, raw(parts.prose)),
       h(
         "footer",
         { className: ["sh-page-foot"] },
         (parts.foot ?? []).filter((f): f is Element => !!f),
       ),
-    ),
-  );
-}
-
-/** The front page: the wiki's name and tagline over its banner, the chosen page's text, a card per section. */
-export function frontArticle(site: SiteInfo, parts: { banner?: string; prose: string; start: PublicLink[] }): string {
-  return html(
-    h(
-      "article",
-      { className: ["pw-article", "pw-front"] },
-      h(
-        "header",
-        { className: ["sh-page-head", "pw-front-head"] },
-        parts.banner ? h("img", { className: ["pw-banner"], src: parts.banner, alt: "" }) : null,
-        h(
-          "div",
-          { className: ["sh-page-heading"] },
-          h(
-            "div",
-            {},
-            h("h1", { className: ["sh-page-title"] }, site.title),
-            site.tagline ? h("p", { className: ["sh-page-summary"] }, site.tagline) : null,
-          ),
-        ),
-      ),
-      parts.prose ? h("div", { className: ["sh-prose"] }, raw(parts.prose)) : null,
-      parts.start.length
-        ? h(
-            "footer",
-            { className: ["sh-page-foot"] },
-            sectionBlock(site.words.start, pageCards(parts.start, "sh-sections-grid pw-start-grid")),
-          )
-        : null,
     ),
   );
 }

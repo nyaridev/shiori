@@ -295,6 +295,7 @@ a.sh-tag:hover {
   display: grid;
   gap: 2px;
   padding: var(--s-3) var(--s-4);
+  border-bottom: 2px solid var(--accent-2);
   background: var(--accent-soft);
   text-align: center;
 }

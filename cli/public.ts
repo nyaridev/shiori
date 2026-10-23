@@ -2,11 +2,12 @@
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { buildCorpus } from "../server/corpus.ts";
+import { loadLayouts } from "../server/layouts.ts";
 import { listPages, type PageFile, pageFinder } from "../server/pages.ts";
 import { dataDir, slashes } from "../server/paths.ts";
 import { buildEdition } from "../server/public/edition.ts";
 import { writeEdition, zipEdition, zipName } from "../server/public/output.ts";
-import { isPrivateFile, publicSettings, unusedPatterns } from "../server/public/rules.ts";
+import { isPrivateFile, isPublicPage, publicSettings, unusedPatterns } from "../server/public/rules.ts";
 import type { Wiki } from "../server/registry.ts";
 import type { PublicReport } from "../shared/api.ts";
 
@@ -27,14 +28,30 @@ export function publicProblems(w: Wiki, pages: PageFile[]): string[] {
   ).map((p) => `wiki.json: public.pages: "${p}" names no page`);
   if (settings.front && !pageFinder(pages, "")(settings.front).page)
     out.push(`wiki.json: public.front: there's no page "${settings.front}"`);
-  for (const field of ["banner", "logo"] as const) {
-    const src = settings[field];
+  const pictures: [string, string | undefined][] = [
+    ["banner", settings.banner],
+    ["logo", settings.logo],
+    ["frame.backdrop", settings.frame.backdrop.startsWith("/") ? settings.frame.backdrop : undefined],
+  ];
+  for (const [field, src] of pictures) {
     if (!src) continue;
     const rel = src.replace(/^\/+/, "");
     if (!existsSync(join(w.root, rel))) out.push(`wiki.json: public.${field}: missing file "${src}"`);
     else if (isPrivateFile(publicSettings(w), rel))
       out.push(`wiki.json: public.${field}: "${src}" is a private picture`);
   }
+  // The front page's layout (ADR-0012) may only feature pages that are public.
+  const find = pageFinder(pages, "");
+  const front = settings.front ? find(settings.front).page?.path : undefined;
+  for (const block of Object.values(loadLayouts(w).front?.blocks ?? {}))
+    if (block.type === "pages")
+      for (const ref of block.pages) {
+        const path = find(ref).page?.path;
+        const page = pages.find((p) => p.path === path);
+        if (!page) out.push(`layouts/front.json: there's no page "${ref}"`);
+        else if (!isPublicPage(settings, page) || page.path === front)
+          out.push(`layouts/front.json: "${ref}" isn't a public page`);
+      }
   return out;
 }
 
@@ -54,6 +71,10 @@ export function showPublic(w: Wiki) {
   if (!w.manifest.public) console.log('  wiki.json has no "public" yet; only pages with `public: true` go public.');
   console.log(
     `  front page: ${report.front ? `${report.front.title} (${report.front.path || "home"})` : "the wiki's name and its sections"}`,
+  );
+  const { layout } = report;
+  console.log(
+    `  layout: ${layout.frame.length ? layout.frame.join(", ") : "the standard frame"}; ${layout.front ? "its own front page (layouts/front.json)" : "the standard front page"}${layout.pages.length ? `; page layouts: ${layout.pages.join(", ")}` : ""}`,
   );
   console.log(`\n${report.pages.length} public page${report.pages.length === 1 ? "" : "s"}:`);
   for (const p of report.pages) console.log(`  ${p.path.padEnd(36)} ${p.title}`);

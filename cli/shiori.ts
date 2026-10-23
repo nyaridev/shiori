@@ -18,6 +18,7 @@ import { syncWiki } from "../server/sync.ts";
 import { copyTemplate } from "../server/template.ts";
 import { addMessage, closeAll, getThread, listThreads, setStatus, waitingForAgent } from "../server/threads.ts";
 import type { Answer, Authored, PageData, Question, Thread } from "../shared/api.ts";
+import { NEW_WIKI_PALETTES, PALETTE_NAMES, type PaletteName } from "../shared/palettes.ts";
 import { isPageComment } from "../shared/quote.ts";
 import { wikiIdSchema } from "../shared/schema.ts";
 import { boards, report, reports } from "./boards.ts";
@@ -27,8 +28,10 @@ import { sheet, sheets } from "./sheets.ts";
 const HELP = `Shiori CLI
 
   pnpm shiori list                                   Wikis, where they live and their open comments
-  pnpm shiori new <id> [--title "T"] [--tagline "…"] [--at <folder>] [--accent "#rrggbb"]
-                                                   New wiki from wikis/_template (--at: outside the app, linked)
+  pnpm shiori new <id> [--title "T"] [--tagline "…"] [--at <folder>]
+                     [--palette <name>] [--accent "#rrggbb"]
+                                                   New wiki from wikis/_template (--at: outside the app, linked;
+                                                   --palette: its colors, random unless given; --accent: its first)
   pnpm shiori link <folder>                          Show a wiki that lives elsewhere (wikis.local.json)
   pnpm shiori unlink <id|folder>                     Stop showing a linked wiki (its files stay)
   pnpm shiori check [id]                             Validate wiki.json, theme.json, pages, links, files, elements
@@ -68,8 +71,6 @@ const HELP = `Shiori CLI
                                                    The public wiki as a static site: a .zip (by default in the
                                                    wiki's data/export/), or files in a folder`;
 
-const ACCENTS = ["#e8b86d", "#7fb7a4", "#8fa8e8", "#e0846b", "#c49be0", "#d4c46a", "#6fb3d4", "#e08aa8"];
-
 const { positionals, values } = parseArgs({
   allowPositionals: true,
   options: {
@@ -77,6 +78,7 @@ const { positionals, values } = parseArgs({
     tagline: { type: "string" },
     at: { type: "string" },
     accent: { type: "string" },
+    palette: { type: "string" },
     note: { type: "string" },
     wontfix: { type: "boolean", default: false },
     all: { type: "boolean", default: false },
@@ -191,13 +193,15 @@ const commands: Record<string, () => void> = {
     if (discover(APP_ROOT).wikis.some((w) => w.id === id)) fail(`A wiki "${id}" already exists.`);
     const dest = values.at ? resolve(values.at) : join(APP_ROOT, "wikis", id);
     if (existsSync(dest) && readdirSync(dest).length) fail(`${slashes(dest)} isn't empty.`);
-    const accent = values.accent ?? ACCENTS[Math.floor(Math.random() * ACCENTS.length)];
-    if (!/^#[0-9a-fA-F]{6}$/.test(accent)) fail("--accent must be #rrggbb.");
+    const name = (values.palette ?? PALETTE_NAMES[Math.floor(Math.random() * PALETTE_NAMES.length)]) as PaletteName;
+    if (!PALETTE_NAMES.includes(name)) fail(`--palette is one of ${PALETTE_NAMES.join(", ")}.`);
+    if (values.accent && !/^#[0-9a-fA-F]{6}$/.test(values.accent)) fail("--accent must be #rrggbb.");
+    const palette = { ...NEW_WIKI_PALETTES[name], ...(values.accent && { accent: values.accent }) };
     const title = values.title ?? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    copyTemplate(APP_ROOT, dest, { id, title, tagline: values.tagline ?? "", accent, shiori: APP_ROOT });
+    copyTemplate(APP_ROOT, dest, { id, title, tagline: values.tagline ?? "", palette, shiori: APP_ROOT });
     if (values.at) writeLinks(APP_ROOT, [...readLinks(APP_ROOT), dest]);
     console.log(
-      `Created ${slashes(dest)}${values.at ? " and linked it" : ""}. Write pages in pages/, then run \`pnpm shiori check ${id}\`.`,
+      `Created ${slashes(dest)}${values.at ? " and linked it" : ""} in the ${name} palette. Write pages in pages/, then run \`pnpm shiori check ${id}\`.`,
     );
   },
 
