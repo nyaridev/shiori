@@ -31,8 +31,10 @@ import { filterFrom, notesOf, search, searchNotes } from "../search.ts";
 import {
   addMessage,
   createThread,
+  editMessage,
   getThread,
   listThreads,
+  messageAuthor,
   react,
   removeThread,
   setStatus,
@@ -41,11 +43,13 @@ import {
   visible,
   visibleThreads,
 } from "../threads.ts";
-import { isToolboxFile, kitsOf } from "../toolbox.ts";
 import { answerProblem, type WikiData } from "../wikiData.ts";
+import { boardRoutes } from "./boards.ts";
+import type { GuestKit, TargetEnv } from "./kit.ts";
 import { LIMITS } from "./limits.ts";
 import { type Presence, placeOf, presenceFor, withTitles } from "./presence.ts";
 import { type Guest, newGuestId, type Share, type Shares, TOKEN } from "./shares.ts";
+import { sheetRoutes } from "./sheets.ts";
 
 const COOKIE = "shiori_guest";
 
@@ -225,6 +229,8 @@ export function buildGuestApp({
     return {
       wiki: { id: share.wiki, title: w?.manifest.title ?? share.wiki },
       kind: share.kind,
+      ...(share.target ? { target: share.target } : {}),
+      ...(share.kind === "sheet" ? { edit: share.edit } : {}),
       expiresAt: share.expiresAt === null ? null : new Date(share.expiresAt).toISOString(),
       guest: guest ? { name: guest.name } : null,
       host: shares.host(),
@@ -279,10 +285,14 @@ export function buildGuestApp({
 
   // ── The wiki, for guests who joined ──────────────────────────────────────────────────────────────────────────
   type WikiEnv = { Variables: Env["Variables"] & { wiki: Wiki; me: Guest } };
-  /** The link's own wiki, for a guest who has a name; any other wiki id doesn't exist. */
+  /**
+   * The link's own wiki, for a guest who has a name; any other wiki id doesn't exist. Board and sheet links
+   * (ADR-0010) have no wiki at all: for them, none exists.
+   */
   const wikiOnly: MiddlewareHandler<WikiEnv> = async (c, next) => {
     const share = c.get("share");
-    const wiki = c.req.param("id") === share.wiki ? registry.get(share.wiki) : undefined;
+    const reads = share.kind === "view" || share.kind === "comment";
+    const wiki = reads && c.req.param("id") === share.wiki ? registry.get(share.wiki) : undefined;
     if (!wiki) return c.json({ error: "not found" }, 404);
     const guest = c.get("guest");
     if (!guest) return c.json({ error: "pick a name first" }, 401);
@@ -386,19 +396,6 @@ export function buildGuestApp({
     // Designs' files go through the designs routes, which keep what the owner hid from guests.
     if (/^designs(\/|%2f|$)/i.test(rel)) return c.json({ error: "not found" }, 404);
     const res = await serveFile(c, w.root, rel);
-    if (res.status === 200 || res.status === 304) res.headers.set("cache-control", "private, no-cache");
-    return res;
-  });
-
-  // The toolbox, read-only: the wiki's kits (never their files) and the element reference with its pictures.
-  api.get("/wikis/:id/kits", (c) => c.json({ kits: kitsOf(c.get("wiki"), registry.appRoot) }));
-
-  api.get("/wikis/:id/elements", (c) => c.json(data.elementsOf(c.get("wiki"), registry.appRoot)));
-
-  api.get("/wikis/:id/toolbox/*", async (c) => {
-    const rel = c.req.path.slice(c.req.path.indexOf("/toolbox/") + "/toolbox/".length);
-    if (!isToolboxFile(rel)) return c.json({ error: "not found" }, 404);
-    const res = await serveFile(c, join(registry.appRoot, "docs"), rel, { cache: false });
     if (res.status === 200 || res.status === 304) res.headers.set("cache-control", "private, no-cache");
     return res;
   });
@@ -598,6 +595,23 @@ export function buildGuestApp({
     return res;
   });
 
+  // A guest edits one of their own messages, on a thread they can see that's still open (ADR-0010).
+  api.patch("/wikis/:id/messages/:mid", ...write, async (c) => {
+    const w = c.get("wiki");
+    const parsed = messageSchema.safeParse(await json(c));
+    if (!parsed.success) return c.json({ error: "bad request" }, 400);
+    const mid = Number(c.req.param("mid"));
+    const who = messageAuthor(w.root, mid);
+    const t = who ? shown(w, who.thread) : null;
+    if (!who || !t?.messages.some((m) => m.id === mid)) return c.json({ error: "no such message" }, 404);
+    if (who.author !== "guest" || who.guestId !== c.get("me").id)
+      return c.json({ error: "you can only edit what you wrote" }, 403);
+    if (t.status !== "open") return c.json({ error: "this thread is closed" }, 409);
+    editMessage(w.root, mid, parsed.data.body);
+    shares.log(c.get("share"), c.get("me").name, `edited a message on #${t.id}`);
+    return c.json(threadFor(shown(w, t.id) as Thread, c.get("me")));
+  });
+
   // Reactions on a message the guest can see; hidden messages and threads don't exist for them.
   api.post("/wikis/:id/messages/:mid/reactions", ...write, async (c) => {
     const w = c.get("wiki");
@@ -668,6 +682,34 @@ export function buildGuestApp({
   );
 
   api.all("*", (c) => c.json({ error: "not found" }, 404));
+
+  // Board and sheet links (ADR-0010), each an allowlist of its own. Mounted before the wiki's API so they're found.
+  const kit: GuestKit = {
+    registry,
+    data,
+    shares,
+    now,
+    sameOrigin,
+    small,
+    tooMany,
+    waitForChange: async (c: Context<TargetEnv>, tag: () => string) => {
+      const known = c.req.header("if-none-match")?.replace(/^W\//, "");
+      const wait = Math.min(Math.max(Number(c.req.query("wait")) || 0, 0), LIMITS.longPoll);
+      if (known === tag() && wait > 0) {
+        const wake = new AbortController();
+        const stop = () => wake.abort();
+        c.req.raw.signal.addEventListener("abort", stop);
+        await data.waitForChange(c.get("wiki"), wait * 1000, wake.signal);
+        c.req.raw.signal.removeEventListener("abort", stop);
+      }
+      const etag = tag();
+      if (known === etag) return c.body(null, 304, { etag });
+      c.header("etag", etag);
+      return c.json({ version: etag });
+    },
+  };
+  app.route("/s/:token/api/board", boardRoutes(kit) as unknown as Hono<Env>);
+  app.route("/s/:token/api/sheet", sheetRoutes(kit) as unknown as Hono<Env>);
   app.route("/s/:token/api", api as unknown as Hono<Env>);
 
   // Any other path under a link is the app, which routes itself.

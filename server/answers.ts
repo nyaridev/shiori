@@ -1,5 +1,5 @@
 // Answers to a page's open questions (ADR-0002), stored in the wiki's `data/wiki.db` next to the comments. People
-// answer in the app; agents read them in `pnpm wiki inbox` and write the decision into the page's frontmatter.
+// answer in the app; agents read them in `pnpm shiori inbox` and write the decision into the page's frontmatter.
 import type { Answer } from "../shared/api.ts";
 import { newUid } from "./ids.ts";
 import { authorColumns, authoredOf, dbFor } from "./threads.ts";

@@ -26,7 +26,7 @@ can't be edited by hand: select text and comment, and the agent answers and upda
 `start-web.bat` builds the app and opens http://localhost:4400. `start-dev.bat` runs hot-reload dev mode on
 http://localhost:4410 with only the template wiki. Needs Node 25+ and pnpm.
 
-Agents work through `pnpm wiki` (new wikis, pages, the comment inbox, checks): see [AGENTS.md](AGENTS.md).
+Agents work through `pnpm shiori` (new wikis, pages, the comment inbox, checks): see [AGENTS.md](AGENTS.md).
 
 ## Sharing
 
@@ -43,4 +43,4 @@ pnpm dev
 pnpm check
 ```
 
-`pnpm check` runs types, lint and tests. `/dev/ui` shows every primitive and element.
+`pnpm check` runs types, lint and tests. The wiki header's Toolbox button (`/toolbox`) shows every primitive and element.

@@ -1,10 +1,10 @@
-import { createBrowserRouter, Outlet, RouterProvider } from "react-router";
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router";
 import { Crash, SCREENS, Screen } from "./dev/Screens.tsx";
-import { UiPage } from "./dev/UiPage.tsx";
 import { GuestGate, GuestHome } from "./guest/GuestGate.tsx";
 import { Deck } from "./home/Deck.tsx";
 import { BASE, isGuest } from "./lib/base.ts";
 import { ErrorPage } from "./shell/ErrorPage.tsx";
+import { ToolboxPage } from "./toolbox/ToolboxPage.tsx";
 import { PageScrollbar, TooltipProvider } from "./ui/index.ts";
 import { WikiLayout } from "./wiki/WikiLayout.tsx";
 
@@ -31,7 +31,10 @@ const ownerRoutes = () =>
           children: [
             { path: "/", element: <Deck /> },
             { path: "/w/:wikiId/*", element: <WikiLayout /> },
-            { path: "/dev/ui", element: <UiPage /> },
+            // The toolbox (the host's only): the app's design system and what pages can use, in a wiki's theme.
+            { path: "/toolbox", element: <Navigate to="/" replace /> },
+            { path: "/toolbox/:wikiId/:entry?", element: <ToolboxPage /> },
+            { path: "/dev/ui", element: <Navigate to="/" replace /> },
             // Previews of the special screens (Screens.tsx); the error page and "not found" are real route errors.
             { path: "/dev/screens/error", element: <Crash /> },
             {

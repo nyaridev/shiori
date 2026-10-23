@@ -1,4 +1,4 @@
-// `pnpm wiki rename` (ADR-0002): moves a page, or a section with everything under it, and keeps the wiki whole. Every
+// `pnpm shiori rename` (ADR-0002): moves a page, or a section with everything under it, and keeps the wiki whole. Every
 // page's links are checked against the old layout; a link whose target moved, or that no longer resolves from its own
 // page's new folder, is rewritten to the new path. Wikilinks that find a page by its title keep working and stay as
 // written. Comments and answers move with their pages. Code blocks are never touched.
@@ -76,7 +76,7 @@ export function planRename(wiki: Wiki, fromRaw: string, toRaw: string): RenamePl
   if (!to) throw new Error("A page can't become the home page.");
   if (from === to) throw new Error("The page is already there.");
   const page = pages.find((p) => p.path === from);
-  if (!page) throw new Error(`No page "${from}". \`pnpm wiki check\` lists the wiki's pages.`);
+  if (!page) throw new Error(`No page "${from}". \`pnpm shiori check\` lists the wiki's pages.`);
   const section = page.file.endsWith("/index.md");
   if (section && to.startsWith(`${from}/`)) throw new Error("A section can't move into itself.");
   const taken = (p: string) =>

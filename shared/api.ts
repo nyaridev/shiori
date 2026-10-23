@@ -138,7 +138,7 @@ export interface Question {
 }
 
 /** Someone's answer to a question: an option they picked and/or a note. */
-/** What two PCs with the same wiki merge by (`pnpm wiki sync`): an id that never collides, and when it last changed. */
+/** What two PCs with the same wiki merge by (`pnpm shiori sync`): an id that never collides, and when it last changed. */
 export interface Synced {
   uid?: string;
   updatedAt?: string;
@@ -345,6 +345,8 @@ export interface Message extends Authored, Synced {
   reactions?: Reaction[];
   /** Pictures attached to it: file names in the wiki's `data/attachments/`. */
   images?: string[];
+  /** When its author last changed its text (ADR-0010). */
+  editedAt?: string;
 }
 
 export interface Thread extends Synced {
@@ -374,8 +376,65 @@ export type LiveEvent =
   /** A wiki's `.git` changed: a commit or a pull (ADR-0008). */
   | { type: "git"; wiki: string };
 
-/** What a share link lets a guest do (ADR-0003). */
-export type ShareKind = "view" | "comment";
+/**
+ * What a share link lets a guest do: read the wiki (`view`), also comment (`comment`) (ADR-0003); or, with no wiki at
+ * all, report on one test board (`board`) or see and maybe edit one data sheet (`sheet`) (ADR-0010).
+ */
+export type ShareKind = "view" | "comment" | "board" | "sheet";
+
+/** The board or sheet a `board` or `sheet` link opens. */
+export interface ShareTarget {
+  /** A board's uid, or a sheet's name. */
+  id: string;
+  title: string;
+}
+
+// ── Test boards (ADR-0010) ──────────────────────────────────────────────────────────────────────────────────────
+
+/** Global: testers see every report on the board. Private: each tester sees only their own. */
+export type BoardVisibility = "global" | "private";
+export type ReportKind = "bug" | "change" | "idea";
+export type ReportStatus = "new" | "planned" | "fixed" | "wontfix" | "duplicate";
+
+export const REPORT_KINDS: ReportKind[] = ["bug", "change", "idea"];
+export const REPORT_STATUSES: ReportStatus[] = ["new", "planned", "fixed", "wontfix", "duplicate"];
+export const REPORT_LIMITS = { title: 120, pictures: 4 } as const;
+
+export interface Board extends Synced {
+  uid: string;
+  name: string;
+  visibility: BoardVisibility;
+  createdAt: string;
+  /** A closed board keeps its reports and takes no new ones. */
+  closedAt: string | null;
+  /** Reports on it (not removed), how many are still new, and how many are done with (fixed, won't fix, duplicate). Owner only. */
+  counts?: { total: number; new: number; done: number };
+}
+
+export interface Report extends Authored, Synced {
+  /** This PC's number for it (`#12` in `pnpm shiori reports`). */
+  id: number;
+  /** The board's uid. */
+  board: string;
+  kind: ReportKind;
+  title: string;
+  body: string;
+  /** Pictures and GIFs: file names in the wiki's `data/attachments/`. */
+  images?: string[];
+  status: ReportStatus;
+  /** The owner's or agent's word to the tester: "Fixed in 0.4". */
+  note: string;
+  createdAt: string;
+  editedAt?: string;
+  removedAt?: string;
+}
+
+/** A board link's page: the board, the wiki it's for, and the reports this tester may see. */
+export interface BoardView {
+  board: Pick<Board, "name" | "visibility" | "closedAt">;
+  wiki: { title: string; theme: WikiDetail["theme"] };
+  reports: Report[];
+}
 /** How long a share link lasts; `session` ends when Shiori closes. */
 export type ShareDuration = "1h" | "24h" | "7d" | "session";
 
@@ -384,6 +443,8 @@ export interface ShareInfo {
   id: string;
   wiki: string;
   kind: ShareKind;
+  target?: ShareTarget;
+  edit?: boolean;
   label: string;
   createdAt: string;
   /** Null for links that last until Shiori closes. */
@@ -443,6 +504,10 @@ export interface ShareActivity {
 export interface GuestSession {
   wiki: { id: string; title: string };
   kind: ShareKind;
+  /** The board or sheet of a `board` or `sheet` link. */
+  target?: ShareTarget;
+  /** A `sheet` link: whether its guests may change values. */
+  edit?: boolean;
   expiresAt: string | null;
   /** Null until the guest picks a display name. */
   guest: { name: string } | null;
@@ -450,7 +515,7 @@ export interface GuestSession {
   host: string;
 }
 
-/** A page kit (`pnpm wiki page --kit`), as the toolbox lists it. */
+/** A page kit (`pnpm shiori page --kit`), as the toolbox lists it. */
 export interface KitInfo {
   name: string;
   /** The kit's `kit:` line. */

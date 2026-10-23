@@ -19,7 +19,7 @@ themes are data, so everything new takes its colors from the tokens.
 **Git, read only, on the owner's PC** (`server/git.ts`). A wiki "is in git" when its folder is inside a repo that
 doesn't ignore it (a wiki in Shiori's own `wikis/` sits in the app's repo but is ignored there, so it isn't). Shiori
 only reads: `rev-parse`, `remote`, `status`, `log --follow`, `cat-file`, with `GIT_OPTIONAL_LOCKS=0` so a read never
-takes the index lock and never wakes the file watcher. It never commits, fetches or checks out; `wiki sync` stays the
+takes the index lock and never wakes the file watcher. It never commits, fetches or checks out; `shiori sync` stays the
 CLI's. A change in a wiki's `.git` is its own live event (`git`), so a commit refreshes histories without rendering
 the pages again.
 
@@ -49,13 +49,13 @@ KaTeX can't read is a page problem and renders as its error. Search reads a form
 **Diagrams** (`code.ts` → `sh-diagram`, `src/wiki/markdown/Diagram.tsx`). A ```` ```mermaid ```` fence is drawn by
 Mermaid in the browser (it needs a DOM), loaded only when a page has a diagram, with `securityLevel: "strict"`. Its
 theme comes from the tokens: each one is resolved by painting a pixel, since tokens are often `color-mix()`, which
-Mermaid can't read. It draws again when the theme or day/night changes. `wiki check` can't parse Mermaid, so a broken
+Mermaid can't read. It draws again when the theme or day/night changes. `shiori check` can't parse Mermaid, so a broken
 diagram shows its error on the page only.
 
 **Data tables** (`server/markdown/tables.ts`, `src/wiki/markdown/DataTable.tsx`). `::table{src}` reads a CSV, TSV or
 JSON file from the wiki (`tables/` by convention, never `data/`), `::table{pages}` makes a row per page from each
 page's own facts (infobox rows and frontmatter keys Shiori doesn't use), and `:::table` wraps a Markdown table. The
-server always emits an ordinary table, so search, comments and `wiki check` see the rows; the app sorts (numbers as
+server always emits an ordinary table, so search, comments and `shiori check` see the rows; the app sorts (numbers as
 people write them: `1,200`, `40%`, `$9.99`, `2.5k`), filters (`hp>20`, `biome:forest`) and adds a foot of stats over
 the rows shown. It reorders the table's own rendered rows, so links and elements in cells keep working. Rows are read
 when the page renders, so editing a data file or a page's fields updates every table that uses it.

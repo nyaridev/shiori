@@ -6,7 +6,9 @@ import { join } from "node:path";
 import { z } from "zod";
 import { REACTIONS } from "../shared/api.ts";
 import { listAnswers } from "./answers.ts";
+import { allReports, listBoards } from "./boards.ts";
 import { slashes } from "./paths.ts";
+import { allEdits } from "./sheets.ts";
 import { authorColumns, dbFor, fillUids, listThreads, type Writer } from "./threads.ts";
 
 export const BACKUP_FILE = "backup.json";
@@ -37,6 +39,7 @@ export const backupSchema = z.object({
           ...guestFields,
           body: z.string(),
           createdAt: z.string(),
+          editedAt: z.string().optional(),
           images: z.array(z.string()).optional(),
           reactions: z
             .array(
@@ -70,6 +73,58 @@ export const backupSchema = z.object({
       ...syncFields,
     }),
   ),
+  // Test boards and data sheets (ADR-0010). Backups from before them have none.
+  boards: z
+    .array(
+      z.object({
+        uid: z.string(),
+        name: z.string(),
+        visibility: z.enum(["global", "private"]),
+        createdAt: z.string(),
+        closedAt: z.string().nullable(),
+        updatedAt: z.string().optional(),
+      }),
+    )
+    .default([]),
+  reports: z
+    .array(
+      z.object({
+        id: z.number().int().positive(),
+        uid: z.string(),
+        board: z.string(),
+        kind: z.enum(["bug", "change", "idea"]),
+        title: z.string(),
+        body: z.string(),
+        images: z.array(z.string()).optional(),
+        author: z.enum(["user", "agent", "guest"]),
+        ...guestFields,
+        status: z.enum(["new", "planned", "fixed", "wontfix", "duplicate"]),
+        note: z.string(),
+        createdAt: z.string(),
+        editedAt: z.string().optional(),
+        removedAt: z.string().optional(),
+        updatedAt: z.string().optional(),
+      }),
+    )
+    .default([]),
+  sheetEdits: z
+    .array(
+      z.object({
+        uid: z.string(),
+        sheet: z.string(),
+        row: z.string(),
+        column: z.string(),
+        value: z.string(),
+        prev: z.string(),
+        author: z.enum(["user", "agent", "guest"]),
+        name: z.string().optional(),
+        guestId: z.string().optional(),
+        createdAt: z.string(),
+        exportedAt: z.string().nullable(),
+        updatedAt: z.string(),
+      }),
+    )
+    .default([]),
 });
 export type Backup = z.infer<typeof backupSchema>;
 
@@ -82,6 +137,9 @@ export function exportData(root: string): Backup {
     exportedAt: new Date().toISOString(),
     threads: listThreads(root, { removed: true }),
     answers: listAnswers(root),
+    boards: listBoards(root).map(({ counts: _, ...b }) => ({ ...b, updatedAt: b.updatedAt ?? b.createdAt })),
+    reports: allReports(root, { removed: true }).map(({ mine: _, ...r }) => ({ ...r, uid: r.uid as string })),
+    sheetEdits: allEdits(root),
   };
 }
 
@@ -95,10 +153,66 @@ export function writeBackup(root: string): { file: string; threads: number; answ
 
 export function readBackup(root: string): Backup {
   const file = join(root, BACKUP_FILE);
-  if (!existsSync(file)) throw new Error(`No ${BACKUP_FILE} in ${slashes(root)}. Make one with \`pnpm wiki backup\`.`);
+  if (!existsSync(file))
+    throw new Error(`No ${BACKUP_FILE} in ${slashes(root)}. Make one with \`pnpm shiori backup\`.`);
   const parsed = backupSchema.safeParse(JSON.parse(readFileSync(file, "utf8")));
   if (!parsed.success) throw new Error(`${BACKUP_FILE} isn't a Shiori backup: ${parsed.error.issues[0]?.message}`);
   return parsed.data;
+}
+
+type Db = ReturnType<typeof dbFor>;
+
+/** Inserts boards, reports and sheet edits (ADR-0010). `keepIds` keeps reports' numbers (a restore). */
+export function insertPlayData(
+  db: Db,
+  data: Pick<Backup, "boards" | "reports" | "sheetEdits">,
+  {
+    keepIds = false,
+    only,
+  }: { keepIds?: boolean; only?: { boards: Set<string>; reports: Set<string>; edits: Set<string> } } = {},
+) {
+  for (const b of data.boards)
+    if (!only || only.boards.has(b.uid))
+      db.prepare(
+        "insert into boards (uid, name, visibility, created_at, closed_at, updated_at) values (?, ?, ?, ?, ?, ?)",
+      ).run(b.uid, b.name, b.visibility, b.createdAt, b.closedAt, b.updatedAt ?? b.createdAt);
+  for (const r of data.reports)
+    if (!only || only.reports.has(r.uid))
+      db.prepare(
+        "insert into reports (id, uid, board_uid, kind, title, body, images, author, guest_id, guest_name, status, note, created_at, edited_at, hidden, removed_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ).run(
+        keepIds ? r.id : null,
+        r.uid,
+        r.board,
+        r.kind,
+        r.title,
+        r.body,
+        JSON.stringify(r.images ?? []),
+        ...authorColumns(writer(r)),
+        r.status,
+        r.note,
+        r.createdAt,
+        r.editedAt ?? null,
+        r.hidden ? 1 : 0,
+        r.removedAt ?? null,
+        r.updatedAt ?? r.createdAt,
+      );
+  for (const e of data.sheetEdits)
+    if (!only || only.edits.has(e.uid))
+      db.prepare(
+        "insert into sheet_edits (uid, sheet, row_key, column_id, value, prev, author, guest_id, guest_name, created_at, exported_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ).run(
+        e.uid,
+        e.sheet,
+        e.row,
+        e.column,
+        e.value,
+        e.prev,
+        ...authorColumns(writer(e)),
+        e.createdAt,
+        e.exportedAt,
+        e.updatedAt,
+      );
 }
 
 /**
@@ -113,12 +227,14 @@ export function importData(root: string, data: Backup, { replace = false } = {})
   }
   db.exec("begin");
   try {
-    db.exec("delete from messages; delete from threads; delete from answers;");
+    db.exec(
+      "delete from messages; delete from threads; delete from answers; delete from boards; delete from reports; delete from sheet_edits;",
+    );
     const thread = db.prepare(
       "insert into threads (id, page, quote, status, created_at, resolved_at, removed_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     const message = db.prepare(
-      "insert into messages (id, thread_id, author, guest_id, guest_name, body, created_at, hidden, reactions, images, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "insert into messages (id, thread_id, author, guest_id, guest_name, body, created_at, edited_at, hidden, reactions, images, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     const answer = db.prepare(
       "insert into answers (id, page, question, choice, body, author, guest_id, guest_name, created_at, hidden, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -142,6 +258,7 @@ export function importData(root: string, data: Backup, { replace = false } = {})
           ...authorColumns(writer(m)),
           m.body,
           m.createdAt,
+          m.editedAt ?? null,
           m.hidden ? 1 : 0,
           JSON.stringify(m.reactions ?? []),
           JSON.stringify(m.images ?? []),
@@ -162,6 +279,7 @@ export function importData(root: string, data: Backup, { replace = false } = {})
         a.uid ?? null,
         a.updatedAt ?? null,
       );
+    insertPlayData(db, data, { keepIds: true });
     fillUids(db);
     db.exec("commit");
   } catch (error) {

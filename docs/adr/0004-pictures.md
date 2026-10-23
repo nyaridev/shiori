@@ -19,7 +19,7 @@ What a wiki may hold, and what it costs to show:
 
 ## Decision
 
-**Pictures only.** A wiki's files route serves PNG, JPEG, WebP, GIF, AVIF and SVG, nothing else. `pnpm wiki check`
+**Pictures only.** A wiki's files route serves PNG, JPEG, WebP, GIF, AVIF and SVG, nothing else. `pnpm shiori check`
 reports videos and sounds anywhere in the wiki ("only pictures belong in a wiki; put videos on YouTube or Vimeo and
 use ::embed") and pictures over **15 MB**, which aren't served.
 
@@ -51,7 +51,7 @@ never keeps them.
 be deleted at any time. **Cons:** A first view of a large gallery waits for its copies; old copies stay until
 `data/cache/` is deleted.
 
-### Option B: Convert originals in place (`pnpm wiki optimize`)
+### Option B: Convert originals in place (`pnpm shiori optimize`)
 
 **Pros:** No runtime work, smaller repos. **Cons:** Rewrites the wiki's files and loses the originals' quality, and
 works only when an agent remembers to run it.
@@ -70,5 +70,5 @@ works only when an agent remembers to run it.
 ## Action Items
 
 1. [x] Files route: pictures only, at most 15 MB; `?w=` copies as WebP cached in `data/cache/pictures/`; ETags
-2. [x] `pnpm wiki check`: videos, sounds and oversized pictures
+2. [x] `pnpm shiori check`: videos, sounds and oversized pictures
 3. [x] The app asks for the width each place needs (`picture()` in `src/lib/base.ts`)

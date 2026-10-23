@@ -1,4 +1,4 @@
-// Opens the image viewer from any picture in a page. Outside a wiki (the /dev/ui reference) there's no viewer, and
+// Opens the image viewer from any picture in a page. Outside a wiki (the toolbox's reference) there's no viewer, and
 // pictures fall back to their own dialog or stay plain.
 import { createContext, useContext } from "react";
 

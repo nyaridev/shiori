@@ -8,7 +8,7 @@ import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { hostname } from "node:os";
 import { join } from "node:path";
-import { type Backup, backupSchema, exportData, writer } from "./backup.ts";
+import { type Backup, backupSchema, exportData, insertPlayData, writer } from "./backup.ts";
 import { dataDir } from "./paths.ts";
 import { authorColumns, dbFor } from "./threads.ts";
 
@@ -43,7 +43,7 @@ export const syncFileOf = (m: Machine) => `${SYNC_DIR}/${m.name}-${m.id}.json`;
 
 export interface Merged {
   /** Items this PC didn't have. */
-  added: { threads: number; messages: number; answers: number };
+  added: { threads: number; messages: number; answers: number; reports: number; edits: number };
   /** Items another PC changed more recently. */
   updated: number;
 }
@@ -94,12 +94,13 @@ export function mergeData(root: string, data: Backup, into: Merged = emptyMerge(
         const mine = find("messages", m.uid);
         if (!mine) {
           db.prepare(
-            "insert into messages (thread_id, author, guest_id, guest_name, body, created_at, hidden, reactions, images, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "insert into messages (thread_id, author, guest_id, guest_name, body, created_at, edited_at, hidden, reactions, images, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
           ).run(
             id,
             ...authorColumns(writer(m)),
             m.body,
             m.createdAt,
+            m.editedAt ?? null,
             m.hidden ? 1 : 0,
             JSON.stringify(m.reactions ?? []),
             JSON.stringify(m.images ?? []),
@@ -108,12 +109,9 @@ export function mergeData(root: string, data: Backup, into: Merged = emptyMerge(
           );
           into.added.messages++;
         } else if (mChanged > mine.updated_at) {
-          db.prepare("update messages set hidden = ?, reactions = ?, updated_at = ? where id = ?").run(
-            m.hidden ? 1 : 0,
-            JSON.stringify(m.reactions ?? []),
-            mChanged,
-            mine.id,
-          );
+          db.prepare(
+            "update messages set body = ?, edited_at = ?, hidden = ?, reactions = ?, updated_at = ? where id = ?",
+          ).run(m.body, m.editedAt ?? null, m.hidden ? 1 : 0, JSON.stringify(m.reactions ?? []), mChanged, mine.id);
           into.updated++;
         }
       }
@@ -150,6 +148,7 @@ export function mergeData(root: string, data: Backup, into: Merged = emptyMerge(
         into.updated++;
       }
     }
+    mergePlayData(db, data, into);
     db.exec("commit");
   } catch (error) {
     db.exec("rollback");
@@ -158,7 +157,72 @@ export function mergeData(root: string, data: Backup, into: Merged = emptyMerge(
   return into;
 }
 
-const emptyMerge = (): Merged => ({ added: { threads: 0, messages: 0, answers: 0 }, updated: 0 });
+/**
+ * Boards, reports and sheet edits (ADR-0010), by uid: new ones are added; for one both PCs have, the newer change
+ * wins (a report's status or note, a board closed, an edit exported).
+ */
+function mergePlayData(db: ReturnType<typeof dbFor>, data: Backup, into: Merged) {
+  const has = (table: string, uid: string) =>
+    db.prepare(`select id, updated_at from ${table} where uid = ?`).get(uid) as
+      | { id: number; updated_at: string }
+      | undefined;
+  const only = { boards: new Set<string>(), reports: new Set<string>(), edits: new Set<string>() };
+  for (const b of data.boards) {
+    const local = has("boards", b.uid);
+    if (!local) only.boards.add(b.uid);
+    else if ((b.updatedAt ?? b.createdAt) > local.updated_at) {
+      db.prepare("update boards set name = ?, visibility = ?, closed_at = ?, updated_at = ? where id = ?").run(
+        b.name,
+        b.visibility,
+        b.closedAt,
+        b.updatedAt ?? b.createdAt,
+        local.id,
+      );
+      into.updated++;
+    }
+  }
+  for (const r of data.reports) {
+    const local = has("reports", r.uid);
+    if (!local) only.reports.add(r.uid);
+    else if ((r.updatedAt ?? r.createdAt) > local.updated_at) {
+      db.prepare(
+        "update reports set kind = ?, title = ?, body = ?, status = ?, note = ?, hidden = ?, edited_at = ?, removed_at = ?, updated_at = ? where id = ?",
+      ).run(
+        r.kind,
+        r.title,
+        r.body,
+        r.status,
+        r.note,
+        r.hidden ? 1 : 0,
+        r.editedAt ?? null,
+        r.removedAt ?? null,
+        r.updatedAt ?? r.createdAt,
+        local.id,
+      );
+      into.updated++;
+    }
+  }
+  for (const e of data.sheetEdits) {
+    const local = has("sheet_edits", e.uid);
+    if (!local) only.edits.add(e.uid);
+    else if (e.updatedAt > local.updated_at) {
+      db.prepare("update sheet_edits set exported_at = ?, updated_at = ? where id = ?").run(
+        e.exportedAt,
+        e.updatedAt,
+        local.id,
+      );
+      into.updated++;
+    }
+  }
+  insertPlayData(db, data, { only });
+  into.added.reports += only.reports.size;
+  into.added.edits += only.edits.size;
+}
+
+const emptyMerge = (): Merged => ({
+  added: { threads: 0, messages: 0, answers: 0, reports: 0, edits: 0 },
+  updated: 0,
+});
 
 export interface FilesSynced {
   merged: Merged;
@@ -195,13 +259,19 @@ export function syncFiles(root: string): FilesSynced {
   }
 
   // The file changes only when the data does, so a sync with nothing new makes no commit.
-  const { threads, answers } = exportData(root);
-  const content = { threads, answers };
+  const { threads, answers, boards, reports, sheetEdits } = exportData(root);
+  const content = { threads, answers, boards, reports, sheetEdits };
   const file = join(root, own);
   let previous: unknown = null;
   try {
-    const old = JSON.parse(readFileSync(file, "utf8")) as Backup;
-    previous = { threads: old.threads, answers: old.answers };
+    const old = JSON.parse(readFileSync(file, "utf8")) as Partial<Backup>;
+    previous = {
+      threads: old.threads,
+      answers: old.answers,
+      boards: old.boards ?? [],
+      reports: old.reports ?? [],
+      sheetEdits: old.sheetEdits ?? [],
+    };
   } catch {}
   const wrote = JSON.stringify(previous) !== JSON.stringify(content);
   if (wrote) {
@@ -240,7 +310,7 @@ const gitOk = (root: string, ...args: string[]) => {
 };
 
 /**
- * `pnpm wiki sync`: pulls (when the wiki is in git and has an upstream), merges every PC's comments, writes this PC's
+ * `pnpm shiori sync`: pulls (when the wiki is in git and has an upstream), merges every PC's comments, writes this PC's
  * file, commits only that file, and pushes unless `push` is false. A wiki that isn't in git (a synced folder) only
  * merges and writes. A pull that stops on a conflict ends the sync before anything is changed.
  */

@@ -1,10 +1,13 @@
-// The way in for a guest (ADR-0003): checks the share link, asks for a display name, then shows the wiki. When the
-// link ends (it expired, the owner turned it off, or the guest was blocked) it says so instead.
-import { type FormEvent, useEffect, useState } from "react";
+// The way in for a guest (ADR-0003): checks the share link, asks for a display name, then shows the wiki. A board or
+// sheet link (ADR-0010) shows only its board or sheet instead. When the link ends (it expired, the owner turned it
+// off, or the guest was blocked) it says so instead.
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router";
 import type { GuestSession } from "../../shared/api.ts";
+import { TesterBoard } from "../boards/TesterBoard.tsx";
 import { ApiError, api } from "../lib/api.ts";
 import { pollChanges } from "../lib/live.ts";
+import { GuestSheet } from "../sheets/GuestSheet.tsx";
 import { Button, Icon, Input } from "../ui/index.ts";
 import { GuestContext, useGuest } from "./GuestContext.ts";
 import "./guest.css";
@@ -23,17 +26,26 @@ export function GuestGate() {
   const session = state && "session" in state ? state.session : null;
   const joined = !!session?.guest;
   const wikiId = session?.wiki.id;
+  // Board and sheet links have no wiki to follow; their pages follow their own changes.
+  const reads = session?.kind === "view" || session?.kind === "comment";
   useEffect(() => {
-    if (!joined || !wikiId) return;
+    if (!joined || !wikiId || !reads) return;
     return pollChanges(wikiId, (status) => setState({ ended: status }));
-  }, [joined, wikiId]);
+  }, [joined, wikiId, reads]);
+  const ended = useCallback((status: number) => setState({ ended: status }), []);
 
   if (!state) return null;
   if ("ended" in state) return <LinkEnded status={state.ended} />;
   if (!state.session.guest) return <NamePrompt session={state.session} onJoined={(s) => setState({ session: s })} />;
   return (
     <GuestContext.Provider value={state.session}>
-      <Outlet />
+      {state.session.kind === "board" ? (
+        <TesterBoard onEnded={ended} />
+      ) : state.session.kind === "sheet" ? (
+        <GuestSheet onEnded={ended} />
+      ) : (
+        <Outlet />
+      )}
     </GuestContext.Provider>
   );
 }
@@ -63,6 +75,16 @@ export function NamePrompt({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const comment = session.kind === "comment";
+  const what =
+    session.kind === "board"
+      ? "Report bugs, changes and ideas for this game, with screenshots or GIFs."
+      : session.kind === "sheet"
+        ? session.edit
+          ? "You can look at this data sheet and change its values."
+          : "You can look at this data sheet."
+        : comment
+          ? "You can read this wiki, comment on it and answer its questions."
+          : "You can read this wiki and its comments.";
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -88,12 +110,9 @@ export function NamePrompt({
     <main className="sh-guest">
       <form className="sh-guest-card" onSubmit={(e) => void submit(e)}>
         <p className="sh-guest-kicker">Shared with you</p>
-        <h1 className="sh-guest-title">{session.wiki.title}</h1>
+        <h1 className="sh-guest-title">{session.target?.title ?? session.wiki.title}</h1>
         <p className="sh-guest-text">
-          {comment
-            ? "You can read this wiki, comment on it and answer its questions."
-            : "You can read this wiki and its comments."}{" "}
-          The link works {until(session.expiresAt)}.
+          {what} The link works {until(session.expiresAt)}.
         </p>
         <label className="sh-guest-label" htmlFor="sh-guest-name">
           Your name
@@ -113,10 +132,16 @@ export function NamePrompt({
           </p>
         )}
         <p className="sh-guest-hint">
-          {comment ? "It's shown with your comments and answers." : "The person sharing the wiki sees who's reading."}
+          {session.kind === "board"
+            ? "It's shown with your reports."
+            : session.kind === "sheet"
+              ? "It's shown with the values you change."
+              : comment
+                ? "It's shown with your comments and answers."
+                : "The person sharing the wiki sees who's reading."}
         </p>
         <Button variant="solid" type="submit" disabled={name.trim().length < 2 || busy}>
-          Open the wiki
+          {session.kind === "board" ? "Open the board" : session.kind === "sheet" ? "Open the sheet" : "Open the wiki"}
         </Button>
       </form>
     </main>

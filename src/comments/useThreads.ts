@@ -56,6 +56,15 @@ export function useThreads(wikiId: string, page: string) {
     [wikiId, reload],
   );
 
+  /** Changes one of this viewer's own messages. */
+  const edit = useCallback(
+    async (message: number, body: string) => {
+      await api.editMessage(wikiId, message, body);
+      reload();
+    },
+    [wikiId, reload],
+  );
+
   /** This viewer's reaction on a message, added or taken back. */
   const react = useCallback(
     async (message: number, emoji: ReactionEmoji, on: boolean) => {
@@ -65,6 +74,6 @@ export function useThreads(wikiId: string, page: string) {
     [wikiId, reload],
   );
 
-  return { wikiId, threads: res.data ?? NONE, create, reply, setStatus, hide, react, remove };
+  return { wikiId, threads: res.data ?? NONE, create, reply, setStatus, hide, edit, react, remove };
 }
 export type Threads = ReturnType<typeof useThreads>;

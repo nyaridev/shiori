@@ -57,40 +57,23 @@ describe("the toolbox on the owner's server", () => {
       expect((await s.owner(`/api/wikis/alpha/toolbox/${path}`)).status, path).toBe(404);
   });
 
-  it("keeps the /dev/ui reference on its own docs", async () => {
+  it("keeps the toolbox's own reference (_dev) on its docs", async () => {
     const page = (await (await s.owner("/api/dev/elements")).json()) as PageData;
     expect(JSON.stringify(page.hast)).toContain("/api/wikis/_dev/files/assets/dusk.svg");
   });
 });
 
 describe("the toolbox for guests", () => {
-  it("serves kits, elements and their pictures to a guest of the link, read-only", async () => {
-    const share = s.shares.create({ wiki: "alpha", kind: "view" });
-    const guest = s.browser(share);
-    expect((await guest.get("/api/wikis/alpha/kits")).status).toBe(401);
-    await guest.join("Mika");
-    const kits = await guest.get("/api/wikis/alpha/kits");
-    expect(kits.status).toBe(200);
-    expect(kits.headers.get("cache-control")).toBe("private, no-store");
-    expect(((await kits.json()) as { kits: KitInfo[] }).kits.length).toBeGreaterThan(0);
-    const elements = (await (await guest.get("/api/wikis/alpha/elements")).json()) as PageData;
-    expect(JSON.stringify(elements.hast)).toContain("/api/wikis/alpha/toolbox/assets/dusk.svg");
-    const picture = await guest.get("/api/wikis/alpha/toolbox/assets/dusk.svg");
-    expect(picture.status).toBe(200);
-    expect(picture.headers.get("cache-control")).toBe("private, no-cache");
-    expect((await guest.get("/api/wikis/alpha/toolbox/notes.png")).status).toBe(404);
-    expect((await guest.get("/api/wikis/alpha/toolbox/elements.md")).status).toBe(404);
-    expect((await guest.send("POST", "/api/wikis/alpha/kits", {})).status).toBe(404);
-  });
-
-  it("never serves another wiki's toolbox, or an ended link's", async () => {
-    const share = s.shares.create({ wiki: "alpha", kind: "comment", duration: "1h" });
+  it("doesn't exist: it's the host's (ADR-0010)", async () => {
+    const share = s.shares.create({ wiki: "alpha", kind: "comment" });
     const guest = s.browser(share);
     await guest.join("Mika");
-    for (const path of ["/api/wikis/beta/kits", "/api/wikis/beta/elements", "/api/wikis/beta/toolbox/assets/dusk.svg"])
+    for (const path of [
+      "/api/wikis/alpha/kits",
+      "/api/wikis/alpha/elements",
+      "/api/wikis/alpha/toolbox/assets/dusk.svg",
+    ])
       expect((await guest.get(path)).status, path).toBe(404);
-    s.clock += 2 * 3_600_000;
-    expect((await guest.get("/api/wikis/alpha/kits")).status).toBe(410);
   });
 });
 

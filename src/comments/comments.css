@@ -82,6 +82,7 @@
   color: var(--text);
 }
 .sh-thread {
+  position: relative;
   border: var(--bw) solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
@@ -105,6 +106,8 @@
   gap: 6px;
   width: 100%;
   padding: var(--s-3);
+  /* Room for the ⋯ menu in the corner. */
+  padding-right: calc(var(--s-3) + 28px);
   border: 0;
   background: none;
   text-align: left;
@@ -126,6 +129,27 @@
 }
 .sh-wiki-rail .sh-thread-main {
   padding: var(--s-2);
+  padding-right: calc(var(--s-2) + 28px);
+}
+/* Everything the viewer may do with a thread (ADR-0010): one ⋯ in its top right corner. Quiet until the card is
+   pointed at, open or focused, so a list of comments stays calm. */
+.sh-thread-menu {
+  position: absolute;
+  top: var(--s-2);
+  right: var(--s-2);
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+.sh-thread:hover .sh-thread-menu,
+.sh-thread.is-active .sh-thread-menu,
+.sh-thread-menu:focus-visible,
+.sh-thread-menu[data-state="open"] {
+  opacity: 1;
+}
+@media (hover: none) {
+  .sh-thread-menu {
+    opacity: 1;
+  }
 }
 .sh-thread-meta {
   display: flex;
@@ -203,13 +227,28 @@
   gap: var(--s-2);
   min-height: 24px;
 }
-.sh-message-hide {
+.sh-message-menu {
   opacity: 0;
 }
-.sh-message:hover .sh-message-hide,
-.sh-message-hide:focus-visible,
-.sh-message[data-hidden] .sh-message-hide {
+.sh-message:hover .sh-message-menu,
+.sh-message-menu:focus-visible,
+.sh-message-menu[data-state="open"],
+.sh-message[data-hidden] .sh-message-menu {
   opacity: 1;
+}
+@media (hover: none) {
+  .sh-message-menu {
+    opacity: 1;
+  }
+}
+.sh-message-edited {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-message-edit {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: 2px;
 }
 /* Hidden by the owner: still here for them, faded. */
 .sh-message[data-hidden] p {
@@ -278,13 +317,22 @@
 .sh-discussion-actions > :last-child {
   margin-left: auto;
 }
-/* Removing a change: off to the left, away from Reply and Resolve, and asked twice. */
-.sh-thread-remove {
-  justify-content: flex-start;
-  color: var(--muted);
+/* Removing a thread, asked twice: at the top of the open card, where the menu was. */
+.sh-thread-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-2);
+  padding: var(--s-2);
+  border-radius: var(--r-sm);
+  background: var(--hover);
+  color: var(--text-soft);
   font-size: var(--t-xs);
 }
-.sh-thread-remove .sh-button:last-child {
+.sh-thread-confirm-text {
+  flex: 1;
+}
+.sh-thread-confirm .sh-button:last-child {
   color: var(--tone-bad);
 }
 .sh-discussion-problem {

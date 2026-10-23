@@ -1,5 +1,5 @@
 // The wiki's sidebar: search, Home and the pages the wiki pins, then the page tree as tabs (SidebarTabs.tsx) with the
-// Tools and the Toolbox beside its sections, all scrolling; under them, docked at the bottom, what this viewer opened
+// Tools beside its sections, all scrolling; under them, docked at the bottom, what this viewer opened
 // lately. Every list folds; long ones start folded unless they hold the open page, and the viewer's choice is
 // remembered in this browser.
 import { type ReactNode, useId } from "react";

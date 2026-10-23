@@ -83,6 +83,17 @@ describe("Shiori's icons", () => {
   });
 });
 
+describe("sheet element", () => {
+  it("shows a data sheet by name, and checks the name", () => {
+    const { hast, problems } = render('::sheet{name="mobs"}\n\n::sheet\n\n::sheet{name="../wiki"}');
+    expect(find(hast, "sh-sheet")[0].properties).toEqual({ name: "mobs" });
+    expect(problems).toEqual([
+      'line 3: sheet: name the sheet, as ::sheet{name="mobs"} for sheets/mobs.json',
+      "line 5: sheet: \"../wiki\" isn't a sheet's name (lowercase letters, digits and -)",
+    ]);
+  });
+});
+
 describe("designs element", () => {
   it("shows a collection, and needs its name", () => {
     const { hast, problems } = render('::designs{collection="mobs"}\n\n::designs');

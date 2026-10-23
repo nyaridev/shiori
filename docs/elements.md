@@ -1,6 +1,6 @@
 # Elements
 
-Every element a wiki page can use, with its syntax. The `/dev/ui` page renders this file, so each example below
+Every element a wiki page can use, with its syntax. The toolbox (`/toolbox/<wiki>/elements`) renders this file, so each example below
 shows how it looks in the default theme.
 
 ## Text
@@ -158,7 +158,7 @@ Hidden text.
 ::question{id=q1}
 
 Open decisions, answered on the page. List them in the frontmatter; people pick an option and/or write a note, and
-the answers wait in the agent's inbox (`pnpm wiki inbox`). The agent decides and writes it back as
+the answers wait in the agent's inbox (`pnpm shiori inbox`). The agent decides and writes it back as
 `status: resolved` with the `answer`. `::question{id=…}` places one in the text; the rest collect under "Questions"
 at the bottom of the page, and Special:Questions lists them across the wiki. (Here on the reference page there's no
 frontmatter, so it shows a placeholder.)
@@ -356,7 +356,7 @@ $$
 \text{damage} = \max\left(1,\ \text{attack} \times \frac{100}{100 + \text{armor}}\right)
 $$
 
-A ```` ```math ```` fence works too. A formula KaTeX can't read shows in red and `pnpm wiki check` reports it.
+A ```` ```math ```` fence works too. A formula KaTeX can't read shows in red and `pnpm shiori check` reports it.
 
 ## Diagrams
 
@@ -533,6 +533,18 @@ the same.
 
 ```md
 ::designs{collection="sketches"}
+```
+
+## Sheet
+
+::sheet{name="mobs"}
+
+A data sheet (ADR-0010): the table `sheets/mobs.json` that an agent wrote, its editable values ready to tune. Every
+value shows its default from the file, and the owner shares the sheet alone from its page (Tools → Data sheets).
+Only agents make sheets, with `pnpm shiori sheet <wiki> new <name>`.
+
+```md
+::sheet{name="mobs"}
 ```
 
 ## Home page

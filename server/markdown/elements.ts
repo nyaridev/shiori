@@ -1,9 +1,11 @@
 // Shiori elements: Markdown directives (`:::callout`, `:badge[…]`) that become `sh-*` elements, which the browser
 // renders with the app's components. The full syntax reference is docs/elements.md.
+
 import type { BlockContent, Image, ListItem, Node, Paragraph, Parent, PhrasingContent, Root, RootContent } from "mdast";
 import type { ContainerDirective, LeafDirective, TextDirective } from "mdast-util-directive";
 import { SKIP, visit } from "unist-util-visit";
 import { PAGE_STATUSES } from "../../shared/schema.ts";
+import { SHEET_NAME } from "../../shared/sheet.ts";
 import { iconSet } from "../icons.ts";
 
 type Directive = ContainerDirective | LeafDirective | TextDirective;
@@ -110,6 +112,8 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   },
   // A collection's designs (ADR-0006), with the button that makes a new one.
   designs: { type: "leafDirective", tag: "sh-designs", attrs: { collection: null }, transform: needsCollection },
+  // A data sheet (ADR-0010): `sheets/<name>.json`, its values editable by the owner and shared by its own link.
+  sheet: { type: "leafDirective", tag: "sh-sheet", attrs: { name: null }, transform: needsSheetName },
 };
 
 const COLONS: Record<Directive["type"], string> = {
@@ -300,6 +304,12 @@ function checkIcon(node: Directive, problem: (message: string) => void) {
 
 function needsCollection(node: Directive, problem: (message: string) => void) {
   if (!node.attributes?.collection) problem('designs: name the collection, as ::designs{collection="mobs"}');
+}
+
+function needsSheetName(node: Directive, problem: (message: string) => void) {
+  const name = node.attributes?.name;
+  if (!name) problem('sheet: name the sheet, as ::sheet{name="mobs"} for sheets/mobs.json');
+  else if (!SHEET_NAME.test(name)) problem(`sheet: "${name}" isn't a sheet's name (lowercase letters, digits and -)`);
 }
 
 /** How many entries a home block lists: 1 to 50. */

@@ -1,6 +1,6 @@
 // The bar above every wiki page, across the whole window. Left: back to the deck (the owner only) and the project:
 // its icon (else its cover), name and tagline, linking home. Middle: search. Right: whether the wiki is live and who is
-// on it (ADR-0005), share, the UI primitives (the owner only), and day or night at the far right. The page list and the comments open from here wherever they're drawers: the comments on the
+// on it (ADR-0005), share, the toolbox (the owner only, in a new tab), and day or night at the far right. The page list and the comments open from here wherever they're drawers: the comments on the
 // home page, and both on narrow screens.
 import { Link, useNavigate } from "react-router";
 import type { Person, WikiDetail } from "../../shared/api.ts";
@@ -10,6 +10,7 @@ import { setViewerMode, useViewerMode } from "../lib/viewerMode.ts";
 import { PresenceBar } from "../presence/PresenceBar.tsx";
 import { LiveBadge } from "../sharing/LiveBadge.tsx";
 import { ShareDialog } from "../sharing/ShareDialog.tsx";
+import { openToolbox } from "../toolbox/open.ts";
 import { Icon, IconButton, Kbd, Tooltip } from "../ui/index.ts";
 import { pageHref } from "./PageHead.tsx";
 import { PageIcon } from "./PageIcon.tsx";
@@ -91,13 +92,14 @@ export function WikiHeader({
           />
         )}
         {!guest && (
-          <Tooltip content="UI primitives" side="bottom">
+          // The host's toolbox: the design system, page kits, elements, fields, icons. Its own tab, beside the wiki.
+          <Tooltip content="Toolbox" side="bottom">
             <IconButton
               filled
               icon="primitives"
-              label="UI primitives"
+              label="Open the toolbox in a new tab"
               className="sh-head-dev"
-              onClick={() => navigate("/dev/ui")}
+              onClick={() => openToolbox(wiki)}
             />
           </Tooltip>
         )}

@@ -12,7 +12,7 @@
     "dev:server": "node --watch --disable-warning=ExperimentalWarning server/main.ts --port 4411 --dev",
     "build": "vite build",
     "start": "node --disable-warning=ExperimentalWarning server/main.ts --port 4400 --static",
-    "wiki": "node --disable-warning=ExperimentalWarning cli/wiki.ts",
+    "shiori": "node --disable-warning=ExperimentalWarning cli/shiori.ts",
     "check": "tsc --noEmit && biome check . && vitest run",
     "format": "biome check --write .",
     "test": "vitest run"

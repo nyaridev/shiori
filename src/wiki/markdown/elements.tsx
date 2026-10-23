@@ -12,6 +12,7 @@ import {
 } from "react";
 import { Link } from "react-router";
 import { picture } from "../../lib/base.ts";
+import { SheetBlock } from "../../sheets/SheetBlock.tsx";
 import {
   Badge,
   type BadgeTone,
@@ -32,7 +33,7 @@ import { PageIcon } from "../PageIcon.tsx";
 import { PagePreview } from "../PagePreview.tsx";
 import { useViewer } from "../viewer/ViewerContext.ts";
 import { Zoom } from "../viewer/Zoom.tsx";
-import { usePageAt } from "../WikiIndexContext.ts";
+import { usePageAt, useWikiIndex } from "../WikiIndexContext.ts";
 
 type Props<T = object> = T & { children?: ReactNode };
 
@@ -274,7 +275,7 @@ export function ImgEl({ src, alt, ...rest }: ImgHTMLAttributes<HTMLImageElement>
 
 export const GalleryEl = ({ children }: Props) => <div className="sh-gallery">{children}</div>;
 
-/** A gallery tile; it opens the image viewer (on /dev/ui, where there's none, a dialog with the image). */
+/** A gallery tile; it opens the image viewer (in the toolbox, where there's none, a dialog with the image). */
 export function ShotEl({ caption, children }: Props<{ caption?: string }>) {
   const viewer = useViewer();
   const src = Children.toArray(children)
@@ -337,4 +338,13 @@ export function TaskBox({ type, checked }: { type?: string; checked?: boolean })
       {checked && <CheckMark size={13} />}
     </span>
   );
+}
+
+/** `::sheet{name}` (ADR-0010): a data sheet, editable for the owner. Outside a wiki (the element reference), a note. */
+export function SheetEl({ name }: Props<{ name?: string }>) {
+  const wiki = useWikiIndex();
+  if (!wiki)
+    return <p className="sh-element-placeholder">A data sheet's table shows here, its values ready to tune.</p>;
+  if (!name) return null;
+  return <SheetBlock wikiId={wiki.wikiId} name={name} />;
 }

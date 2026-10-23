@@ -1,6 +1,6 @@
 // Comment threads, stored in each wiki's own `data/wiki.db`. The app never writes into its own folder or into a
 // wiki's pages. Every thread, message and answer has a `uid` that never collides between PCs and an `updated_at`, so
-// two PCs with the same wiki can merge their comments (`pnpm wiki sync`, sync.ts).
+// two PCs with the same wiki can merge their comments (`pnpm shiori sync`, sync.ts).
 
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -78,6 +78,56 @@ const MIGRATIONS = [
   `alter table threads add column removed_at text;`,
   // One person's answers, for the question lists (ADR-0009): a wiki can have thousands.
   `create index answers_author on answers(author, guest_id);`,
+  // Editing a message (ADR-0010): it keeps its place and says it was edited.
+  `alter table messages add column edited_at text;`,
+  // Test boards and testers' reports (ADR-0010, boards.ts).
+  `create table boards (
+     id integer primary key,
+     uid text not null unique,
+     name text not null,
+     visibility text not null default 'global' check (visibility in ('global', 'private')),
+     created_at text not null,
+     closed_at text,
+     updated_at text not null
+   );
+   create table reports (
+     id integer primary key,
+     uid text not null unique,
+     board_uid text not null,
+     kind text not null check (kind in ('bug', 'change', 'idea')),
+     title text not null,
+     body text not null default '',
+     images text not null default '[]',
+     author text not null check (author in ('user', 'agent', 'guest')),
+     guest_id text,
+     guest_name text,
+     status text not null default 'new' check (status in ('new', 'planned', 'fixed', 'wontfix', 'duplicate')),
+     note text not null default '',
+     created_at text not null,
+     edited_at text,
+     hidden integer not null default 0,
+     removed_at text,
+     updated_at text not null
+   );
+   create index reports_board on reports(board_uid, guest_id);`,
+  // Data sheets (ADR-0010, sheets.ts): every change to a cell. `value` and `prev` are JSON; a null value is "back to
+  // the default".
+  `create table sheet_edits (
+     id integer primary key,
+     uid text not null unique,
+     sheet text not null,
+     row_key text not null,
+     column_id text not null,
+     value text not null,
+     prev text not null,
+     author text not null check (author in ('user', 'agent', 'guest')),
+     guest_id text,
+     guest_name text,
+     created_at text not null,
+     exported_at text,
+     updated_at text not null
+   );
+   create index sheet_edits_cell on sheet_edits(sheet, row_key, column_id, id);`,
 ];
 
 /** Gives rows made before uids (or restored from an old backup) theirs, and an `updated_at`. */
@@ -156,6 +206,7 @@ interface MessageRow {
   hidden: number;
   reactions: string;
   images: string;
+  edited_at: string | null;
   uid: string;
   updated_at: string;
 }
@@ -204,6 +255,7 @@ function hydrate(db: DatabaseSync, rows: ThreadRow[]): Thread[] {
         ...(m.hidden ? { hidden: true } : {}),
         ...(reactionsOf(m.reactions).length ? { reactions: reactionsOf(m.reactions) } : {}),
         ...(imagesOf(m.images).length ? { images: imagesOf(m.images) } : {}),
+        ...(m.edited_at ? { editedAt: m.edited_at } : {}),
         uid: m.uid,
         updatedAt: m.updated_at,
       })),
@@ -300,6 +352,27 @@ export function removeThread(root: string, id: number): boolean {
     .prepare("update threads set removed_at = ?, updated_at = ? where id = ? and removed_at is null")
     .run(at, at, id);
   return Number(changes) > 0;
+}
+
+/** Who wrote a message, and its thread; null when there's no such message. */
+export function messageAuthor(
+  root: string,
+  messageId: number,
+): { thread: number; author: Author; guestId: string | null } | null {
+  const row = dbFor(root).prepare("select thread_id, author, guest_id from messages where id = ?").get(messageId) as
+    | { thread_id: number; author: Author; guest_id: string | null }
+    | undefined;
+  return row ? { thread: row.thread_id, author: row.author, guestId: row.guest_id } : null;
+}
+
+/** Changes a message's text and marks it edited. The caller checks it's the writer's own. Null when it's missing. */
+export function editMessage(root: string, messageId: number, body: string): Thread | null {
+  const at = now();
+  const db = dbFor(root);
+  const row = messageAuthor(root, messageId);
+  if (!row) return null;
+  db.prepare("update messages set body = ?, edited_at = ?, updated_at = ? where id = ?").run(body, at, at, messageId);
+  return getThread(root, row.thread);
 }
 
 /** The thread a message belongs to, if there's such a message. */

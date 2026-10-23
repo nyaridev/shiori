@@ -21,6 +21,10 @@ export const LIMITS = {
   designsPerLinkPerDay: 100,
   /** Bytes of drawings and pictures a guest may send in a day. */
   designBytesPerGuestPerDay: 200 * 1024 * 1024,
+  /** Changes to a data sheet's cells per guest (ADR-0010): 60 a minute, bursts of 30; then a day's caps. */
+  sheetEdits: { capacity: 30, per: 60_000, refill: 60 },
+  sheetEditsPerGuestPerDay: 1000,
+  sheetEditsPerLinkPerDay: 3000,
   /** New guest names per client address. */
   joins: { capacity: 10, per: 3_600_000, refill: 10 },
   /** This many 429s within `strikeWindow` blocks the guest and their address for the rest of the link's life. */
@@ -153,6 +157,9 @@ export function createLinkLimits() {
   const daily = new Windows(LIMITS.writesPerGuestPerDay, DAY);
   const linkDaily = new Windows(LIMITS.writesPerLinkPerDay, DAY);
   const strikes = new Windows(Number.POSITIVE_INFINITY, LIMITS.strikeWindow);
+  const sheetEdits = new Buckets(LIMITS.sheetEdits);
+  const sheetDaily = new Windows(LIMITS.sheetEditsPerGuestPerDay, DAY);
+  const sheetLinkDaily = new Windows(LIMITS.sheetEditsPerLinkPerDay, DAY);
   return {
     read: (ip: string, now: number) => reads.take(ip, now),
     join: (ip: string, now: number) => joins.take(ip, now),
@@ -179,10 +186,34 @@ export function createLinkLimits() {
       }
       return wait;
     },
+    /** A change to a sheet's cell: the day's caps, then the rate; a refused change uses up nothing. */
+    sheetEdit: (guest: string, now: number) => {
+      const wait =
+        Math.max(sheetDaily.wait(guest, now), sheetLinkDaily.wait("link", now)) || sheetEdits.take(guest, now);
+      if (!wait) {
+        sheetDaily.count(guest, now);
+        sheetLinkDaily.count("link", now);
+      }
+      return wait;
+    },
     /** Counts a 429 against a key; true when the key has now struck out. */
     strike: (key: string, now: number) => strikes.count(key, now) >= LIMITS.strikes,
     prune: (now: number) => {
-      for (const l of [reads, writes, joins, presence, designSaves, daily, linkDaily, strikes, designs, linkDesigns])
+      for (const l of [
+        reads,
+        writes,
+        joins,
+        presence,
+        designSaves,
+        daily,
+        linkDaily,
+        strikes,
+        designs,
+        linkDesigns,
+        sheetEdits,
+        sheetDaily,
+        sheetLinkDaily,
+      ])
         l.prune(now);
       designBytes.prune(now);
     },

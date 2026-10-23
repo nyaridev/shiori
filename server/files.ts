@@ -18,7 +18,7 @@ const TYPES: Record<string, string> = {
   ".avif": "image/avif",
 };
 
-/** A picture bigger than this isn't served, and `pnpm wiki check` reports it. */
+/** A picture bigger than this isn't served, and `pnpm shiori check` reports it. */
 export const MAX_PICTURE_BYTES = 15 * 1024 * 1024;
 /** The widths the app asks for: strip thumbnails, gallery tiles, the infobox, the article, the viewer. */
 export const WIDTHS = [160, 480, 960, 1600, 2400] as const;
@@ -101,7 +101,7 @@ export async function serveFile(c: Context, root: string, encoded: string, { cac
   return c.body(new Uint8Array(out), 200, { ...headers, "content-type": "image/webp" });
 }
 
-/** What `pnpm wiki check` says about a wiki's media: videos and sounds it may not carry, pictures that are too big. */
+/** What `pnpm shiori check` says about a wiki's media: videos and sounds it may not carry, pictures that are too big. */
 export function mediaProblems(root: string): string[] {
   const problems: string[] = [];
   const walk = (dir: string) => {

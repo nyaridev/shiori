@@ -1,0 +1,612 @@
+/* Test boards (ADR-0010): the owner's list and board, a tester's page, and the report rows both use. Colors come
+   only from tokens; a kind's tint is its tone mixed into the surface. */
+
+/* A kind's icon in a tinted tile: bugs in the bad tone, changes in the accent, ideas in the good tone. The drawn
+   icon takes the tile's tone through the icon tokens. */
+.sh-kind-mark {
+  --kind: var(--accent);
+  --icon-ink: var(--kind);
+  --icon-tint: color-mix(in oklab, var(--kind) 50%, var(--surface));
+  --icon-detail: var(--surface);
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--kind) 16%, var(--surface));
+}
+.sh-kind-mark[data-kind="bug"] {
+  --kind: var(--tone-bad);
+}
+.sh-kind-mark[data-kind="idea"] {
+  --kind: var(--tone-good);
+}
+.sh-kind-mark .sh-glyph {
+  width: var(--glyph, 18px);
+  height: var(--glyph, 18px);
+}
+.sh-kind-mark[data-size="lg"] {
+  --glyph: 24px;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--r-md);
+}
+
+/* ── The owner's list of boards (Boards.tsx) ───────────────────────────────────────────────────────────────── */
+.sh-boards {
+  display: grid;
+  gap: var(--s-5);
+}
+.sh-boards-new {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-3);
+  border: var(--bw) dashed var(--border-strong);
+  border-radius: var(--r-lg);
+}
+.sh-boards-new .sh-field {
+  flex: 1 1 220px;
+}
+.sh-boards-hint {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-boards-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-boards-card {
+  display: grid;
+  gap: var(--s-2);
+  height: 100%;
+  padding: var(--s-4);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    border-color var(--fast) var(--ease),
+    transform var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+.sh-boards-card:hover {
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow-1);
+  transform: translateY(-1px);
+}
+.sh-boards-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-boards-card[data-closed] {
+  opacity: 0.7;
+}
+.sh-boards-top {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.sh-boards-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-heading);
+  font-size: var(--t-md);
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.sh-boards-meta,
+.sh-boards-count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-boards-meta .sh-glyph {
+  width: 14px;
+  height: 14px;
+}
+
+/* How much of a board is done with: a thin bar. */
+.sh-board-progress {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--hover);
+}
+.sh-board-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tone-good);
+  transition: width var(--glide) var(--ease);
+}
+
+/* ── One board for the owner (BoardPage.tsx) ───────────────────────────────────────────────────────────────── */
+.sh-board {
+  display: grid;
+  gap: var(--s-4);
+}
+.sh-board-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.sh-board-setting {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.sh-board-setting > .sh-glyph {
+  width: 18px;
+  height: 18px;
+}
+.sh-board-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.sh-board-fact > .sh-glyph {
+  width: 14px;
+  height: 14px;
+}
+.sh-board-spacer {
+  flex: 1;
+}
+.sh-board-stats,
+.sh-board-kinds {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* The numbers, which are also the status filter. */
+.sh-board-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: var(--s-2);
+}
+.sh-board-stat {
+  --tone: var(--text);
+  display: grid;
+  gap: 2px;
+  padding: var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--fast) var(--ease),
+    background var(--fast) var(--ease);
+}
+.sh-board-stat[data-tone="accent"] {
+  --tone: var(--accent-ink);
+}
+.sh-board-stat[data-tone="warn"] {
+  --tone: var(--tone-warn);
+}
+.sh-board-stat[data-tone="good"] {
+  --tone: var(--tone-good);
+}
+.sh-board-stat:hover {
+  border-color: var(--border-strong);
+}
+.sh-board-stat:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-board-stat.is-on {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.sh-board-stat-value {
+  color: var(--tone);
+  font-family: var(--font-heading);
+  font-size: var(--t-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.sh-board-stat-label {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+/* Kinds, as chips with their counts. */
+.sh-board-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.sh-kind-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 36px;
+  padding: 3px var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-soft);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.sh-kind-chip:has(.sh-kind-mark) {
+  padding-left: 3px;
+}
+.sh-kind-chip .sh-kind-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+}
+.sh-kind-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.sh-kind-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-kind-chip.is-on {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.sh-kind-chip-n {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.sh-board-empty {
+  --icon-ink: var(--muted);
+  --icon-tint: var(--border-strong);
+  display: grid;
+  justify-items: center;
+  gap: var(--s-2);
+  padding: var(--s-6) var(--s-4);
+  border: var(--bw) dashed var(--border);
+  border-radius: var(--r-lg);
+  color: var(--muted);
+  text-align: center;
+}
+.sh-board-empty .sh-glyph {
+  width: 32px;
+  height: 32px;
+}
+.sh-board-empty p {
+  margin: 0;
+  max-width: 44ch;
+  font-size: var(--t-sm);
+}
+
+/* ── A report, as a row that opens (ReportCard.tsx) ────────────────────────────────────────────────────────── */
+.sh-board-reports,
+.sh-tester-reports {
+  display: grid;
+  gap: var(--s-2);
+}
+.sh-report {
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  transition:
+    border-color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+.sh-report:hover {
+  border-color: var(--border-strong);
+}
+.sh-report.is-open {
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow-1);
+}
+.sh-report-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding-right: var(--s-2);
+}
+/* A tester's own reports have a menu; the others keep its room, so the statuses line up. */
+.sh-tester .sh-report-row:not(:has(> .sh-report-menu))::after {
+  content: "";
+  flex: none;
+  width: 28px;
+}
+.sh-report-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--s-3);
+  min-width: 0;
+  padding: var(--s-3);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sh-report-main:focus-visible {
+  outline: none;
+  border-radius: var(--r-md);
+  box-shadow: var(--focus);
+}
+.sh-report-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.sh-report-title {
+  font-size: var(--t-md);
+  font-weight: 620;
+  overflow-wrap: anywhere;
+}
+.sh-report[data-status="duplicate"] .sh-report-title,
+.sh-report[data-status="wontfix"] .sh-report-title {
+  text-decoration: line-through;
+  text-decoration-color: var(--border-strong);
+}
+.sh-report-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-report-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: var(--s-2);
+  color: var(--text-soft);
+}
+.sh-report-count .sh-glyph {
+  width: 13px;
+  height: 13px;
+}
+.sh-report-chevron {
+  display: inline-grid;
+  color: var(--muted);
+  transition: transform var(--fast) var(--ease);
+}
+.sh-report.is-open .sh-report-chevron {
+  transform: rotate(180deg);
+}
+.sh-report-details {
+  display: grid;
+  gap: var(--s-3);
+  padding: 0 var(--s-4) var(--s-4) calc(var(--s-3) + 30px + var(--s-3));
+}
+.sh-report-body {
+  margin: 0;
+  font-size: var(--t-sm);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sh-report-quiet {
+  color: var(--muted);
+}
+.sh-report[data-hidden] .sh-report-title,
+.sh-report[data-hidden] .sh-report-body {
+  opacity: 0.55;
+}
+/* Done with (fixed, won't fix, duplicate): quieter. */
+.sh-report[data-done]:not(.is-open) .sh-report-title {
+  color: var(--text-soft);
+}
+.sh-report-pictures {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-report-pictures a {
+  display: block;
+  overflow: hidden;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-sm);
+}
+.sh-report-pictures img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  transition: transform var(--fast) var(--ease);
+}
+.sh-report-pictures a:hover img {
+  transform: scale(1.03);
+}
+/* The team's word to the tester. */
+.sh-report-note {
+  display: grid;
+  gap: 2px;
+  padding: var(--s-2) var(--s-3);
+  border-left: 3px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+}
+.sh-report-note-label {
+  color: var(--accent-ink);
+  font-size: var(--t-xs);
+  font-weight: 700;
+}
+.sh-report-note p {
+  margin: 0;
+  font-size: var(--t-sm);
+}
+.sh-report-triage {
+  display: grid;
+  grid-template-columns: minmax(150px, auto) 1fr;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--hover);
+}
+.sh-report-triage-field {
+  display: grid;
+  gap: 4px;
+}
+.sh-report-triage-field > span {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+.sh-report-edit {
+  display: grid;
+  gap: var(--s-2);
+}
+
+/* ── A tester's page (TesterBoard.tsx); its frame is guest.css's `.sh-tester` ──────────────────────────────── */
+.sh-tester-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-4);
+}
+.sh-tester-hero > div {
+  display: grid;
+  gap: var(--s-2);
+}
+.sh-tester-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin: var(--s-1) 0 0;
+}
+.sh-tester-facts > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: 999px;
+  color: var(--text-soft);
+  font-size: var(--t-xs);
+}
+.sh-tester-facts .sh-glyph {
+  width: 14px;
+  height: 14px;
+}
+.sh-tester-closed {
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  border: var(--bw) dashed var(--border-strong);
+  border-radius: var(--r-md);
+  color: var(--text-soft);
+}
+.sh-report-form {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+/* What it is: three cards to pick from (radios inside). */
+.sh-kind-pick {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+.sh-kind-option {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--fast) var(--ease),
+    background var(--fast) var(--ease);
+}
+.sh-kind-option:hover {
+  border-color: var(--border-strong);
+}
+.sh-kind-option:has(input:focus-visible) {
+  box-shadow: var(--focus);
+}
+.sh-kind-option:has(input:checked) {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.sh-kind-option-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.sh-kind-option-text strong {
+  font-size: var(--t-sm);
+}
+.sh-kind-option-text span {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  line-height: 1.35;
+}
+.sh-tester-reports-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+.sh-tester-reports-head h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--t-lg);
+}
+
+@media (max-width: 640px) {
+  .sh-kind-pick {
+    grid-template-columns: 1fr;
+  }
+  .sh-report-triage {
+    grid-template-columns: 1fr;
+  }
+  .sh-report-details {
+    padding-left: var(--s-3);
+  }
+  .sh-tester-hero > .sh-kind-mark {
+    display: none;
+  }
+}

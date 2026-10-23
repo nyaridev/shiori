@@ -1,0 +1,50 @@
+/* The toolbox page (ToolboxPage.tsx), on the design system page's frame (dev/ui-page.css). */
+/* Two groups: the app's design system, set apart in its own box, and what the wiki's pages can use. */
+.sh-toolbox-group {
+  display: grid;
+  gap: 2px;
+  margin-bottom: var(--s-4);
+}
+.sh-toolbox-app {
+  padding: var(--s-2);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sh-toolbox-group-title {
+  margin: 0 0 var(--s-1);
+  padding: 0 var(--s-2);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+.ui-nav .sh-toolbox-link {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--text-soft);
+  font-weight: 550;
+}
+.ui-nav .sh-toolbox-link[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.sh-toolbox-link .sh-page-icon,
+.sh-toolbox-link svg {
+  width: 18px;
+  height: 18px;
+}
+.sh-toolbox-sub {
+  display: grid;
+  gap: 1px;
+  margin: 2px 0 var(--s-2) var(--s-5);
+  padding-left: var(--s-2);
+  border-left: var(--bw) solid var(--border);
+}
+.ui-nav .sh-toolbox-sub a {
+  padding: 3px var(--s-2);
+  font-size: var(--t-xs);
+}
+.sh-toolbox-body {
+  margin-top: var(--s-5);
+}

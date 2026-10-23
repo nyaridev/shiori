@@ -1,5 +1,6 @@
-// The toolbox: special pages that list everything a wiki's pages can use. Page kits (the kinds of page agents start
-// from), the element reference in the wiki's own theme, the frontmatter fields, and the special pages themselves.
+// The toolbox's lists of everything a wiki's pages can use, shown by src/toolbox/ToolboxPage.tsx: Page kits (the kinds
+// of page agents start from), the element reference in the wiki's own theme, the frontmatter fields, the icons and
+// the special pages themselves.
 import { Link } from "react-router";
 import type { WikiDetail } from "../../../shared/api.ts";
 import { FRONTMATTER_FIELDS } from "../../../shared/schema.ts";
@@ -58,7 +59,7 @@ export function Kits({ wiki }: { wiki: WikiDetail }) {
                 ))}
               </p>
             )}
-            <Snippet lang="bash" text={`pnpm wiki page ${wiki.id} <path> --kit ${k.name}`} />
+            <Snippet lang="bash" text={`pnpm shiori page ${wiki.id} <path> --kit ${k.name}`} />
           </article>
         ))}
       </div>
@@ -88,7 +89,7 @@ export function Fields() {
     <>
       <p className="sh-toolbox-intro">
         What a page's frontmatter (the YAML between <code>---</code> lines at its top) can set. Anything else is
-        reported by <code>pnpm wiki check</code>. Quote values that contain a colon.
+        reported by <code>pnpm shiori check</code>. Quote values that contain a colon.
       </p>
       <dl className="sh-fm-fields">
         {FRONTMATTER_FIELDS.map((f) => (

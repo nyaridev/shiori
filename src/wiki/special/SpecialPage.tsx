@@ -4,7 +4,11 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { PageEntry, TaskEntry, WantedPage, WikiDetail, WikiIndex } from "../../../shared/api.ts";
+import { BoardPage } from "../../boards/BoardPage.tsx";
+import { Boards } from "../../boards/Boards.tsx";
 import { DesignsGallery } from "../../designs/DesignsGallery.tsx";
+import { SheetPage } from "../../sheets/SheetPage.tsx";
+import { Sheets } from "../../sheets/Sheets.tsx";
 import { CheckMark, Segmented } from "../../ui/index.ts";
 import { PageCard, PageChip } from "../PageFoot.tsx";
 import { Crumbs, pageHref, specialHref } from "../PageHead.tsx";
@@ -12,7 +16,7 @@ import { StatusBadge } from "../StatusBadge.tsx";
 import { Attention } from "./Attention.tsx";
 import { Decisions, Questions } from "./Questions.tsx";
 import { SPECIALS } from "./specials.ts";
-import { Elements, Fields, Icons, Kits, Specials } from "./Toolbox.tsx";
+import { Specials } from "./Toolbox.tsx";
 import "./special.css";
 import { PageIcon } from "../PageIcon.tsx";
 
@@ -317,10 +321,27 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
   const arg = rest.length ? decodeURIComponent(rest.join("/")) : null;
   const pages = (index?.pages ?? []).filter((p) => !p.hidden);
   const known = SPECIALS.find((s) => s.route === name);
+  // A board's and a sheet's names come with their own data.
+  const [boardTitle, setBoardTitle] = useState<string | undefined>();
+  const [sheetTitle, setSheetTitle] = useState<string | undefined>();
 
   let head: { icon: string; title: string; summary: string };
   let body: ReactNode;
-  if (name === "designs" && arg) {
+  if (name === "boards" && arg) {
+    head = {
+      icon: "bug",
+      title: boardTitle ?? "Test board",
+      summary: "What testers reported on this board. Set where each one stands; testers see the status and your note.",
+    };
+    body = <BoardPage wikiId={wiki.id} uid={arg} onTitle={setBoardTitle} />;
+  } else if (name === "sheets" && arg) {
+    head = {
+      icon: "table",
+      title: sheetTitle ?? arg,
+      summary: "Change values here or share the sheet. Every value keeps its default and who changed it.",
+    };
+    body = <SheetPage wikiId={wiki.id} name={arg} onTitle={setSheetTitle} />;
+  } else if (name === "designs" && arg) {
     const meta = wiki.collections[arg];
     head = {
       icon: "pencil",
@@ -367,18 +388,12 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
         <Wanted wikiId={wiki.id} wanted={index?.wanted ?? []} />
       ) : name === "pages" ? (
         <AllPages wikiId={wiki.id} pages={pages} />
-      ) : name === "kits" ? (
-        <Kits wiki={wiki} />
-      ) : name === "elements" ? (
-        <Elements wiki={wiki} />
-      ) : name === "fields" ? (
-        <Fields />
       ) : name === "designs" ? (
         <Collections wiki={wiki} />
-      ) : name === "icons" ? (
-        <Icons />
-      ) : name === "special" ? (
-        <Specials wikiId={wiki.id} />
+      ) : name === "boards" ? (
+        <Boards wikiId={wiki.id} />
+      ) : name === "sheets" ? (
+        <Sheets wikiId={wiki.id} />
       ) : (
         <Categories wikiId={wiki.id} pages={pages} />
       );
@@ -387,7 +402,7 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
     body = <Specials wikiId={wiki.id} />;
   }
   // The toolbox, designs and question lists read their own data, not the page index.
-  const ready = !!index || known?.group === "toolbox" || ["designs", "questions", "decisions"].includes(name) || !known;
+  const ready = !!index || ["designs", "questions", "decisions", "boards", "sheets"].includes(name) || !known;
 
   useEffect(() => {
     document.title = `${head.title} · ${wiki.title}`;
@@ -400,6 +415,8 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
       ? [{ path: "_/categories", title: "Categories", icon: "tag", isPage: true }]
       : []),
     ...(arg && name === "designs" ? [{ path: "_/designs", title: "Designs", icon: "pencil", isPage: true }] : []),
+    ...(arg && name === "boards" ? [{ path: "_/boards", title: "Test boards", icon: "bug", isPage: true }] : []),
+    ...(arg && name === "sheets" ? [{ path: "_/sheets", title: "Data sheets", icon: "table", isPage: true }] : []),
   ];
   return (
     <main id="sh-main" tabIndex={-1} className="sh-wiki-main sh-special" data-path={`_/${route}`}>

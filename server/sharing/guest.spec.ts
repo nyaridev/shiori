@@ -880,3 +880,80 @@ describe("removing a change", () => {
     return ((await (await b.post("/api/wikis/alpha/threads", change)).json()) as Thread).id;
   }
 });
+
+describe("editing a message", () => {
+  const ownerPatch = (mid: number, body: unknown, origin = "http://localhost:4400") =>
+    ownerApp.request(`http://127.0.0.1:4400/api/wikis/alpha/messages/${mid}`, {
+      method: "PATCH",
+      headers: { origin, "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  const change = { page: "plan", quote: { exact: "", prefix: "", suffix: "" }, body: "Add a map" };
+
+  it("is only for its author: a guest their own, the owner theirs, nobody the agent's", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const ana = browser(share);
+    await ana.join("Ana");
+    const bo = browser(share, "198.51.100.2");
+    await bo.join("Bo");
+    const t = (await (await ana.post("/api/wikis/alpha/threads", change)).json()) as Thread;
+    const mid = t.messages[0].id;
+
+    expect((await bo.patch(`/api/wikis/alpha/messages/${mid}`, { body: "Hijacked" })).status).toBe(403);
+    expect((await ana.patch(`/api/wikis/beta/messages/${mid}`, { body: "Other wiki" })).status).toBe(404);
+    expect((await ana.patch(`/api/wikis/alpha/messages/9999`, { body: "Nothing" })).status).toBe(404);
+    expect((await ana.patch(`/api/wikis/alpha/messages/${mid}`, { body: "  " })).status).toBe(400);
+    expect((await ana.patch(`/api/wikis/alpha/messages/${mid}`, { body: "x".repeat(LIMITS.comment + 1) })).status).toBe(
+      400,
+    );
+    expect((await ana.patch(`/api/wikis/alpha/messages/${mid}`, { body: "ok", hidden: true })).status).toBe(400);
+    const edited = await ana.patch(`/api/wikis/alpha/messages/${mid}`, { body: "Add a bigger map" });
+    expect(edited.status).toBe(200);
+    const after = (await edited.json()) as Thread;
+    expect(after.messages[0].body).toBe("Add a bigger map");
+    expect(after.messages[0].editedAt).toBeTruthy();
+    expect(after.messages[0].guestId).toBeUndefined();
+
+    // The owner can't rewrite a guest's words, nor the agent's, but edits their own.
+    expect((await ownerPatch(mid, { body: "Owner's words" })).status).toBe(403);
+    const agent = addMessage(alpha(), t.id, "agent", "Done.") as Thread;
+    // Edits count as writes; let Ana's write limit refill.
+    clock += 60_000;
+    expect((await ownerPatch(agent.messages[1].id, { body: "Not done" })).status).toBe(403);
+    expect((await ana.patch(`/api/wikis/alpha/messages/${agent.messages[1].id}`, { body: "Mine now" })).status).toBe(
+      403,
+    );
+    const own = addMessage(alpha(), t.id, "user", "Typo hree") as Thread;
+    const ownId = own.messages[2].id;
+    expect((await ownerPatch(ownId, { body: "Typo here" }, "https://evil.example")).status).toBe(403);
+    const res = await ownerPatch(ownId, { body: "Typo here" });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as Thread).messages[2].body).toBe("Typo here");
+    // Hiding still works through the same route.
+    expect((await ownerPatch(mid, { hidden: true })).status).toBe(200);
+    expect((await ana.patch(`/api/wikis/alpha/messages/${mid}`, { body: "Hidden now" })).status).toBe(404);
+  });
+
+  it("needs a comment link, this site's Origin and an open thread", async () => {
+    const share = shares.create({ wiki: "alpha", kind: "comment" });
+    const ana = browser(share);
+    await ana.join("Ana");
+    const t = (await (await ana.post("/api/wikis/alpha/threads", change)).json()) as Thread;
+    const mid = t.messages[0].id;
+    const evil = await guestApp.request(`${HOST}/s/${share.token}/api/wikis/alpha/messages/${mid}`, {
+      method: "PATCH",
+      headers: { cookie: ana.cookie, origin: "https://evil.example", "content-type": "application/json" },
+      body: JSON.stringify({ body: "From elsewhere" }),
+    });
+    expect(evil.status).toBe(403);
+    await ana.patch(`/api/wikis/alpha/threads/${t.id}`, { status: "resolved" });
+    expect((await ana.patch(`/api/wikis/alpha/messages/${mid}`, { body: "Too late" })).status).toBe(409);
+
+    const view = shares.create({ wiki: "alpha", kind: "view" });
+    const vi = browser(view);
+    await vi.join("Vi");
+    expect((await vi.patch(`/api/wikis/alpha/messages/${mid}`, { body: "View" })).status).toBe(403);
+    shares.revoke(share.id);
+    expect((await ana.patch(`/api/wikis/alpha/messages/${mid}`, { body: "Gone" })).status).toBe(410);
+  });
+});

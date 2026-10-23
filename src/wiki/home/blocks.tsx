@@ -1,6 +1,6 @@
 // The home page's elements (ADR-0002): `::::boxes` of titled `:::box`es, and blocks that show the whole wiki live:
 // recent changes, open questions and tasks, the latest discussions, and the directory of sections. Each wiki's home
-// places the ones it wants, so every wiki's front page is its own. Outside a wiki (the /dev/ui reference) the blocks
+// places the ones it wants, so every wiki's front page is its own. Outside a wiki (the toolbox's reference) the blocks
 // say what they'd show.
 import {
   Children,

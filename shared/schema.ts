@@ -1,4 +1,4 @@
-// File formats of a wiki folder. Agents write these files; the server and `pnpm wiki check` validate them.
+// File formats of a wiki folder. Agents write these files; the server and `pnpm shiori check` validate them.
 import { z } from "zod";
 
 /** A day, written `2026-11-15` (YAML may read it as a date). */

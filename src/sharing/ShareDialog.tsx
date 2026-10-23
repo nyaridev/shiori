@@ -1,5 +1,6 @@
 // The owner's Share dialog (ADR-0003): make a link to one wiki, copy it, and watch who came through it. The links,
-// guests and activity live in the server's memory; the dialog asks for them while it's open.
+// guests and activity live in the server's memory; the dialog asks for them while it's open. Opened on a test board
+// or a data sheet (ADR-0010), it makes links to that alone: testers', or a sheet's to look at or to change.
 import { type ReactNode, useEffect, useId, useState } from "react";
 import type { ShareDuration, ShareInfo, ShareKind, SharesState, TunnelStatus } from "../../shared/api.ts";
 import { api } from "../lib/api.ts";
@@ -19,6 +20,34 @@ const KINDS: { value: ShareKind; label: string }[] = [
   { value: "view", label: "Can read" },
   { value: "comment", label: "Can read and comment" },
 ];
+const SHEET_RIGHTS: { value: "look" | "edit"; label: string }[] = [
+  { value: "look", label: "Can look" },
+  { value: "edit", label: "Can change values" },
+];
+
+/** What a link opens, when it isn't the whole wiki: one test board or one data sheet. */
+export interface ShareTargetOf {
+  kind: "board" | "sheet";
+  id: string;
+  title: string;
+}
+
+/** A link's badge: what it lets people do. */
+function kindLabel(s: ShareInfo): { label: string; tone: "accent" | "neutral" } {
+  if (s.kind === "board") return { label: `Test board · ${s.target?.title ?? ""}`, tone: "accent" };
+  if (s.kind === "sheet")
+    return {
+      label: `Sheet · ${s.target?.title ?? ""}${s.edit ? " · can change" : ""}`,
+      tone: s.edit ? "accent" : "neutral",
+    };
+  return s.kind === "comment" ? { label: "Read and comment", tone: "accent" } : { label: "Read", tone: "neutral" };
+}
+const WRITES: Record<ShareKind, [string, string]> = {
+  view: ["comment", "comments"],
+  comment: ["comment", "comments"],
+  board: ["report", "reports"],
+  sheet: ["change", "changes"],
+};
 
 /** The name the owner signs with for guests, remembered in this browser so it survives restarts. */
 const HOST_KEY = "shiori.hostName";
@@ -36,23 +65,36 @@ const saveHost = (name: string) => {
 };
 
 /** A Share button (`trigger`) and its dialog. Guests never get one. */
-export function ShareDialog({ wikiId, title, trigger }: { wikiId: string; title: string; trigger: ReactNode }) {
+export function ShareDialog({
+  wikiId,
+  title,
+  trigger,
+  target,
+}: {
+  wikiId: string;
+  title: string;
+  trigger: ReactNode;
+  /** A board or a sheet to share alone, without the wiki. */
+  target?: ShareTargetOf;
+}) {
   if (isGuest) return null;
+  const description =
+    target?.kind === "board"
+      ? "Testers open the link and see only this board: they report bugs, changes and ideas, with pictures. Nothing else of the wiki."
+      : target?.kind === "sheet"
+        ? "People open the link and see only this sheet. Let them change values, or only look. Nothing else of the wiki."
+        : "Friends open the link in their browser. The wiki stays on this PC, and links end when they expire or Shiori closes.";
   return (
     <Dialog>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent
-        size="lg"
-        title={`Share ${title}`}
-        description="Friends open the link in their browser. The wiki stays on this PC, and links end when they expire or Shiori closes."
-      >
-        <ShareBody wikiId={wikiId} />
+      <DialogContent size="lg" title={`Share ${target?.title ?? title}`} description={description}>
+        <ShareBody wikiId={wikiId} target={target} />
       </DialogContent>
     </Dialog>
   );
 }
 
-function ShareBody({ wikiId }: { wikiId: string }) {
+function ShareBody({ wikiId, target }: { wikiId: string; target?: ShareTargetOf }) {
   const { state, unavailable, problem, act } = useShares();
   // The countdowns tick while the dialog is open.
   const [now, setNow] = useState(Date.now());
@@ -64,13 +106,14 @@ function ShareBody({ wikiId }: { wikiId: string }) {
   if (unavailable) return <Callout tone="warning">{unavailable}</Callout>;
   if (!state) return <p className="sh-share-quiet">Loading…</p>;
 
-  const mine = state.shares.filter((s) => s.wiki === wikiId);
+  // On a board or sheet: its own links. On the wiki: all of the wiki's, boards' and sheets' too.
+  const mine = state.shares.filter((s) => s.wiki === wikiId && (!target || s.target?.id === target.id));
   const others = state.shares.length - mine.length;
   const up = state.tunnel.state === "up";
   return (
     <div className="sh-share">
       <TunnelNote tunnel={state.tunnel} active={state.shares.length > 0} onRetry={() => act(api.retryTunnel)} />
-      <NewLink wikiId={wikiId} state={state} act={act} />
+      <NewLink wikiId={wikiId} state={state} act={act} target={target} />
       {problem && <p className="sh-share-problem">{problem}</p>}
       {mine.length > 0 && (
         <section className="sh-share-links" aria-label="Active links">
@@ -83,7 +126,7 @@ function ShareBody({ wikiId }: { wikiId: string }) {
       {state.shares.length > 0 && (
         <footer className="sh-share-foot">
           <span className="sh-share-quiet">
-            {others > 0 && `${others} more link${others === 1 ? "" : "s"} on other wikis.`}
+            {others > 0 && `${others} more link${others === 1 ? "" : "s"} elsewhere.`}
           </span>
           <Button variant="outline" size="sm" icon="block" onClick={() => void act(api.stopSharing)}>
             Stop all sharing
@@ -144,12 +187,15 @@ function NewLink({
   wikiId,
   state,
   act,
+  target,
 }: {
   wikiId: string;
   state: SharesState;
   act: ReturnType<typeof useShares>["act"];
+  target?: ShareTargetOf;
 }) {
   const [kind, setKind] = useState<ShareKind>("comment");
+  const [rights, setRights] = useState<"look" | "edit">("edit");
   const [duration, setDuration] = useState<ShareDuration>("24h");
   const [label, setLabel] = useState("");
   const [host, setHost] = useState(() => savedHost() || state.host);
@@ -167,17 +213,35 @@ function NewLink({
     setBusy(true);
     const name = host.trim();
     if (name) saveHost(name);
-    await act(() => api.share({ wiki: wikiId, kind, duration, label: label.trim(), host: name || undefined }));
+    await act(() =>
+      api.share({
+        wiki: wikiId,
+        kind: target?.kind ?? kind,
+        duration,
+        label: label.trim(),
+        host: name || undefined,
+        ...(target ? { target: target.id } : {}),
+        ...(target?.kind === "sheet" ? { edit: rights === "edit" } : {}),
+      }),
+    );
     setLabel("");
     setBusy(false);
   };
 
   return (
     <section className="sh-share-new" aria-label="New link">
-      <div className="sh-share-field">
-        <span className="sh-share-label">People with the link</span>
-        <Segmented label="What guests can do" value={kind} onChange={setKind} options={KINDS} />
-      </div>
+      {!target && (
+        <div className="sh-share-field">
+          <span className="sh-share-label">People with the link</span>
+          <Segmented label="What guests can do" value={kind} onChange={setKind} options={KINDS} />
+        </div>
+      )}
+      {target?.kind === "sheet" && (
+        <div className="sh-share-field">
+          <span className="sh-share-label">People with the link</span>
+          <Segmented label="What people can do" value={rights} onChange={setRights} options={SHEET_RIGHTS} />
+        </div>
+      )}
       <div className="sh-share-grid">
         <div className="sh-share-field">
           <span className="sh-share-label" aria-hidden="true">
@@ -214,7 +278,10 @@ function NewLink({
         </div>
       </div>
       <div className="sh-share-actions">
-        <span className="sh-share-quiet">Guests see your comments signed {state.host}.</span>
+        <span className="sh-share-quiet">
+          Guests see your {target?.kind === "sheet" ? "changes" : target?.kind === "board" ? "notes" : "comments"}{" "}
+          signed {state.host}.
+        </span>
         <Button variant="solid" icon="link" disabled={busy} onClick={() => void create()}>
           Create link
         </Button>
@@ -235,12 +302,12 @@ function LinkCard({
   act: ReturnType<typeof useShares>["act"];
 }) {
   const recent = share.activity.slice(-8).reverse();
+  const badge = kindLabel(share);
+  const [one, many] = WRITES[share.kind];
   return (
     <article className="sh-share-link">
       <header className="sh-share-row">
-        <Badge tone={share.kind === "comment" ? "accent" : "neutral"}>
-          {share.kind === "comment" ? "Read and comment" : "Read"}
-        </Badge>
+        <Badge tone={badge.tone}>{badge.label}</Badge>
         {share.label && <strong className="sh-share-for">{share.label}</strong>}
         <span className="sh-share-quiet sh-share-ends">
           {share.expiresAt ? `ends in ${left(share.expiresAt, now)}` : "until Shiori closes"}
@@ -270,7 +337,7 @@ function LinkCard({
               <span className="sh-share-guest">{g.name}</span>
               {g.blocked && <Badge tone="bad">Blocked</Badge>}
               <span className="sh-share-quiet">
-                seen {ago(g.lastSeen)} · {g.writes} comment{g.writes === 1 ? "" : "s"}
+                seen {ago(g.lastSeen)} · {g.writes} {g.writes === 1 ? one : many}
               </span>
               <Button
                 size="sm"

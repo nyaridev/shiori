@@ -1,5 +1,5 @@
 // React components for the universal elements (ADR-0002): related, children, toc, status, steps, compare, quote,
-// embed. Elements that list what the page knows read it from PageContext; elsewhere (the /dev/ui reference) they
+// embed. Elements that list what the page knows read it from PageContext; elsewhere (the toolbox's reference) they
 // say what they'd show.
 import type { ReactNode } from "react";
 import { Link } from "react-router";

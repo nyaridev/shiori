@@ -22,7 +22,7 @@
 
 .sh-guest-kicker {
   margin: 0;
-  color: var(--accent-text);
+  color: var(--accent-ink);
   font-size: var(--t-xs);
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -72,4 +72,27 @@
   gap: var(--s-2);
   color: var(--muted);
   font-size: var(--t-xs);
+}
+
+/* A board's or a sheet's page for guests (ADR-0010): one column, its name, then what it holds. */
+.sh-tester {
+  display: grid;
+  align-content: start;
+  gap: var(--s-5);
+  width: min(760px, 100%);
+  min-height: 100%;
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-4) var(--s-7);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+.sh-tester-head {
+  display: grid;
+  gap: var(--s-2);
+}
+.sh-tester-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--t-2xl);
+  line-height: 1.15;
 }

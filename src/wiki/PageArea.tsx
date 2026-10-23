@@ -113,7 +113,7 @@ export function PageArea({
         )}
         <div className="sh-page-body">
           {showProblems && (
-            <Callout tone="warning" title="Problems (for the agent: run pnpm wiki check)">
+            <Callout tone="warning" title="Problems (for the agent: run pnpm shiori check)">
               <ul>
                 {problems.map((p) => (
                   <li key={p}>{p}</li>

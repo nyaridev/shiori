@@ -69,6 +69,7 @@ const components = {
   "sh-discussions": home.DiscussionsEl,
   "sh-directory": home.DirectoryEl,
   "sh-designs": home.DesignsEl,
+  "sh-sheet": el.SheetEl,
   "sh-section": SectionEl,
   "sh-diagram": DiagramEl,
   "sh-table": DataTableEl,

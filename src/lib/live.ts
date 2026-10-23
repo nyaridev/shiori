@@ -61,13 +61,31 @@ const RETRY = 4000;
  * hears the status when the link stops working, and asking stops.
  */
 export function pollChanges(wiki: string, onEnded: (status: number) => void): () => void {
-  let etag = "";
   let last: Version | null = null;
+  return poll(
+    `/api/wikis/${encodeURIComponent(wiki)}/changes`,
+    (v: Version) => {
+      if (last && v.pages !== last.pages) emit({ type: "pages", wiki });
+      if (last && v.threads !== last.threads) emit({ type: "threads", wiki });
+      if (last && v.designs !== last.designs) emit({ type: "designs", wiki });
+      if (last && v.presence !== last.presence) emit({ type: "presence", wiki });
+      last = v;
+    },
+    onEnded,
+  );
+}
+
+/**
+ * Long polling any `changes` route (a wiki's, a board link's, a sheet link's, ADR-0010): `onAnswer` hears each new
+ * version, the first one too; `onEnded` hears the status when the link stops working.
+ */
+export function poll<V>(path: string, onAnswer: (v: V) => void, onEnded: (status: number) => void): () => void {
+  let etag = "";
   let stopped = false;
   let failures = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const controller = new AbortController();
-  const url = withBase(`/api/wikis/${encodeURIComponent(wiki)}/changes?wait=${WAIT}`);
+  const url = withBase(`${path}?wait=${WAIT}`);
 
   const ask = async () => {
     // A short gap even after an answer, so a server that answers at once can't make a tight loop.
@@ -79,12 +97,7 @@ export function pollChanges(wiki: string, onEnded: (status: number) => void): ()
       if (res.status === 429) pause = Math.max(RETRY, Number(res.headers.get("retry-after")) * 1000 || 0);
       if (res.status === 200) {
         etag = res.headers.get("etag") ?? "";
-        const v = (await res.json()) as Version;
-        if (last && v.pages !== last.pages) emit({ type: "pages", wiki });
-        if (last && v.threads !== last.threads) emit({ type: "threads", wiki });
-        if (last && v.designs !== last.designs) emit({ type: "designs", wiki });
-        if (last && v.presence !== last.presence) emit({ type: "presence", wiki });
-        last = v;
+        onAnswer((await res.json()) as V);
       } else if (ENDED.includes(res.status)) {
         if (!stopped) onEnded(res.status);
         return;

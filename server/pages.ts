@@ -320,7 +320,7 @@ export function renderPage(
       const broken = layouts.problems.some((p) => p.startsWith(`layouts/${fm.layout}.json`));
       problems.push(
         broken
-          ? `frontmatter: layout: layouts/${fm.layout}.json has problems (pnpm wiki check lists them)`
+          ? `frontmatter: layout: layouts/${fm.layout}.json has problems (pnpm shiori check lists them)`
           : `frontmatter: layout: there's no layouts/${fm.layout}.json`,
       );
     } else {

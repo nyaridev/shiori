@@ -1,4 +1,4 @@
-// wikis/_template: copying it into a new wiki (`pnpm wiki new`) and, in dev, into a filled-in preview.
+// wikis/_template: copying it into a new wiki (`pnpm shiori new`) and, in dev, into a filled-in preview.
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";

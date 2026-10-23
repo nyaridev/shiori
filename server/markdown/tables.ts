@@ -1,5 +1,5 @@
 // Data tables (ADR-0008): `::table` fills itself from a data file in the wiki or from the wiki's pages, and `:::table`
-// wraps a Markdown table. Either way the page gets an ordinary table (so search, comments and `wiki check` see it), and
+// wraps a Markdown table. Either way the page gets an ordinary table (so search, comments and `shiori check` see it), and
 // the app makes it sortable and filterable. The rows are read when the page renders, so they follow the files.
 import type { Link, PhrasingContent, Root, RootContent, Table, TableCell, TableRow } from "mdast";
 import type { ContainerDirective, LeafDirective } from "mdast-util-directive";

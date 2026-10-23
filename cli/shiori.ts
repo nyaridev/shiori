@@ -1,4 +1,4 @@
-// `pnpm wiki <command>`: how agents create wikis, check them and answer comments.
+// `pnpm shiori <command>`: how agents create wikis, check them and answer comments.
 import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
@@ -13,41 +13,54 @@ import { listPages, renderPage } from "../server/pages.ts";
 import { APP_ROOT, slashes } from "../server/paths.ts";
 import { discover, loadWiki, readLinks, type Wiki, writeLinks } from "../server/registry.ts";
 import { applyRename, planRename, type RenamePlan } from "../server/rename.ts";
+import { allSheetProblems } from "../server/sheets.ts";
 import { syncWiki } from "../server/sync.ts";
 import { copyTemplate } from "../server/template.ts";
 import { addMessage, closeAll, getThread, listThreads, setStatus, waitingForAgent } from "../server/threads.ts";
 import type { Answer, Authored, PageData, Question, Thread } from "../shared/api.ts";
 import { isPageComment } from "../shared/quote.ts";
 import { wikiIdSchema } from "../shared/schema.ts";
+import { boards, report, reports } from "./boards.ts";
+import { sheet, sheets } from "./sheets.ts";
 
-const HELP = `Shiori wiki CLI
+const HELP = `Shiori CLI
 
-  pnpm wiki list                                   Wikis, where they live and their open comments
-  pnpm wiki new <id> [--title "T"] [--tagline "…"] [--at <folder>] [--accent "#rrggbb"]
+  pnpm shiori list                                   Wikis, where they live and their open comments
+  pnpm shiori new <id> [--title "T"] [--tagline "…"] [--at <folder>] [--accent "#rrggbb"]
                                                    New wiki from wikis/_template (--at: outside the app, linked)
-  pnpm wiki link <folder>                          Show a wiki that lives elsewhere (wikis.local.json)
-  pnpm wiki unlink <id|folder>                     Stop showing a linked wiki (its files stay)
-  pnpm wiki check [id]                             Validate wiki.json, theme.json, pages, links, files, elements
-  pnpm wiki page <id> <path> [--kit <name>] [--title "T"] [--section]
+  pnpm shiori link <folder>                          Show a wiki that lives elsewhere (wikis.local.json)
+  pnpm shiori unlink <id|folder>                     Stop showing a linked wiki (its files stay)
+  pnpm shiori check [id]                             Validate wiki.json, theme.json, pages, links, files, elements
+  pnpm shiori page <id> <path> [--kit <name>] [--title "T"] [--section]
                                                    New page, from a kit or bare (--section: the folder's index.md)
-  pnpm wiki kits [id]                              The page kits a wiki can use
-  pnpm wiki rename <id> <page> <new path> [--dry-run]
+  pnpm shiori kits [id]                              The page kits a wiki can use
+  pnpm shiori rename <id> <page> <new path> [--dry-run]
                                                    Move a page (or a section and everything under it), fix the
                                                    links to and from it, and move its comments and answers
-  pnpm wiki inbox [id]                             Open comments, and answers to open questions and suggestions
-  pnpm wiki threads <id> [--all]                   All open (or all) threads of a wiki
-  pnpm wiki reply <id> <thread> "message"          Answer or ask back; the thread stays open
-  pnpm wiki resolve <id> <thread> [--note "…"] [--wontfix]
-  pnpm wiki reopen <id> <thread>
-  pnpm wiki backup [id]                            Save comments and answers to <wiki>/backup.json (commit it)
-  pnpm wiki restore <id> [--replace]               Load <wiki>/backup.json back into the wiki's database
-  pnpm wiki sync <id> [--no-push]                  Share comments with the wiki's other PCs: pull, merge every
+  pnpm shiori inbox [id]                             Open comments, and answers to open questions and suggestions
+  pnpm shiori threads <id> [--all]                   All open (or all) threads of a wiki
+  pnpm shiori reply <id> <thread> "message"          Answer or ask back; the thread stays open
+  pnpm shiori resolve <id> <thread> [--note "…"] [--wontfix]
+  pnpm shiori reopen <id> <thread>
+  pnpm shiori backup [id]                            Save comments and answers to <wiki>/backup.json (commit it)
+  pnpm shiori restore <id> [--replace]               Load <wiki>/backup.json back into the wiki's database
+  pnpm shiori sync <id> [--no-push]                  Share comments with the wiki's other PCs: pull, merge every
                                                    PC's sync/ file, write this PC's, commit it and designs/, push
-  pnpm wiki designs <id> [collection] [--all]      Designs people made in the app that are ready for a page
+  pnpm shiori designs <id> [collection] [--all]      Designs people made in the app that are ready for a page
                                                    (--all: drafts and done ones too), with their files
-  pnpm wiki designs <id> show <collection>/<id>    One design: its description, drawing and pictures
-  pnpm wiki designs <id> done <collection>/<id> --page <path> [--note "…"]
-                                                   The design became that page; the person sees the note`;
+  pnpm shiori designs <id> show <collection>/<id>    One design: its description, drawing and pictures
+  pnpm shiori designs <id> done <collection>/<id> --page <path> [--note "…"]
+                                                   The design became that page; the person sees the note
+  pnpm shiori boards <id>                            Test boards (ADR-0010): testers' bug, change and idea reports
+  pnpm shiori reports <id> [board] [--all]           New and planned reports (--all: every one), with pictures
+  pnpm shiori report <id> <n> [--status s] [--note "…"]
+                                                   planned, fixed, wontfix, duplicate; the tester sees the note
+  pnpm shiori sheets <id>                            Data sheets (sheets/*.json) and their changes not exported
+  pnpm shiori sheet <id> new <name> [--title "T"]    A new sheet file to fill in
+  pnpm shiori sheet <id> <name>                      Its current values and what people changed since the export
+  pnpm shiori sheet <id> <name> export [--json <file>] [--luau <file>] [--apply]
+                                                   Write the values for the game; --apply makes them the
+                                                   file's defaults`;
 
 const ACCENTS = ["#e8b86d", "#7fb7a4", "#8fa8e8", "#e0846b", "#c49be0", "#d4c46a", "#6fb3d4", "#e08aa8"];
 
@@ -67,6 +80,10 @@ const { positionals, values } = parseArgs({
     page: { type: "string" },
     section: { type: "boolean", default: false },
     "no-push": { type: "boolean", default: false },
+    status: { type: "string" },
+    json: { type: "string" },
+    luau: { type: "string" },
+    apply: { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
 });
@@ -79,14 +96,14 @@ function fail(message: string): never {
 }
 
 function wikiById(id: string | undefined): Wiki {
-  if (!id) fail("Give a wiki id. `pnpm wiki list` shows them.");
+  if (!id) fail("Give a wiki id. `pnpm shiori list` shows them.");
   const w = discover(APP_ROOT).wikis.find((x) => x.id === id);
-  return w ?? fail(`No wiki "${id}". \`pnpm wiki list\` shows them.`);
+  return w ?? fail(`No wiki "${id}". \`pnpm shiori list\` shows them.`);
 }
 
 function threadId(raw: string | undefined): number {
   const n = Number(raw);
-  return Number.isInteger(n) && n > 0 ? n : fail("Give a thread number, as shown by `pnpm wiki inbox`.");
+  return Number.isInteger(n) && n > 0 ? n : fail("Give a thread number, as shown by `pnpm shiori inbox`.");
 }
 
 const short = (s: string, n = 90) => (s.length > n ? `${s.slice(0, n - 1)}…` : s).replace(/\s+/g, " ");
@@ -148,7 +165,7 @@ function printAnswers(wiki: Wiki, { page, question, answers }: ReturnType<typeof
 const commands: Record<string, () => void> = {
   list() {
     const { wikis, broken } = discover(APP_ROOT);
-    if (!wikis.length && !broken.length) console.log("No wikis yet. Make one with `pnpm wiki new <id>`.");
+    if (!wikis.length && !broken.length) console.log("No wikis yet. Make one with `pnpm shiori new <id>`.");
     for (const w of wikis) {
       const open = listThreads(w.root, { status: "open" });
       const waiting = waitingForAgent(open).length;
@@ -172,7 +189,7 @@ const commands: Record<string, () => void> = {
     copyTemplate(APP_ROOT, dest, { id, title, tagline: values.tagline ?? "", accent, shiori: APP_ROOT });
     if (values.at) writeLinks(APP_ROOT, [...readLinks(APP_ROOT), dest]);
     console.log(
-      `Created ${slashes(dest)}${values.at ? " and linked it" : ""}. Write pages in pages/, then run \`pnpm wiki check ${id}\`.`,
+      `Created ${slashes(dest)}${values.at ? " and linked it" : ""}. Write pages in pages/, then run \`pnpm shiori check ${id}\`.`,
     );
   },
 
@@ -203,7 +220,7 @@ const commands: Record<string, () => void> = {
     const targets = args[0] ? [wikiById(args[0])] : wikis;
     let count = 0;
     for (const w of targets) {
-      const problems = [...w.problems, ...mediaProblems(w.root)];
+      const problems = [...w.problems, ...mediaProblems(w.root), ...allSheetProblems(w.root)];
       const pages = listPages(w);
       if (!pages.some((p) => p.path === "")) problems.push("pages/index.md (the home page) is missing");
       const layouts = loadLayouts(w);
@@ -243,7 +260,7 @@ const commands: Record<string, () => void> = {
     if (guests) console.log(`\n${GUEST_NOTE}`);
     if (n)
       console.log(
-        `\n${n} thread${n === 1 ? "" : "s"} waiting. Answer with \`pnpm wiki reply\` or \`pnpm wiki resolve\`.`,
+        `\n${n} thread${n === 1 ? "" : "s"} waiting. Answer with \`pnpm shiori reply\` or \`pnpm shiori resolve\`.`,
       );
     if (q) {
       console.log(
@@ -280,7 +297,7 @@ const commands: Record<string, () => void> = {
 
   page() {
     const w = wikiById(args[0]);
-    if (!args[1]) fail("Give the page's path: `pnpm wiki page <id> weapons/iron-sword --kit item`.");
+    if (!args[1]) fail("Give the page's path: `pnpm shiori page <id> weapons/iron-sword --kit item`.");
     let file: string;
     try {
       file = newPage(w, APP_ROOT, args[1], { kit: values.kit, title: values.title, section: values.section });
@@ -288,7 +305,7 @@ const commands: Record<string, () => void> = {
       fail((e as Error).message);
     }
     console.log(
-      `Made ${file}${values.kit ? ` from the ${values.kit} kit` : ""}. Fill it in, then run \`pnpm wiki check ${w.id}\`.`,
+      `Made ${file}${values.kit ? ` from the ${values.kit} kit` : ""}. Fill it in, then run \`pnpm shiori check ${w.id}\`.`,
     );
   },
 
@@ -300,13 +317,13 @@ const commands: Record<string, () => void> = {
       console.log(`${k.name.padEnd(12)} ${k.description}${k.source === "wiki" ? "  (this wiki's own)" : ""}`);
     if (kits.length)
       console.log(
-        "\nUse one with `pnpm wiki page <id> <path> --kit <name>`. A wiki's own kits/<name>.md override these.",
+        "\nUse one with `pnpm shiori page <id> <path> --kit <name>`. A wiki's own kits/<name>.md override these.",
       );
   },
 
   rename() {
     const w = wikiById(args[0]);
-    if (!args[1] || !args[2]) fail("Give the page and its new path: `pnpm wiki rename <id> plan/goals plan/aims`.");
+    if (!args[1] || !args[2]) fail("Give the page and its new path: `pnpm shiori rename <id> plan/goals plan/aims`.");
     let plan: RenamePlan;
     try {
       plan = planRename(w, args[1], args[2]);
@@ -323,7 +340,7 @@ const commands: Record<string, () => void> = {
     const moved = applyRename(w, plan);
     console.log(
       `Fixed ${links} link${links === 1 ? "" : "s"} and moved ${moved.threads} comment thread${moved.threads === 1 ? "" : "s"}` +
-        ` and ${moved.answers} answer${moved.answers === 1 ? "" : "s"}. Run \`pnpm wiki check ${w.id}\`.`,
+        ` and ${moved.answers} answer${moved.answers === 1 ? "" : "s"}. Run \`pnpm shiori check ${w.id}\`.`,
     );
   },
 
@@ -415,10 +432,22 @@ const commands: Record<string, () => void> = {
     if (!n) console.log(values.all ? "No designs yet." : "No designs are ready. --all lists drafts too.");
     else if (!values.all)
       console.log(
-        `\n${n} ready. Read one with \`pnpm wiki designs ${w.id} show <collection>/<id>\`, write its page, then mark it done.`,
+        `\n${n} ready. Read one with \`pnpm shiori designs ${w.id} show <collection>/<id>\`, write its page, then mark it done.`,
       );
     console.log(`\n${GUEST_DESIGNS}`);
   },
+
+  boards: () => boards(wikiById(args[0])),
+  reports: () => reports(wikiById(args[0]), args[1], values.all, fail),
+  report: () => report(wikiById(args[0]), args[1], values.status, values.note, fail),
+  sheets: () => sheets(wikiById(args[0])),
+  sheet: () =>
+    sheet(
+      wikiById(args[0]),
+      args.slice(1),
+      { title: values.title, json: values.json, luau: values.luau, apply: values.apply },
+      fail,
+    ),
 
   reopen() {
     const w = wikiById(args[0]);

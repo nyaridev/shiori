@@ -37,7 +37,7 @@ comment.
 guest's) instead of adding one, so the agent reads what people think now. The card shows your answer, "Waiting for
 the agent" until the question is decided, and Change. Options show how many people picked each. Questions take an
 optional `due` day, and the agent writes `decided` with the decision; Special:Decisions is the timeline of decided
-questions. `pnpm wiki sync` now carries an answer's choice and note, not only its hidden flag.
+questions. `pnpm shiori sync` now carries an answer's choice and note, not only its hidden flag.
 
 **Reactions on messages** (👍 ✅ 👀 ❤️) live in a `reactions` JSON column on `messages` (migration 6):
 `[{ emoji, by: [{ author, name?, guestId? }] }]`. Reacting moves the message's `updated_at`, so sync and backups
@@ -88,7 +88,7 @@ made on the page.
 
 **`settings.json`** is a wiki's own settings, next to `wiki.json`: `maxQuestions` and `maxSuggestions`, the most
 open ones a page may have at once (6 and 6 when the file or a key is missing). A page over either gets a page problem
-that `pnpm wiki check` reports, so the agent decides or drops old ones before adding more. The template ships the
+that `pnpm shiori check` reports, so the agent decides or drops old ones before adding more. The template ships the
 file, so new wikis get it.
 
 **Changes.** The whole-page comment panel is now "Changes", for asking a change to the page; it's the last thing on

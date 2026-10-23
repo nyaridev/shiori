@@ -1,7 +1,7 @@
 // Share links (ADR-0003), held only in memory: restarting Shiori ends every link, by design. A link gives guests one
 // wiki, to view or to view and comment, until it expires or the owner revokes it.
 import { randomBytes } from "node:crypto";
-import type { ShareActivity, ShareDuration, ShareInfo, ShareKind } from "../../shared/api.ts";
+import type { ShareActivity, ShareDuration, ShareInfo, ShareKind, ShareTarget } from "../../shared/api.ts";
 import { createLinkLimits, LIMITS, type LinkLimits } from "./limits.ts";
 
 const HOUR = 3_600_000;
@@ -34,6 +34,10 @@ export interface Share {
   token: string;
   wiki: string;
   kind: ShareKind;
+  /** The board or sheet of a `board` or `sheet` link (ADR-0010). */
+  target: ShareTarget | null;
+  /** A `sheet` link: its guests may change values. */
+  edit: boolean;
   label: string;
   createdAt: number;
   expiresAt: number | null;
@@ -104,12 +108,17 @@ export function createShares({
       kind,
       duration = "24h",
       label = "",
+      target = null,
+      edit = false,
     }: {
       wiki: string;
       kind: ShareKind;
       duration?: ShareDuration;
       label?: string;
+      target?: ShareTarget | null;
+      edit?: boolean;
     }): Share {
+      if ((kind === "board" || kind === "sheet") !== !!target) throw new Error("Only board and sheet links name one.");
       sweep();
       if (active.size >= LIMITS.links) throw new Error(`At most ${LIMITS.links} links can be active at a time.`);
       const at = now();
@@ -119,6 +128,8 @@ export function createShares({
         token: random(32),
         wiki,
         kind,
+        target,
+        edit: kind === "sheet" && edit,
         label,
         createdAt: at,
         expiresAt: ms === null ? null : at + ms,
@@ -204,6 +215,8 @@ export function createShares({
         id: share.id,
         wiki: share.wiki,
         kind: share.kind,
+        ...(share.target ? { target: share.target } : {}),
+        ...(share.kind === "sheet" ? { edit: share.edit } : {}),
         label: share.label,
         createdAt: iso(share.createdAt),
         expiresAt: share.expiresAt === null ? null : iso(share.expiresAt),

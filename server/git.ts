@@ -1,5 +1,5 @@
 // A wiki's git (ADR-0008): whether its folder is in a repo of its own, where that repo is online, and each page's
-// history. Everything is read from git on this PC; Shiori never commits, checks out or fetches here (`wiki sync` is the
+// history. Everything is read from git on this PC; Shiori never commits, checks out or fetches here (`shiori sync` is the
 // CLI's). A wiki in Shiori's own `wikis/` sits inside the app's repo but is ignored by it, so it has no git.
 import { type ExecFileOptions, execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";

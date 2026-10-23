@@ -56,7 +56,7 @@ export function isToolboxFile(encoded: string): boolean {
 
 /**
  * The element reference (`docs/elements.md`) as a page. For a wiki, its links point at the wiki's own pages (red
- * when it has no such page) and its pictures at the toolbox route; for /dev/ui (`_dev`) every link is fine.
+ * when it has no such page) and its pictures at the toolbox route; for the toolbox's own reference (`_dev`) every link is fine.
  */
 export function renderElements(appRoot: string, wiki?: { id: string; pages: PageFile[] }): PageData {
   const docs = join(appRoot, "docs");

@@ -4,8 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { addAnswer, listAnswers, setAnswerHidden } from "./answers.ts";
+import { createBoard, createReport, listReports, triageReport } from "./boards.ts";
+import { readSheet, type Sheet, setCell, sheetView } from "./sheets.ts";
 import { syncFiles, syncWiki } from "./sync.ts";
-import { addMessage, closeAll, createThread, listThreads, react, setStatus } from "./threads.ts";
+import { addMessage, closeAll, createThread, editMessage, listThreads, react, setStatus } from "./threads.ts";
 
 let tmp: string;
 
@@ -48,9 +50,9 @@ describe("sync files", () => {
     expect(fa).toMatchObject({ file: "sync/desk-0001.json", wrote: true, read: [] });
     carry(a, b, fa.file);
     const fb = syncFiles(b);
-    expect(fb.merged.added).toEqual({ threads: 1, messages: 1, answers: 0 });
+    expect(fb.merged.added).toMatchObject({ threads: 1, messages: 1, answers: 0 });
     carry(b, a, fb.file);
-    expect(syncFiles(a).merged.added).toEqual({ threads: 1, messages: 1, answers: 1 });
+    expect(syncFiles(a).merged.added).toMatchObject({ threads: 1, messages: 1, answers: 1 });
     expect(new Set(uids(a))).toEqual(new Set(uids(b)));
 
     // Nothing new: nothing merged, nothing written.
@@ -98,9 +100,73 @@ describe("sync files, later changes", () => {
     expect(listThreads(a)[0].messages[0].reactions).toEqual([{ emoji: "👍", by: [{ author: "user" }] }]);
     expect(listAnswers(a).map((x) => [x.choice, x.body])).toEqual([["itch.io", "Changed my mind"]]);
   });
+
+  it("carry an edited message to the other PC", () => {
+    const a = pc(join(tmp, "a"), "desk");
+    const b = pc(join(tmp, "b"), "laptop");
+    const carry = (from: string, to: string, file: string) => {
+      mkdirSync(join(to, "sync"), { recursive: true });
+      writeFileSync(join(to, file), readFileSync(join(from, file)));
+    };
+    const t = createThread(a, "plan", quote, "Ship it on Stem?");
+    carry(a, b, syncFiles(a).file);
+    syncFiles(b);
+    const there = listThreads(b).find((x) => x.uid === t.uid);
+    editMessage(b, there?.messages[0].id ?? 0, "Ship it on Steam?");
+    carry(b, a, syncFiles(b).file);
+    syncFiles(a);
+    const m = listThreads(a)[0].messages[0];
+    expect(m.body).toBe("Ship it on Steam?");
+    expect(m.editedAt).toBeTruthy();
+  });
 });
 
-describe("pnpm wiki sync", () => {
+describe("sync files, boards and sheets (ADR-0010)", () => {
+  it("carry boards, reports and their status, and sheet edits in the order they were made", () => {
+    const a = pc(join(tmp, "a"), "desk");
+    const b = pc(join(tmp, "b"), "laptop");
+    const sheet = {
+      title: "Mobs",
+      key: "id",
+      columns: [
+        { id: "id", type: "text" },
+        { id: "hp", type: "number", editable: true },
+      ],
+      rows: [{ id: "slime", hp: 20 }],
+    };
+    for (const root of [a, b]) {
+      mkdirSync(join(root, "sheets"), { recursive: true });
+      writeFileSync(join(root, "sheets", "mobs.json"), JSON.stringify(sheet));
+    }
+    const carry = (from: string, to: string, file: string) => {
+      mkdirSync(join(to, "sync"), { recursive: true });
+      writeFileSync(join(to, file), readFileSync(join(from, file)));
+    };
+    const board = createBoard(a, "Alpha", "private");
+    const r = createReport(
+      a,
+      board.uid,
+      { kind: "bug", title: "Crash", body: "", images: [] },
+      { guest: "g1", name: "Ana" },
+    );
+    const s = readSheet(a, "mobs") as Sheet;
+    setCell(a, s, { row: "slime", column: "hp", value: 30, base: 0 }, { guest: "g1", name: "Ana" }, { kind: "owner" });
+    carry(a, b, syncFiles(a).file);
+    expect(syncFiles(b).merged.added).toMatchObject({ reports: 1, edits: 1 });
+    const there = listReports(b, board.uid)[0];
+    expect(there).toMatchObject({ title: "Crash", name: "Ana", guestId: "g1", status: "new" });
+    expect(sheetView(b, readSheet(b, "mobs") as Sheet, { kind: "owner" }).rows[0].cells.hp.value).toBe(30);
+
+    // The laptop fixes it; the desk learns.
+    triageReport(b, there.id, { status: "fixed", note: "In 0.4" });
+    carry(b, a, syncFiles(b).file);
+    syncFiles(a);
+    expect(listReports(a, board.uid)[0]).toMatchObject({ status: "fixed", note: "In 0.4" });
+    expect(r.uid).toBe(there.uid);
+  });
+});
+
+describe("pnpm shiori sync", () => {
   it("pulls, merges, commits only its own file and pushes, so two clones meet", () => {
     const remote = join(tmp, "remote.git");
     git(tmp, "init", "--bare", "-b", "main", remote);

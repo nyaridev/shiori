@@ -76,7 +76,7 @@ Owner's app 127.0.0.1:4400 (the normal Shiori) ── never tunneled
   `SameSite=Strict`, scoped to `/s/<token>/`).
 - Comments and answers record who wrote them. The database gains author columns (`author`: user, agent or guest, plus
   the guest's name and id); the owner's comments keep showing as "You" in the app and with the owner's chosen name to
-  guests. Agents see guests' names in `pnpm wiki inbox`.
+  guests. Agents see guests' names in `pnpm shiori inbox`.
 - Guests can't edit pages; nobody can in Shiori. They never see other wikis, the deck, the CLI or the dev pages.
 
 ### Allowed routes (guest server)
@@ -86,7 +86,7 @@ Owner's app 127.0.0.1:4400 (the normal Shiori) ── never tunneled
 | The built app, under `/s/<token>/` | ✓ | ✓ |
 | Read the wiki: `wiki`, `page`, `pages` (index), `search`, `files/*` (media only, as today) | ✓ | ✓ |
 | Read `threads` and `answers` for a page | ✓ | ✓ |
-| The toolbox: `kits`, `elements`, `toolbox/assets/*` (the element reference's pictures only) | ✓ | ✓ |
+| ~~The toolbox: `kits`, `elements`, `toolbox/assets/*`~~ The host's only since ADR-0010 | | |
 | Presence (ADR-0005): read who is here, say which page you're on, leave | ✓ | ✓ |
 | Designs (ADR-0006): read them and their files | ✓ | ✓ |
 | Designs: make one, change or remove your own (drawing, text, pictures) | | ✓ |
@@ -175,13 +175,13 @@ Details settled while building the tunnel and the owner's controls (2026-10-21):
 | Stopping | With the last link, on `SIGINT`/`SIGTERM` and on the server's exit. |
 | Owner's name | Held in memory (`PUT /api/shares/host`, 2–32 characters); the dialog remembers it in the browser and sends it with each new link, so it survives restarts. A guest can't join with it, and the owner can't take a name a guest on an active link uses |
 | Blocking | `PATCH /api/shares/:id/guests/:guest { blocked }` blocks the guest and the address they joined from (a fresh cookie doesn't get around it); letting them back in clears both. Opening or reloading a link the guest server refuses (blocked `403`, ended `410`, unknown `404`) gets the bare app with that status, so the gate says why; the API under it answers JSON and nothing from the wiki |
-| Hiding | Migration 4 adds `hidden` to `messages` and `answers`. `PATCH /api/wikis/:id/messages/:mid` and `/answers/:aid { hidden }`, for guests' text only. Guests never receive hidden text; a hidden first message hides the whole thread from them (replying to it or resolving it answers `404`). `pnpm wiki inbox` and the question counts leave it out; `pnpm wiki threads` lists it marked "hidden by the owner"; backups keep the flag |
+| Hiding | Migration 4 adds `hidden` to `messages` and `answers`. `PATCH /api/wikis/:id/messages/:mid` and `/answers/:aid { hidden }`, for guests' text only. Guests never receive hidden text; a hidden first message hides the whole thread from them (replying to it or resolving it answers `404`). `pnpm shiori inbox` and the question counts leave it out; `pnpm shiori threads` lists it marked "hidden by the owner"; backups keep the flag |
 | Dialog | A Share button in the sidebar head (in the wiki header since ADR-0005, beside the live badge). Never rendered for guests. In dev it shows the server's `409` message. It updates live: the owner's SSE stream sends a `shares` event (at most every 250 ms) when links, guests, activity, the host's name or the tunnel change |
 
 ### Two PCs with the same wiki (phase 3)
 
 Pages are already files in git. To merge comments too: comments and answers get IDs that can't collide (ULIDs plus
-the PC they came from) instead of counters, `backup.json` merges by ID, and `pnpm wiki sync <id>` pulls, merges the
+the PC they came from) instead of counters, `backup.json` merges by ID, and `pnpm shiori sync <id>` pulls, merges the
 backups, and pushes. Page conflicts stay git's job. The main case remains **one host PC plus share links**.
 
 As built (2026-10-21):
@@ -190,8 +190,8 @@ As built (2026-10-21):
 |---|---|
 | Ids | Every thread, message and answer has a `uid` (a ULID: time, then randomness) and an `updated_at` (migration 6; older rows and old backups get theirs). The `#12` numbers stay, and are each PC's own |
 | Files | Each PC writes everything it knows to **its own** `sync/<pc name>-<id>.json` in the wiki folder (the backup format plus which PC wrote it). The PC's name and id are made once and kept in `data/machine.json`. Since no two PCs ever write the same file, git never has to merge comments: a merge of the files themselves can't conflict |
-| Merging | Every other PC's file is merged into the database by uid: new items are added; for one both PCs have, the newer `updated_at` wins (status, hidden flags, the page after a `wiki rename`). Nothing is ever deleted, so merging only adds or updates. A PC's file is rewritten only when its data changed, so a sync with nothing new commits nothing |
-| `pnpm wiki sync <id>` | Pulls (`--rebase --autostash`; a conflict stops it before anything changes), merges, writes this PC's file, commits only that file and `designs/` ("Sync comments and designs from <pc>", ADR-0006) and pushes, unless `--no-push`. A wiki that isn't in git (a Syncthing or Dropbox folder) only merges and writes. A wiki in Shiori's own `wikis/` is ignored by the app's repo, so that repo is never used |
+| Merging | Every other PC's file is merged into the database by uid: new items are added; for one both PCs have, the newer `updated_at` wins (status, hidden flags, the page after a `shiori rename`). Nothing is ever deleted, so merging only adds or updates. A PC's file is rewritten only when its data changed, so a sync with nothing new commits nothing |
+| `pnpm shiori sync <id>` | Pulls (`--rebase --autostash`; a conflict stops it before anything changes), merges, writes this PC's file, commits only that file and `designs/` ("Sync comments and designs from <pc>", ADR-0006) and pushes, unless `--no-push`. A wiki that isn't in git (a Syncthing or Dropbox folder) only merges and writes. A wiki in Shiori's own `wikis/` is ignored by the app's repo, so that repo is never used |
 | `backup.json` | Stays the one-PC backup and keeps uids now, so a restore keeps each item's identity |
 
 ## Options Considered
@@ -263,13 +263,13 @@ Anything not written into it can't be reached, so new owner features stay privat
 1. [x] Share registry in memory: tokens, kinds, expiry, revoke, stop all
 2. [x] Guest server on `127.0.0.1:4420`: the allowlisted routes, link checks, `410` for expired links
 3. [x] Guest identity: name prompt, signed cookie; author columns for messages and answers (migration 3; backups
-   and `pnpm wiki inbox` carry names)
+   and `pnpm shiori inbox` carry names)
 4. [x] Guests resolve or reopen only their own threads
 5. [x] Rate limits and blocking; size limits
 6. [x] Security headers, CSP, `Origin` checks (and the owner's server locked to loopback names and its own origin)
 7. [x] Guest mode in the client: base path, session, polling with ETags, nothing owner-only shown
 8. [x] Tests for every guest route: wrong token, other wiki, expired, view-only writes, limits, CSRF
-9. [x] Template `AGENTS.md`: guests' comments are untrusted input (`pnpm wiki inbox` says so too)
+9. [x] Template `AGENTS.md`: guests' comments are untrusted input (`pnpm shiori inbox` says so too)
 
 **Phase 2: tunnel and owner UI**
 
@@ -279,4 +279,4 @@ Anything not written into it can't be reached, so new owner features stay privat
 
 **Phase 3: two PCs**
 
-13. [x] Collision-free IDs for comments and answers; one sync file per PC, merged by uid; `pnpm wiki sync`
+13. [x] Collision-free IDs for comments and answers; one sync file per PC, merged by uid; `pnpm shiori sync`

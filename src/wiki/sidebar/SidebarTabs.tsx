@@ -1,4 +1,4 @@
-// The page tree as tabs: the tree's sections, the Tools and the Toolbox as a block of icon tabs, and under it the
+// The page tree as tabs: the tree's sections and the Tools as a block of icon tabs (the toolbox is the header's), and under it the
 // pages of one of them, under a strip (a tinted heading bar, as on a fandom wiki) that folds them; groups inside fold
 // the same way. It opens on the section that holds the open page, and follows the reader into another. Pages the wiki
 // pins stay beside Home only.
@@ -19,13 +19,13 @@ interface Tab {
   icon?: string;
   /** A section of the tree; else a group of special pages. */
   node?: NavNode;
-  group?: "tools" | "toolbox";
+  group?: "tools";
 }
 
 const holds = (tab: Tab, path: string) =>
   tab.node
     ? path === tab.node.path || path.startsWith(`${tab.node.path}/`)
-    : SPECIALS.some((s) => s.group === tab.group && path === `_/${s.route}`);
+    : SPECIALS.some((s) => s.group === tab.group && (path === `_/${s.route}` || path.startsWith(`_/${s.route}/`)));
 
 export function SidebarTabs({
   wiki,
@@ -45,7 +45,6 @@ export function SidebarTabs({
   const tabs: Tab[] = [
     ...wiki.nav.filter((n) => n.children.length).map((n) => ({ key: n.path, title: n.title, icon: n.icon, node: n })),
     { key: "_tools", title: "Tools", icon: "toolbox", group: "tools" },
-    { key: "_toolbox", title: "Toolbox", icon: "blocks", group: "toolbox" },
   ];
   const [open, setOpen] = useState(() => (tabs.find((t) => holds(t, path)) ?? tabs[0]).key);
   // Into another section (a link, search): its tab opens.

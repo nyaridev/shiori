@@ -1,9 +1,11 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { addAnswer, listAnswers, setAnswerHidden } from "./answers.ts";
 import { BACKUP_FILE, importData, readBackup, writeBackup } from "./backup.ts";
+import { createBoard, createReport, listBoards, listReports, removeReport, triageReport } from "./boards.ts";
+import { allEdits, readSheet, type Sheet, setCell } from "./sheets.ts";
 import { addMessage, closeAll, createThread, listThreads, setHidden, setStatus } from "./threads.ts";
 
 let a: string;
@@ -43,6 +45,43 @@ describe("backups", () => {
     expect(listThreads(b)[1].messages[2].hidden).toBe(true);
     // New comments continue after the restored ids.
     expect(createThread(b, "", { exact: "x", prefix: "", suffix: "" }, "New").id).toBe(3);
+  });
+
+  it("round-trip boards, reports (removed ones too) and sheet edits (ADR-0010)", () => {
+    const board = createBoard(a, "Alpha", "global");
+    const kept = createReport(
+      a,
+      board.uid,
+      { kind: "idea", title: "Rain", body: "", images: [] },
+      { guest: "g", name: "Bo" },
+    );
+    triageReport(a, kept.id, { status: "planned", note: "Next" });
+    const gone = createReport(
+      a,
+      board.uid,
+      { kind: "bug", title: "Spam", body: "", images: [] },
+      { guest: "g", name: "Bo" },
+    );
+    removeReport(a, gone.id);
+    mkdirSync(join(a, "sheets"));
+    writeFileSync(
+      join(a, "sheets", "mobs.json"),
+      JSON.stringify({
+        title: "M",
+        key: "id",
+        columns: [
+          { id: "id", type: "text" },
+          { id: "hp", type: "number", editable: true },
+        ],
+        rows: [{ id: "x", hp: 1 }],
+      }),
+    );
+    setCell(a, readSheet(a, "mobs") as Sheet, { row: "x", column: "hp", value: 5, base: 0 }, "user", { kind: "owner" });
+    writeBackup(a);
+    importData(b, readBackup(a));
+    expect(listBoards(b)).toEqual(listBoards(a));
+    expect(listReports(b, board.uid, { removed: true })).toEqual(listReports(a, board.uid, { removed: true }));
+    expect(allEdits(b)).toEqual(allEdits(a));
   });
 
   it("only overwrite a database that has data when asked to", () => {

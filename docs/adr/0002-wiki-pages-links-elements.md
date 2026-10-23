@@ -50,7 +50,7 @@ Pages, search, backlinks and the special pages all read from it, so they can nev
 
 | Part | Decision |
 |---|---|
-| Wikilinks | `[[Page]]`, `[[folder/page\|label]]`, `[[Page#Section\|label]]` (in tables, escape the bar: `\|`). The target is found by path from the root, then from the page's folder, then by file name, then by title, ignoring case and accents. Two pages that both match is a problem `pnpm wiki check` reports |
+| Wikilinks | `[[Page]]`, `[[folder/page\|label]]`, `[[Page#Section\|label]]` (in tables, escape the bar: `\|`). The target is found by path from the root, then from the page's folder, then by file name, then by title, ignoring case and accents. Two pages that both match is a problem `pnpm shiori check` reports |
 | Red links | A wikilink to a page that doesn't exist yet stays a link, styled as missing. It's a page worth writing, not an error; Special:Wanted pages lists them. A plain Markdown link to nowhere is still a problem |
 | Hover previews | Pointing at any link to a page shows its icon, title, status, summary, first lines and image. They're read from the corpus's page index, which the client loads once per wiki |
 | Heading links | Each `##`/`###` gets a link icon on hover that copies a link to it |
@@ -166,9 +166,9 @@ an infobox label costs nothing worse than an odd label. Option C remains open as
 **Later**
 
 16. [x] Page-level comments and a Discussion panel; Special:Tasks
-17. [x] CLI: `pnpm wiki page <id> <path> --kit <name>` and `pnpm wiki kits` (named `page`, since `wiki new` makes
-    wikis; `wiki backup` / `restore` done, ADR-0001)
-19. [x] `pnpm wiki rename`: moves a page or a section, rewrites links that the move breaks or that named the old
+17. [x] CLI: `pnpm shiori page <id> <path> --kit <name>` and `pnpm shiori kits` (named `page`, since `shiori new` makes
+    wikis; `shiori backup` / `restore` done, ADR-0001)
+19. [x] `pnpm shiori rename`: moves a page or a section, rewrites links that the move breaks or that named the old
     path (title wikilinks stay as written, code is left alone), and moves its comments and answers
 18. [x] Wide article column; the image viewer with the wiki's pictures in reading order
 

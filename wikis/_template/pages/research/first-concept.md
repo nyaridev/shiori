@@ -18,7 +18,7 @@ questions:
 ---
 
 This page uses the `concept` layout from `layouts/concept.json`: the sketch and the facts sit side by side, the text
-comes under the sketch, and the open questions run along the bottom. Pages made with `pnpm wiki page <id> <path> --kit
+comes under the sketch, and the open questions run along the bottom. Pages made with `pnpm shiori page <id> <path> --kit
 concept` look like this, with the sketch someone drew in [[Sketches]].
 
 ## Look

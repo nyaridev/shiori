@@ -44,7 +44,7 @@ export const DeckOffline = () => <DeckMessage>The Shiori server isn't reachable.
 
 export const NoWikis = () => (
   <DeckMessage>
-    No wikis yet. Ask an agent to make one: <code>pnpm wiki new &lt;id&gt;</code>
+    No wikis yet. Ask an agent to make one: <code>pnpm shiori new &lt;id&gt;</code>
   </DeckMessage>
 );
 

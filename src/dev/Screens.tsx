@@ -1,8 +1,8 @@
-// Previews of the app's special screens under /dev/screens/<name>, for /dev/ui. Each renders the real component with
+// Previews of the app's special screens under /dev/screens/<name>, for the toolbox's design system. Each renders the real component with
 // sample data, so a preview can't drift from what people see. The error page and "not found" are real route errors
 // (App.tsx), caught by the real error boundary.
 import { type ReactNode, useState } from "react";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 import type { GuestSession } from "../../shared/api.ts";
 import { LinkEnded, NamePrompt } from "../guest/GuestGate.tsx";
 import { DeckOffline, NoWikis } from "../home/Deck.tsx";
@@ -108,9 +108,7 @@ export function Screen() {
   return (
     <>
       {screen.render()}
-      <Link to="/dev/ui#screens" className="ui-screen-tag">
-        Preview · {screen.title}
-      </Link>
+      <span className="ui-screen-tag">Preview · {screen.title}</span>
     </>
   );
 }

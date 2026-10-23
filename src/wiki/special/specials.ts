@@ -1,5 +1,5 @@
-// The special pages under /w/<wiki>/_/ (ADR-0002), in the sidebar's order. `tools` list the wiki's own pages; the
-// `toolbox` lists what pages can use (Toolbox.tsx). Icons are names from Shiori's icon set (public/icons/).
+// The special pages under /w/<wiki>/_/ (ADR-0002), in the sidebar's order: the Tools, which list the wiki's own pages.
+// What pages can use (kits, elements, fields, icons) is the host's toolbox, src/toolbox/. Icons are names from Shiori's icon set (public/icons/).
 export const SPECIALS = [
   {
     route: "attention",
@@ -66,39 +66,20 @@ export const SPECIALS = [
     summary: "What people drew and described for the wiki's collections, for an agent to turn into pages.",
   },
   {
-    route: "kits",
-    group: "toolbox",
-    icon: "toolbox",
-    title: "Page kits",
-    summary: "The kinds of page agents start from, with what each holds and the command that makes one.",
+    route: "boards",
+    group: "tools",
+    icon: "bug",
+    title: "Test boards",
+    summary:
+      "Boards for your game's testers: share one, and the bugs, changes and ideas they report land here, with their pictures.",
   },
   {
-    route: "elements",
-    group: "toolbox",
-    icon: "blocks",
-    title: "Elements",
-    summary: "Every element a page can use, as written and as shown in this wiki's theme.",
-  },
-  {
-    route: "fields",
-    group: "toolbox",
-    icon: "bookmark",
-    title: "Page fields",
-    summary: "What a page's frontmatter can set: title, icon, status, infobox, questions and the rest.",
-  },
-  {
-    route: "icons",
-    group: "toolbox",
-    icon: "palette",
-    title: "Icons",
-    summary: "Shiori's drawn icons, by name: what a page's `icon` picks from before drawing its own.",
-  },
-  {
-    route: "special",
-    group: "toolbox",
-    icon: "cabinet",
-    title: "Special pages",
-    summary: "The wiki-wide lists the app makes from the pages, like this one.",
+    route: "sheets",
+    group: "tools",
+    icon: "table",
+    title: "Data sheets",
+    summary:
+      "Tables of game data an agent prepared, like every mob's health. Tune the values here, or share one sheet so others can.",
   },
 ] as const;
 

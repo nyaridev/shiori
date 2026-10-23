@@ -1,0 +1,152 @@
+/* Data sheets (ADR-0010): the table, its editable cells with their defaults, and the history. */
+
+.sh-sheet-page {
+  display: grid;
+  gap: var(--s-4);
+}
+.sh-sheet-description {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+}
+/* Wide sheets scroll sideways inside their box, never the page. */
+.sh-sheet-scroll {
+  max-width: 100%;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sh-sheet {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-sm);
+}
+.sh-sheet th,
+.sh-sheet td {
+  padding: var(--s-2) var(--s-3);
+  border-bottom: var(--bw) solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.sh-sheet thead th {
+  position: sticky;
+  top: 0;
+  background: var(--raised);
+  color: var(--text-soft);
+  font-size: var(--t-xs);
+  font-weight: 650;
+}
+.sh-sheet [data-type="number"] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.sh-sheet-unit {
+  color: var(--muted);
+  font-weight: 400;
+}
+.sh-sheet .sh-sheet-group th {
+  padding-top: var(--s-3);
+  background: var(--hover);
+  color: var(--accent-ink);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sh-sheet tbody tr:last-child td {
+  border-bottom: 0;
+}
+/* A value someone changed: marked, so it stands out from the defaults. */
+.sh-sheet td[data-changed] {
+  background: var(--accent-soft);
+}
+.sh-sheet-edit {
+  min-width: 120px;
+}
+.sh-sheet-edit.is-saving {
+  opacity: 0.6;
+}
+.sh-sheet-field {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+.sh-sheet-field .sh-field {
+  min-width: 80px;
+  padding-block: 4px;
+}
+.sh-sheet-edit[data-type="number"] .sh-field {
+  text-align: right;
+}
+.sh-sheet-default {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  text-align: left;
+}
+.sh-sheet-edit[data-problem] .sh-sheet-default {
+  color: var(--tone-bad);
+  white-space: normal;
+}
+
+/* On a page (`::sheet`). */
+.sh-sheet-block {
+  display: grid;
+  gap: var(--s-2);
+  margin: var(--s-4) 0;
+}
+.sh-sheet-block figcaption {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-sheet-block figcaption a {
+  color: var(--accent-ink);
+}
+
+/* The history (SheetPage.tsx). */
+.sh-sheet-history {
+  display: grid;
+  gap: var(--s-2);
+}
+.sh-sheet-guests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.sh-sheet-edits {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-sm);
+}
+.sh-sheet-edits li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-sm);
+}
+.sh-sheet-edits li:hover {
+  background: var(--hover);
+}
+.sh-sheet-edits time {
+  min-width: 72px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-sheet-edits li > span {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+/* A guest's sheet page: wider than a board, for wide tables. */
+.sh-tester-wide {
+  width: min(1100px, 100%);
+}

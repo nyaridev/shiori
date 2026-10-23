@@ -34,24 +34,30 @@ export class ApiError extends Error {
   status: number;
   /** The server's own words, without the status. */
   detail: string;
-  constructor(status: number, message: string) {
+  /** The whole answer, when it says more than its error (a sheet's conflict carries the cell as it is now). */
+  data: unknown;
+  constructor(status: number, message: string, data: unknown = null) {
     super(`${status} ${message}`);
     this.status = status;
     this.detail = message;
+    this.data = data;
   }
 }
 
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
+export async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(withBase(url), {
     ...init,
     headers: init?.body ? { "content-type": "application/json" } : undefined,
   });
-  if (!res.ok) throw new ApiError(res.status, (await res.json().catch(() => null))?.error ?? res.statusText);
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new ApiError(res.status, data?.error ?? res.statusText, data);
+  }
   return (res.status === 204 ? undefined : res.json()) as Promise<T>;
 }
 
 /** A drawing or a picture, sent as it is with its own type. */
-async function upload<T>(url: string, method: string, body: Blob): Promise<T> {
+export async function upload<T>(url: string, method: string, body: Blob): Promise<T> {
   const res = await fetch(withBase(url), { method, body, headers: { "content-type": body.type } });
   if (!res.ok) throw new ApiError(res.status, (await res.json().catch(() => null))?.error ?? res.statusText);
   return res.json() as Promise<T>;
@@ -127,6 +133,9 @@ export const api = {
   /** The owner hides a guest's message or answer from guests and the inbox (ADR-0003), or shows it again. */
   hideMessage: (id: string, message: number, hidden: boolean) =>
     request<Thread>(`/api/wikis/${enc(id)}/messages/${message}`, { method: "PATCH", body: JSON.stringify({ hidden }) }),
+  /** Changes the text of one of this viewer's own messages (ADR-0010). */
+  editMessage: (id: string, message: number, body: string) =>
+    request<Thread>(`/api/wikis/${enc(id)}/messages/${message}`, { method: "PATCH", body: JSON.stringify({ body }) }),
   /** Adds this viewer's reaction to a message, or takes it back. */
   react: (id: string, message: number, emoji: ReactionEmoji, on: boolean) =>
     request<Thread>(`/api/wikis/${enc(id)}/messages/${message}/reactions`, {
@@ -137,8 +146,16 @@ export const api = {
     request<Answer>(`/api/wikis/${enc(id)}/answers/${answer}`, { method: "PATCH", body: JSON.stringify({ hidden }) }),
   /** Share links (ADR-0003), for the owner's Share dialog. */
   shares: () => request<SharesState>("/api/shares"),
-  share: (link: { wiki: string; kind: ShareKind; duration: ShareDuration; label: string; host?: string }) =>
-    request<ShareInfo>("/api/shares", { method: "POST", body: JSON.stringify(link) }),
+  share: (link: {
+    wiki: string;
+    kind: ShareKind;
+    duration: ShareDuration;
+    label: string;
+    host?: string;
+    /** A board's uid or a sheet's name, for board and sheet links (ADR-0010). */
+    target?: string;
+    edit?: boolean;
+  }) => request<ShareInfo>("/api/shares", { method: "POST", body: JSON.stringify(link) }),
   revokeShare: (id: string) => request<void>(`/api/shares/${enc(id)}`, { method: "DELETE" }),
   stopSharing: () => request<void>("/api/shares", { method: "DELETE" }),
   setHost: (name: string) =>

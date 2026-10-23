@@ -20,6 +20,8 @@ const PATHS = {
   plus: "M12 5v14M5 12h14",
   trash: "M4 7h16M9 7V4.5h6V7m-8.5 0 1 13h9l1-13",
   dots: "M5 12h.01M12 12h.01M19 12h.01",
+  edit: "M4 20h4L19 9l-4-4L4 16v4Zm9-13 4 4",
+  reply: "M10 7 5 12l5 5M5 12h9a5 5 0 0 1 5 5v2",
   search: "m20 20-4.5-4.5M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13Z",
   minimize: "M6 12h12",
   maximize: "M6 6h12v12H6z",

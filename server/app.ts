@@ -7,9 +7,11 @@ import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
-import { type LiveEvent, REACTIONS, type SharesState } from "../shared/api.ts";
+import { type LiveEvent, REACTIONS, type SharesState, type ShareTarget } from "../shared/api.ts";
 import { addAnswer, listAnswers, setAnswerHidden } from "./answers.ts";
 import { ATTACHMENT_LIMITS, ATTACHMENT_NAME, attachmentsDir, hasAttachment, saveAttachment } from "./attachments.ts";
+import { ownerBoardRoutes } from "./boardRoutes.ts";
+import { getBoard } from "./boards.ts";
 import { designRoutes } from "./designRoutes.ts";
 import { PICTURE_MIME } from "./designs.ts";
 import { serveFile } from "./files.ts";
@@ -23,11 +25,15 @@ import { cleanName } from "./sharing/guest.ts";
 import { type Presence, placeOf, presenceFor, withTitles } from "./sharing/presence.ts";
 import { DEFAULT_HOST, type Shares } from "./sharing/shares.ts";
 import type { Tunnel } from "./sharing/tunnel.ts";
+import { ownerSheetRoutes } from "./sheetRoutes.ts";
+import { readSheet } from "./sheets.ts";
 import {
   addMessage,
   createThread,
+  editMessage,
   getThread,
   listThreads,
+  messageAuthor,
   react,
   removeThread,
   setHidden,
@@ -59,10 +65,15 @@ const attachmentBody = bodyLimit({
 const messageSchema = z.strictObject({ body: z.string().trim().min(1) });
 const statusSchema = z.strictObject({ status: z.enum(["open", "resolved", "wontfix"]) });
 const hiddenSchema = z.strictObject({ hidden: z.boolean() });
+const editSchema = z.strictObject({ body: z.string().trim().min(1) });
 export const reactionSchema = z.strictObject({ emoji: z.enum(REACTIONS), on: z.boolean() });
 const newShareSchema = z.strictObject({
   wiki: z.string(),
-  kind: z.enum(["view", "comment"]),
+  kind: z.enum(["view", "comment", "board", "sheet"]),
+  /** A `board` link's board (its uid), a `sheet` link's sheet (its name). */
+  target: z.string().max(80).optional(),
+  /** A `sheet` link: its guests may change values. */
+  edit: z.boolean().default(false),
   duration: z.enum(["1h", "24h", "7d", "session"]).default("24h"),
   label: z.string().trim().max(60).default(""),
   /** How the owner signs for guests; the dialog sends the name it remembers. */
@@ -198,7 +209,7 @@ export function buildApp({
     });
   });
 
-  // A wiki's pictures. `_dev` is docs/, for the element examples on /dev/ui; it's the app's own folder, so nothing
+  // A wiki's pictures. `_dev` is docs/, for the element examples in the toolbox; it's the app's own folder, so nothing
   // is cached there.
   app.get("/api/wikis/:id/files/*", (c) => {
     const dev = c.req.param("id") === "_dev";
@@ -316,7 +327,21 @@ export function buildApp({
     if (result === "not a guest's") return c.json({ error: "only guests' comments can be hidden" }, 400);
     return c.json(result);
   };
-  app.patch("/api/wikis/:id/messages/:mid", (c) => hide(c, setHidden));
+  // A message's body: the owner edits only their own (ADR-0010); `{ hidden }` hides a guest's.
+  app.patch("/api/wikis/:id/messages/:mid", async (c) => {
+    // Hono keeps the parsed body, so `hide` reads it again for free.
+    const raw: unknown = await c.req.json().catch(() => null);
+    if (!raw || typeof raw !== "object" || !("body" in raw)) return hide(c, setHidden);
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const body = editSchema.safeParse(raw);
+    if (!body.success) return c.json({ error: "bad request" }, 400);
+    const mid = Number(c.req.param("mid"));
+    const who = messageAuthor(w.root, mid);
+    if (!who) return c.notFound();
+    if (who.author !== "user") return c.json({ error: "you can only edit what you wrote" }, 403);
+    return c.json(editMessage(w.root, mid, body.data.body));
+  });
 
   // Reactions on a message: the owner adds one or takes it back.
   app.post("/api/wikis/:id/messages/:mid/reactions", async (c) => {
@@ -329,10 +354,10 @@ export function buildApp({
   });
   app.patch("/api/wikis/:id/answers/:mid", (c) => hide(c, setAnswerHidden));
 
-  /** The element reference (docs/elements.md), rendered for the /dev/ui page. */
+  /** The element reference (docs/elements.md), rendered for the toolbox's design system. */
   app.get("/api/dev/elements", (c) => c.json(renderElements(registry.appRoot)));
 
-  // The toolbox (Special:Page kits, Special:Elements): what pages of this wiki can use.
+  // The toolbox (the host's only, ADR-0010): what pages of this wiki can use.
   app.get("/api/wikis/:id/kits", (c) => {
     const w = wikiOr404(c);
     if (w instanceof Response) return w;
@@ -380,6 +405,10 @@ export function buildApp({
     presence.leave(`host:${tab.data}`);
     return c.body(null, 204);
   });
+
+  // Test boards (ADR-0010).
+  app.route("/api/wikis/:id/boards", ownerBoardRoutes(wikiOr404));
+  app.route("/api/wikis/:id/sheets", ownerSheetRoutes(wikiOr404));
 
   // Designs (ADR-0006): the owner may change every one.
   app.use("/api/wikis/:id/designs/*", async (c, next) =>
@@ -465,12 +494,25 @@ export function buildApp({
     if (!shares) return noSharing(c);
     const body = newShareSchema.safeParse(await c.req.json().catch(() => null));
     if (!body.success) return c.json({ error: "bad request" }, 400);
-    const { host, ...link } = body.data;
-    if (!registry.get(link.wiki)) return c.json({ error: "no such wiki" }, 404);
+    const { host, target: targetId, ...link } = body.data;
+    const w = registry.get(link.wiki);
+    if (!w) return c.json({ error: "no such wiki" }, 404);
+    // A board or sheet link names one that exists (ADR-0010); a wiki link names nothing.
+    let target: ShareTarget | null = null;
+    if (link.kind === "board") {
+      const board = targetId ? getBoard(w.root, targetId) : null;
+      if (!board) return c.json({ error: "no such board" }, 404);
+      if (board.closedAt) return c.json({ error: "This board is closed. Open it again to share it." }, 409);
+      target = { id: board.uid, title: board.name };
+    } else if (link.kind === "sheet") {
+      const sheet = targetId ? readSheet(w.root, targetId) : null;
+      if (!sheet) return c.json({ error: "no such sheet" }, 404);
+      target = { id: sheet.name, title: sheet.file.title };
+    } else if (targetId) return c.json({ error: "bad request" }, 400);
     // A remembered name that no longer fits keeps the current one; the dialog shows which is used.
     if (host !== undefined) setHost(shares, host);
     try {
-      return c.json(shares.info(shares.create(link)), 201);
+      return c.json(shares.info(shares.create({ ...link, target })), 201);
     } catch (e) {
       return c.json({ error: (e as Error).message }, 409);
     }
