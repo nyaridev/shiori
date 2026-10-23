@@ -5,6 +5,7 @@ import { parseArgs } from "node:util";
 import { listAnswers } from "../server/answers.ts";
 import { importData, readBackup, writeBackup } from "../server/backup.ts";
 import { buildCorpus } from "../server/corpus.ts";
+import { designPlace, type Group, listGroups } from "../server/designGroups.ts";
 import { type Design, getDesign, listDesigns, updateDesign } from "../server/designs.ts";
 import { mediaProblems } from "../server/files.ts";
 import { journalProblems } from "../server/journal.ts";
@@ -54,14 +55,15 @@ const HELP = `Shiori CLI
                                                    PC's sync/ file, write this PC's, commit it and designs/, push
   pnpm shiori designs <id> [collection] [--all]      Designs people made in the app that are ready for a page
                                                    (--all: drafts and done ones too), with their files
-  pnpm shiori designs <id> show <collection>/<id>    One design: its description, drawing and pictures
+  pnpm shiori designs <id> show <collection>/<id>    One design: its description, drawing, pictures and group
+  pnpm shiori designs <id> groups [collection]       The groups people sorted designs into, as a tree
   pnpm shiori designs <id> done <collection>/<id> --page <path> [--note "…"]
                                                    The design became that page; the person sees the note
   pnpm shiori boards <id>                            Test boards (ADR-0010): testers' bug, change and idea reports
-  pnpm shiori reports <id> [board] [--all]           New and planned reports (--all: every one), with pictures
-  pnpm shiori report <id> <n> [--status s] [--note "…"]
   pnpm shiori boards <id> trash|restore <board>      Move a board to the trash and back (ADR-0014); the app
                                                    deletes it 30 days later, or the owner does from the trash
+  pnpm shiori reports <id> [board] [--all]           New and planned reports (--all: every one), with pictures
+  pnpm shiori report <id> <n> [--status s] [--note "…"]
                                                    planned, fixed, wontfix, duplicate; the tester sees the note
   pnpm shiori sheets <id>                            Data sheets (sheets/*.json) and their changes not exported
   pnpm shiori sheet <id> new <name> [--title "T"]    A new sheet file to fill in
@@ -424,9 +426,16 @@ const commands: Record<string, () => void> = {
       [d.board ? "board.png" : null, ...d.images.map((i) => i.file)]
         .filter(Boolean)
         .map((f) => slashes(join(w.root, "designs", d.collection, d.id, f as string)));
+    const groupsOf = new Map<string, Group[]>();
+    const groups = (collection: string) => {
+      if (!groupsOf.has(collection)) groupsOf.set(collection, listGroups(w, collection));
+      return groupsOf.get(collection) as Group[];
+    };
     const print = (d: Design, full: boolean) => {
       const who = d.author.kind === "owner" ? "the owner" : `guest "${d.author.name}"`;
       console.log(`\n${d.collection}/${d.id}  ${d.name}  [${d.status}${d.hidden ? ", hidden" : ""}] by ${who}`);
+      const place = designPlace(groups(d.collection), d);
+      if (place) console.log(`  in ${place}`);
       const text = d.description.trim();
       if (text) console.log(full ? text.replace(/^/gm, "  ") : `  ${text.split("\n")[0].slice(0, 160)}`);
       for (const f of files(d)) console.log(`  ${f}`);
@@ -434,6 +443,31 @@ const commands: Record<string, () => void> = {
       if (d.page) console.log(`  → page ${d.page}${d.note ? `: ${d.note}` : ""}`);
     };
     if (args[1] === "show") return print(pick(args[2]), true);
+    if (args[1] === "groups") {
+      // The groups people sorted a collection's designs into, as a tree, with how many designs each holds.
+      if (args[2] && !collections.includes(args[2]))
+        fail(`No collection "${args[2]}". Collections: ${collections.join(", ")}.`);
+      for (const c of args[2] ? [args[2]] : collections) {
+        const all = groups(c);
+        const designs = listDesigns(w, c);
+        const known = new Set(all.map((g) => g.id));
+        const count = (id: string | null) =>
+          designs.filter((d) => (d.group && known.has(d.group) ? d.group : null) === id).length;
+        console.log(`\n${c}  (${count(null)} at the top)`);
+        const tree = (parent: string | null, depth: number, seen: Set<string>) => {
+          for (const g of all.filter((x) => (x.parent && known.has(x.parent) ? x.parent : null) === parent)) {
+            if (seen.has(g.id)) continue;
+            seen.add(g.id);
+            console.log(
+              `${"  ".repeat(depth)}${g.name}  [${g.id}]  ${count(g.id)} design${count(g.id) === 1 ? "" : "s"}`,
+            );
+            tree(g.id, depth + 1, seen);
+          }
+        };
+        tree(null, 1, new Set());
+      }
+      return;
+    }
     if (args[1] === "done") {
       const d = pick(args[2]);
       if (!values.page) fail("Give the page it became: --page <path>.");

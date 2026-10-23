@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router";
 import type { DesignInfo, WikiDetail } from "../../shared/api.ts";
 import { useGuest } from "../guest/GuestContext.ts";
 import { ApiError, api } from "../lib/api.ts";
-import { picture } from "../lib/base.ts";
+import { picture, withBase } from "../lib/base.ts";
 import { useLive } from "../lib/live.ts";
 import { ago } from "../lib/time.ts";
 import { useResource } from "../lib/useResource.ts";
@@ -21,11 +21,15 @@ import {
   IconButton,
   Input,
   Textarea,
+  Tooltip,
 } from "../ui/index.ts";
 import { Crumbs, pageHref, specialHref } from "../wiki/PageHead.tsx";
+import { PageIcon } from "../wiki/PageIcon.tsx";
 import { useWikiIndex } from "../wiki/WikiIndexContext.ts";
-import { Board } from "./Board.tsx";
-import { STATUS } from "./DesignsGallery.tsx";
+import { Board } from "./board/Board.tsx";
+import { pathTo, placeName, type Tree } from "./collection.ts";
+import { groupHref, STATUS, useTree } from "./DesignsGallery.tsx";
+import { MoveDialog } from "./GroupDialogs.tsx";
 import "./designs.css";
 
 const PICTURES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
@@ -64,9 +68,17 @@ export function DesignPage({ wiki, collection, id }: { wiki: WikiDetail; collect
     }
   }, []);
 
+  const tree = useTree(wiki.id, collection);
+  const groups = tree && design ? pathTo(tree, tree.placeOf(design)) : [];
   const trail = [
     { path: "", title: "Home", icon: "home", isPage: true },
     { path: `_/designs/${collection}`, title: meta?.title ?? collection, icon: "pencil", isPage: true },
+    ...groups.map((g) => ({
+      path: `_/designs/${collection}?in=${encodeURIComponent(g.id)}`,
+      title: g.name,
+      icon: "folder",
+      isPage: true,
+    })),
   ];
 
   if (loaded.error || !meta) {
@@ -113,7 +125,8 @@ export function DesignPage({ wiki, collection, id }: { wiki: WikiDetail; collect
             by {design.mine ? "you" : design.author.name} · started {ago(design.createdAt)} · changed{" "}
             {ago(design.updatedAt)}
           </span>
-          {saving && <span className="sh-design-saving">Saving…</span>}
+          {edit && <span className="sh-design-saving">{saving ? "Saving…" : "Saves as you go"}</span>}
+          <Status design={design} edit={edit} onChange={(status) => run(() => api.changeDesign(...ids, { status }))} />
         </div>
       </header>
 
@@ -136,33 +149,46 @@ export function DesignPage({ wiki, collection, id }: { wiki: WikiDetail; collect
       <div className="sh-design-layout">
         <section className="sh-design-board" aria-label="Drawing">
           <Board
-            src={design.board ? picture(design.board, 1600) : null}
+            src={design.board ? withBase(design.board) : null}
             editable={edit}
             onSave={(png) => run(() => api.saveBoard(...ids, png))}
           />
         </section>
-        <aside className="sh-design-side">
-          <Status design={design} edit={edit} onChange={(status) => run(() => api.changeDesign(...ids, { status }))} />
-          <section>
-            <h2 className="sh-rail-title">Description</h2>
-            {edit ? (
-              <DescriptionField
-                key={design.id}
-                value={design.description}
-                onSave={(description) => run(() => api.changeDesign(...ids, { description }))}
+        <div className="sh-design-details">
+          <div className="sh-design-side">
+            <section>
+              <h2 className="sh-rail-title">Description</h2>
+              {edit ? (
+                <DescriptionField
+                  key={design.id}
+                  value={design.description}
+                  onSave={(description) => run(() => api.changeDesign(...ids, { description }))}
+                />
+              ) : (
+                <p className="sh-design-text">{design.description || "No description yet."}</p>
+              )}
+            </section>
+          </div>
+          <aside className="sh-design-side">
+            <Pictures
+              design={design}
+              edit={edit}
+              onAdd={(file, caption) => run(() => api.addPicture(...ids, file, caption))}
+              onRemove={(file) => run(() => api.removePicture(...ids, file))}
+            />
+            {tree && (
+              <Place
+                wikiId={wiki.id}
+                tree={tree}
+                title={meta.title}
+                design={design}
+                edit={edit}
+                onMove={(group) => run(() => api.changeDesign(...ids, { group }))}
               />
-            ) : (
-              <p className="sh-design-text">{design.description || "No description yet."}</p>
             )}
-          </section>
-          <Pictures
-            design={design}
-            edit={edit}
-            onAdd={(file, caption) => run(() => api.addPicture(...ids, file, caption))}
-            onRemove={(file) => run(() => api.removePicture(...ids, file))}
-          />
-          <Manage wiki={wiki} design={design} edit={edit} run={run} />
-        </aside>
+            <Manage wiki={wiki} design={design} edit={edit} run={run} />
+          </aside>
+        </div>
       </div>
     </main>
   );
@@ -216,6 +242,7 @@ function DescriptionField({ value, onSave }: { value: string; onSave: (text: str
   );
 }
 
+/** "Ready to add" in the page head: one button that tells the agent, and takes it back while it waits. */
 function Status({
   design,
   edit,
@@ -226,24 +253,23 @@ function Status({
   onChange: (status: "draft" | "ready") => void;
 }) {
   if (!edit || design.status === "done") return null;
-  return design.status === "draft" ? (
-    <Callout tone="note">
-      Still drawing? It saves as you go. When it's ready, tell the agent:
-      <div className="sh-design-actions">
-        <Button variant="solid" onClick={() => onChange("ready")}>
-          Ready to add
-        </Button>
-      </div>
-    </Callout>
-  ) : (
-    <Callout tone="tip" title="Ready to add">
-      An agent will make its page. Want to change something first?
-      <div className="sh-design-actions">
-        <Button variant="soft" icon="undo" onClick={() => onChange("draft")}>
-          Back to draft
-        </Button>
-      </div>
-    </Callout>
+  return (
+    <span className="sh-design-ready">
+      {design.status === "draft" ? (
+        <Tooltip content="Tell the agent it's ready to become a page" side="bottom">
+          <Button variant="solid" size="sm" icon="check" onClick={() => onChange("ready")}>
+            Ready to add
+          </Button>
+        </Tooltip>
+      ) : (
+        <>
+          <span>Waiting for the agent</span>
+          <Button variant="ghost" size="sm" icon="undo" onClick={() => onChange("draft")}>
+            Back to draft
+          </Button>
+        </>
+      )}
+    </span>
   );
 }
 
@@ -332,6 +358,55 @@ function Pictures({
   );
 }
 
+/** The group the design sits in, and moving it to another. */
+function Place({
+  wikiId,
+  tree,
+  title,
+  design,
+  edit,
+  onMove,
+}: {
+  wikiId: string;
+  tree: Tree;
+  title: string;
+  design: DesignInfo;
+  edit: boolean;
+  onMove: (group: string | null) => Promise<void>;
+}) {
+  const [moving, setMoving] = useState(false);
+  const place = tree.placeOf(design);
+  if (!edit && !place) return null;
+  return (
+    <section>
+      <h2 className="sh-rail-title">Group</h2>
+      <div className="sh-design-place-row">
+        <Link to={groupHref(wikiId, design.collection, place)} className="sh-link">
+          <PageIcon icon={place ? "folder" : "home"} className="sh-icon-gap" />
+          {place ? placeName(tree, place) : `Top of ${title.toLowerCase()}`}
+        </Link>
+        {edit && (
+          <Button variant="ghost" size="sm" icon="arrowRight" onClick={() => setMoving(true)}>
+            Move to…
+          </Button>
+        )}
+      </div>
+      <MoveDialog
+        open={moving}
+        onOpenChange={setMoving}
+        tree={tree}
+        title={`Move “${design.name}”`}
+        collectionTitle={title}
+        current={place}
+        onPick={async (group) => {
+          await onMove(group);
+          setMoving(false);
+        }}
+      />
+    </section>
+  );
+}
+
 /** Hiding a guest's design (the owner) and removing it (whoever may change it). */
 function Manage({
   wiki,
@@ -380,7 +455,7 @@ function Manage({
                 onClick={() =>
                   run(async () => {
                     await api.removeDesign(...ids);
-                    navigate(specialHref(wiki.id, "designs", design.collection));
+                    navigate(groupHref(wiki.id, design.collection, design.group));
                     return undefined;
                   })
                 }

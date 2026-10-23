@@ -2,7 +2,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { DesignInfo, PageData } from "../shared/api.ts";
+import type { DesignCollection, DesignGroupInfo, DesignInfo, PageData } from "../shared/api.ts";
 import { layoutSchema } from "../shared/layout.ts";
 import { png, sharingFixture, withMobs } from "./sharing/fixture.ts";
 
@@ -109,6 +109,106 @@ describe("designs on the owner's server", () => {
       body: JSON.stringify({ name: "x" }),
     });
     expect(res.status).toBe(403);
+  });
+});
+
+describe("groups of designs on the owner's server", () => {
+  const MOBS = "/api/wikis/alpha/designs/mobs";
+  const group = async (name: string, parent: string | null = null) => {
+    const res = await s.owner(`${MOBS}/_groups`, { method: "POST", body: { name, parent } });
+    expect(res.status, name).toBe(201);
+    return json<DesignGroupInfo>(res);
+  };
+  const list = async () => json<DesignCollection>(await s.owner(MOBS));
+
+  it("nest as deep as people like, each one its own file, and hold designs", async () => {
+    withMobs(s.app);
+    s.emit({ type: "wikis" });
+    const monsters = await group("Monsters");
+    const world = await group("World 1", monsters.id);
+    const forest = await group("Forest", world.id);
+    expect(forest).toMatchObject({ name: "Forest", parent: world.id, editable: true, mine: true });
+    expect(readdirSync(join(alpha(), "designs", "mobs", "_groups")).sort()).toEqual(
+      [forest.id, monsters.id, world.id].map((id) => `${id}.json`).sort(),
+    );
+
+    const made = await json<DesignInfo>(
+      await s.owner(MOBS, { method: "POST", body: { name: "Moss Fox", group: forest.id } }),
+    );
+    expect(made.group).toBe(forest.id);
+    const plain = await create("Loose");
+    expect(plain.group).toBeNull();
+    const moved = await s.owner(`${MOBS}/${plain.id}`, { method: "PATCH", body: { group: monsters.id } });
+    expect((await json<DesignInfo>(moved)).group).toBe(monsters.id);
+    // The design's folder stays where it was: only its group changes.
+    expect(existsSync(join(alpha(), "designs", "mobs", plain.id, "design.json"))).toBe(true);
+
+    const all = await list();
+    expect(all.groups.map((g) => g.name)).toEqual(["Forest", "Monsters", "World 1"]);
+    expect(all.designs.map((d) => [d.name, d.group])).toEqual([
+      ["Loose", monsters.id],
+      ["Moss Fox", forest.id],
+    ]);
+    // A collection's groups aren't designs.
+    expect(all.designs.some((d) => d.id === "_groups")).toBe(false);
+  });
+
+  it("refuse groups that don't exist, loops and bad names", async () => {
+    withMobs(s.app);
+    s.emit({ type: "wikis" });
+    const a = await group("A");
+    const b = await group("B", a.id);
+    const d = await create();
+    expect(
+      (await s.owner(`${MOBS}/_groups`, { method: "POST", body: { name: "x", parent: "nope-0000" } })).status,
+    ).toBe(400);
+    expect((await s.owner(`${MOBS}/_groups`, { method: "POST", body: { name: "" } })).status).toBe(400);
+    expect((await s.owner(`${MOBS}/_groups`, { method: "POST", body: { name: "x".repeat(61) } })).status).toBe(400);
+    expect((await s.owner(`${MOBS}/_groups`, { method: "POST", body: { name: "x", parent: "../a" } })).status).toBe(
+      400,
+    );
+    expect((await s.owner(MOBS, { method: "POST", body: { name: "x", group: "nope-0000" } })).status).toBe(400);
+    expect((await s.owner(`${MOBS}/${d.id}`, { method: "PATCH", body: { group: "nope-0000" } })).status).toBe(400);
+    // A group can't go inside itself, or inside a group under it.
+    const self = await s.owner(`${MOBS}/_groups/${a.id}`, { method: "PATCH", body: { parent: a.id } });
+    expect(self.status).toBe(400);
+    const loop = await s.owner(`${MOBS}/_groups/${a.id}`, { method: "PATCH", body: { parent: b.id } });
+    expect(await json<{ error: string }>(loop)).toEqual({ error: "a group can't go inside itself" });
+    // Moving and renaming work.
+    const top = await s.owner(`${MOBS}/_groups/${b.id}`, { method: "PATCH", body: { parent: null, name: "Bee" } });
+    expect(await json<DesignGroupInfo>(top)).toMatchObject({ name: "Bee", parent: null });
+    expect((await s.owner(`${MOBS}/_groups/nope-0000`, { method: "PATCH", body: { name: "x" } })).status).toBe(404);
+  });
+
+  it("move what's in a removed group up a level, and keep the group's file", async () => {
+    withMobs(s.app);
+    s.emit({ type: "wikis" });
+    const monsters = await group("Monsters");
+    const world = await group("World 1", monsters.id);
+    const forest = await group("Forest", world.id);
+    const fox = await json<DesignInfo>(await s.owner(MOBS, { method: "POST", body: { name: "Fox", group: world.id } }));
+    const gone = await s.owner(`${MOBS}/_groups/${world.id}`, { method: "DELETE" });
+    expect(await json(gone)).toEqual({ groups: 1, designs: 1 });
+    const all = await list();
+    expect(all.groups.find((g) => g.id === forest.id)?.parent).toBe(monsters.id);
+    expect(all.designs.find((d) => d.id === fox.id)?.group).toBe(monsters.id);
+    expect(all.groups.some((g) => g.id === world.id)).toBe(false);
+    expect(
+      readdirSync(join(alpha(), "designs", "_removed")).some((f) => f.endsWith(`-mobs-group-${world.id}.json`)),
+    ).toBe(true);
+  });
+
+  it("read designs saved before groups, at the top", async () => {
+    withMobs(s.app);
+    s.emit({ type: "wikis" });
+    const d = await create();
+    const file = join(alpha(), "designs", "mobs", d.id, "design.json");
+    const { group: _, ...old } = JSON.parse(readFileSync(file, "utf8"));
+    writeFileSync(file, JSON.stringify(old));
+    expect((await json<DesignInfo>(await s.owner(`${MOBS}/${d.id}`))).group).toBeNull();
+    mkdirSync(join(alpha(), "designs", "mobs", "_groups"), { recursive: true });
+    writeFileSync(join(alpha(), "designs", "mobs", "_groups", "broken-0000.json"), "{");
+    expect((await list()).groups).toEqual([]);
   });
 });
 

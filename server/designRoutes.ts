@@ -1,11 +1,22 @@
-// The designs API (ADR-0006), mounted by both servers under `/wikis/:id/designs`. Who may do what comes from the
-// viewer: the owner may change every design; a guest on a comment link may make designs and change only their own;
+// The designs API (ADR-0006), mounted by both servers under `/wikis/:id/designs`: designs, and the groups that sort
+// them (`/_groups`). Who may do what comes from the viewer: the owner may change every design and group; a guest on a
+// comment link may make designs and groups and change only their own;
 // everyone sees all of them, except that guests never see what the owner hid. The guest server adds its link checks,
 // limits and Origin check before these routes run (server/sharing/guest.ts).
 import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
-import type { DesignInfo } from "../shared/api.ts";
+import type { DesignGroupInfo, DesignInfo } from "../shared/api.ts";
+import {
+  createGroup,
+  GROUP_LIMITS,
+  type Group,
+  getGroup,
+  groupExists,
+  listGroups,
+  removeGroup,
+  updateGroup,
+} from "./designGroups.ts";
 import {
   type Author,
   addPicture,
@@ -43,14 +54,20 @@ export interface DesignRouteOptions {
 }
 
 const nameSchema = z.string().trim().min(1).max(DESIGN_LIMITS.name);
-const newSchema = z.strictObject({ name: nameSchema });
+/** A group to put something in, or null for the top of the collection. */
+const placeSchema = z.string().regex(ID).nullable();
+const newSchema = z.strictObject({ name: nameSchema, group: placeSchema.optional() });
 const patchSchema = z.strictObject({
   name: nameSchema.optional(),
+  group: placeSchema.optional(),
   description: z.string().max(DESIGN_LIMITS.description).optional(),
   // "done" is the agent's, through the CLI.
   status: z.enum(["draft", "ready"]).optional(),
 });
 const hiddenSchema = z.strictObject({ hidden: z.boolean() });
+const groupNameSchema = z.string().trim().min(1).max(GROUP_LIMITS.name);
+const newGroupSchema = z.strictObject({ name: groupNameSchema, parent: placeSchema.optional() });
+const groupPatchSchema = z.strictObject({ name: groupNameSchema.optional(), parent: placeSchema.optional() });
 
 const json = (max: number) => bodyLimit({ maxSize: max, onError: (c) => c.json({ error: "request too large" }, 413) });
 const board = bodyLimit({
@@ -86,7 +103,52 @@ export function designRoutes({ wikiOf, viewerOf, hostName, limit, log }: DesignR
       editable: editable(d, v),
       mine: v.kind === "owner" ? d.author.kind === "owner" : d.author.guestId === v.id,
       ...(v.kind === "owner" ? { hidden: d.hidden } : {}),
+      group: d.group,
     };
+  };
+
+  const groupEditable = (g: Group, v: DesignViewer) =>
+    v.kind === "owner" || (v.canWrite && g.author.kind === "guest" && g.author.guestId === v.id);
+
+  const groupInfo = (g: Group, v: DesignViewer): DesignGroupInfo => ({
+    id: g.id,
+    name: g.name,
+    parent: g.parent,
+    createdAt: g.createdAt,
+    updatedAt: g.updatedAt,
+    author: { kind: g.author.kind, name: g.author.kind === "owner" ? hostName() : g.author.name },
+    editable: groupEditable(g, v),
+    mine: v.kind === "owner" ? g.author.kind === "owner" : g.author.guestId === v.id,
+  });
+
+  /** The group, when this viewer may change it; else the refusal. */
+  const myGroup = (c: Context): Group | Response => {
+    const g = getGroup(wikiOf(c), c.req.param("collection") ?? "", c.req.param("gid") ?? "");
+    if (!g) return c.json({ error: "no such group" }, 404);
+    const v = viewerOf(c);
+    if (v.kind === "guest" && !v.canWrite) return c.json({ error: "this link is view-only" }, 403);
+    if (!groupEditable(g, v)) return c.json({ error: "only the person who made it can change it" }, 403);
+    return g;
+  };
+
+  /**
+   * A guest moves or removes their own group only while everything in it, however deep, is theirs too: moving or
+   * removing it carries other people's designs along.
+   */
+  const allMine = (w: Wiki, g: Group, v: DesignViewer): boolean => {
+    if (v.kind === "owner") return true;
+    const groups = listGroups(w, g.collection);
+    const inside = new Set([g.id]);
+    for (let grew = true; grew; ) {
+      grew = false;
+      for (const x of groups)
+        if (x.parent && inside.has(x.parent) && !inside.has(x.id)) {
+          if (!groupEditable(x, v)) return false;
+          inside.add(x.id);
+          grew = true;
+        }
+    }
+    return listDesigns(w, g.collection).every((d) => !d.group || !inside.has(d.group) || editable(d, v));
   };
 
   /** The collection exists in wiki.json. */
@@ -119,8 +181,53 @@ export function designRoutes({ wikiOf, viewerOf, hostName, limit, log }: DesignR
   api.get("/:collection", (c) => {
     const v = viewerOf(c);
     const w = wikiOf(c);
-    const list = listDesigns(w, c.req.param("collection")).filter((d) => v.kind === "owner" || !d.hidden);
-    return c.json({ designs: list.map((d) => info(w, d, v)) });
+    const collection = c.req.param("collection");
+    const list = listDesigns(w, collection).filter((d) => v.kind === "owner" || !d.hidden);
+    return c.json({
+      designs: list.map((d) => info(w, d, v)),
+      groups: listGroups(w, collection).map((g) => groupInfo(g, v)),
+    });
+  });
+
+  // Groups: made by the owner, or by a guest on a comment link; changed by whoever may change them.
+  api.post("/:collection/_groups", json(4096), async (c) => {
+    const v = viewerOf(c);
+    if (v.kind === "guest" && !v.canWrite) return c.json({ error: "this link is view-only" }, 403);
+    const body = newGroupSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: `a group's name is 1 to ${GROUP_LIMITS.name} characters` }, 400);
+    const refused = limit?.(c, "create", 0);
+    if (refused) return refused;
+    const author: Author =
+      v.kind === "owner" ? { kind: "owner", name: "" } : { kind: "guest", name: v.name, guestId: v.id };
+    const g = createGroup(wikiOf(c), c.req.param("collection"), body.data.name, body.data.parent ?? null, author);
+    if (typeof g === "string") return c.json({ error: g }, 400);
+    log?.(c, `made the group "${g.name}"`);
+    return c.json(groupInfo(g, v), 201);
+  });
+
+  api.patch("/:collection/_groups/:gid", json(4096), async (c) => {
+    const g = myGroup(c);
+    if (g instanceof Response) return g;
+    const body = groupPatchSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: "bad request" }, 400);
+    const v = viewerOf(c);
+    if (body.data.parent !== undefined && !allMine(wikiOf(c), g, v))
+      return c.json({ error: "it holds other people's designs; only the owner can move it" }, 403);
+    const refused = limit?.(c, "save", 0);
+    if (refused) return refused;
+    const next = updateGroup(wikiOf(c), g, body.data);
+    if (typeof next === "string") return c.json({ error: next }, 400);
+    return c.json(groupInfo(next, v));
+  });
+
+  api.delete("/:collection/_groups/:gid", (c) => {
+    const g = myGroup(c);
+    if (g instanceof Response) return g;
+    if (!allMine(wikiOf(c), g, viewerOf(c)))
+      return c.json({ error: "it holds other people's designs; only the owner can remove it" }, 403);
+    const moved = removeGroup(wikiOf(c), g);
+    log?.(c, `removed the group "${g.name}"`);
+    return c.json(moved);
   });
 
   api.post("/:collection", json(4096), async (c) => {
@@ -128,11 +235,13 @@ export function designRoutes({ wikiOf, viewerOf, hostName, limit, log }: DesignR
     if (v.kind === "guest" && !v.canWrite) return c.json({ error: "this link is view-only" }, 403);
     const body = newSchema.safeParse(await c.req.json().catch(() => null));
     if (!body.success) return c.json({ error: `a name is 1 to ${DESIGN_LIMITS.name} characters` }, 400);
+    const group = body.data.group ?? null;
+    if (!groupExists(wikiOf(c), c.req.param("collection"), group)) return c.json({ error: "no such group" }, 400);
     const refused = limit?.(c, "create", 0);
     if (refused) return refused;
     const author: Author =
       v.kind === "owner" ? { kind: "owner", name: "" } : { kind: "guest", name: v.name, guestId: v.id };
-    const d = createDesign(wikiOf(c), c.req.param("collection"), body.data.name, author);
+    const d = createDesign(wikiOf(c), c.req.param("collection"), body.data.name, author, group);
     log?.(c, `made the design "${d.name}"`);
     return c.json(info(wikiOf(c), d, v), 201);
   });
@@ -147,6 +256,8 @@ export function designRoutes({ wikiOf, viewerOf, hostName, limit, log }: DesignR
     if (d instanceof Response) return d;
     const body = patchSchema.safeParse(await c.req.json().catch(() => null));
     if (!body.success) return c.json({ error: "bad request" }, 400);
+    if (body.data.group !== undefined && !groupExists(wikiOf(c), d.collection, body.data.group))
+      return c.json({ error: "no such group" }, 400);
     const refused = limit?.(c, "save", 0);
     if (refused) return refused;
     const next = updateDesign(wikiOf(c), d, body.data);

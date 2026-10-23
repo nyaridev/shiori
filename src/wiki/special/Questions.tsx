@@ -51,10 +51,12 @@ export function ListSearch({
   value,
   onChange,
   label,
+  placeholder = "Search questions, options and pages",
 }: {
   value: string;
   onChange: (q: string) => void;
   label: string;
+  placeholder?: string;
 }) {
   const [text, setText] = useState(value);
   const last = useRef(value);
@@ -77,7 +79,7 @@ export function ListSearch({
       className="sh-q-search"
       value={text}
       onChange={(e) => setText(e.target.value)}
-      placeholder="Search questions, options and pages"
+      placeholder={placeholder}
       aria-label={label}
     />
   );

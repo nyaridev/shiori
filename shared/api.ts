@@ -619,6 +619,28 @@ export interface DesignInfo {
   mine: boolean;
   /** Owner only: hidden from guests. */
   hidden?: boolean;
+  /** The group it sits in, or null at the top of the collection. */
+  group: string | null;
+}
+
+/** A group of designs in a collection, which may sit in another group (ADR-0006, groups). */
+export interface DesignGroupInfo {
+  id: string;
+  name: string;
+  /** The group it sits in, or null at the top of the collection. */
+  parent: string | null;
+  createdAt: string;
+  updatedAt: string;
+  author: { kind: "owner" | "guest"; name: string };
+  /** This viewer may rename, move or remove it: the owner always, a guest on a comment link only their own. */
+  editable: boolean;
+  mine: boolean;
+}
+
+/** A collection: its designs and its groups. */
+export interface DesignCollection {
+  designs: DesignInfo[];
+  groups: DesignGroupInfo[];
 }
 
 /** Where a wiki's files are kept in git (ADR-0008), for the badge on its home page. The owner only. */

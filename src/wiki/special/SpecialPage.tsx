@@ -347,10 +347,12 @@ export function SpecialPage({ wiki, route, index }: { wiki: WikiDetail; route: s
       icon: "pencil",
       title: meta?.title ?? "No such collection",
       summary: meta
-        ? `Every ${meta.item.toLowerCase()} people drew and described. Ready ones become pages.`
+        ? `Every ${meta.item.toLowerCase()} people drew and described, sorted into groups. Ready ones become pages.`
         : `There's no collection “${arg}” in this wiki.`,
     };
-    body = meta ? <DesignsGallery wikiId={wiki.id} collection={arg} title={meta.title} item={meta.item} /> : null;
+    body = meta ? (
+      <DesignsGallery wikiId={wiki.id} collection={arg} title={meta.title} item={meta.item} urlBacked />
+    ) : null;
   } else if ((name === "status" || name === "types") && arg) {
     // Every page with one status (`_/status/active`) or one type (`_/types/Feature`).
     const inside = pages.filter((p) =>

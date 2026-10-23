@@ -1,4 +1,4 @@
-/* Designs (ADR-0006): the gallery (DesignsGallery.tsx), one design (DesignPage.tsx), the board (Board.tsx) and a
+/* Designs (ADR-0006): the gallery (DesignsGallery.tsx), one design (DesignPage.tsx) and a
    page's design block (DesignBlock.tsx). */
 
 /* Gallery */
@@ -85,11 +85,269 @@
   font-size: var(--t-sm);
 }
 
+/* Making things, and the search with its filters */
+.sh-designs-top {
+  display: grid;
+  gap: var(--s-3);
+  width: 100%;
+}
+.sh-designs-create {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.sh-designs-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+}
+.sh-designs-tools > .sh-field[type="search"] {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.sh-designs-tools .sh-select {
+  flex: 0 1 auto;
+  min-width: 150px;
+}
+.sh-designs-found {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.sh-designs-found > span {
+  margin-right: auto;
+}
+
+/* Where you are among the groups; each step takes drops */
+.sh-designs-trail {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  padding-bottom: var(--s-2);
+  border-bottom: var(--bw) solid var(--border);
+}
+.sh-designs-trail nav {
+  min-width: 0;
+}
+.sh-designs-trail ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-designs-trail li + li::before {
+  content: "›";
+  margin: 0 var(--s-1);
+  color: var(--muted);
+}
+.sh-designs-step {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--s-2);
+  border: var(--bw) solid transparent;
+  border-radius: var(--r-md);
+  background: none;
+  color: var(--accent-ink);
+  font: inherit;
+  font-size: var(--t-sm);
+  text-decoration: none;
+  cursor: pointer;
+}
+.sh-designs-step:hover {
+  background: var(--accent-soft);
+}
+.sh-designs-step[aria-current] {
+  color: var(--text);
+  font-weight: 650;
+  cursor: default;
+}
+.sh-designs-step[aria-current]:hover {
+  background: none;
+}
+.sh-designs-step:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-designs-step.is-drop,
+.sh-design-item.is-drop .sh-design-card {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* A card, with its menu over the corner */
+.sh-design-item {
+  position: relative;
+  display: grid;
+}
+.sh-design-item[draggable="true"] .sh-design-card {
+  cursor: grab;
+}
+.sh-design-more {
+  position: absolute;
+  top: calc(var(--s-2) + 4px);
+  right: calc(var(--s-2) + 4px);
+  background: color-mix(in oklab, var(--surface) 85%, transparent);
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+.sh-design-item:hover .sh-design-more,
+.sh-design-more:focus-visible,
+.sh-design-more[data-state="open"] {
+  opacity: 1;
+}
+@media (hover: none) {
+  .sh-design-more {
+    opacity: 1;
+  }
+}
+.sh-design-place {
+  padding: 0 var(--s-1);
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sh-design-meta .sh-design-place {
+  flex-basis: 100%;
+  padding: 0;
+}
+
+/* Groups: a folder card showing the newest drawings inside */
+.sh-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--s-3);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-group-card {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: var(--raised);
+}
+.sh-group-thumbs {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 1), 1fr);
+  gap: 3px;
+  aspect-ratio: 16 / 7;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--paper);
+  place-items: center;
+}
+.sh-group-thumbs[data-n="2"] {
+  --n: 2;
+}
+.sh-group-thumbs[data-n="3"] {
+  --n: 3;
+}
+.sh-group-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* One drawing shows whole; two or three share the strip, cropped. */
+.sh-group-thumbs[data-n="1"] .sh-group-thumb {
+  object-fit: contain;
+}
+.sh-group-name {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--s-1);
+  font-weight: 650;
+}
+
+/* Picking where something goes */
+.sh-group-form {
+  display: grid;
+  gap: var(--s-2);
+}
+.sh-move {
+  display: grid;
+  gap: var(--s-3);
+}
+.sh-move-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-move-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  padding: var(--s-2) var(--s-2) var(--s-2) calc(var(--s-2) + var(--depth, 0) * var(--s-4));
+  border: var(--bw) solid transparent;
+  border-radius: var(--r-md);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sh-move-row:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.sh-move-row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-move-row:disabled {
+  cursor: default;
+}
+.sh-move-row[aria-current] {
+  background: var(--surface);
+}
+.sh-move-icon {
+  flex: none;
+}
+.sh-move-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sh-move-hint {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  white-space: nowrap;
+}
+.sh-move-hint + .sh-move-hint {
+  margin-left: 0;
+}
+.sh-design-place-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  font-size: var(--t-sm);
+}
+
 /* One design */
 /* A design takes the rail's room too: the board wants the width. */
 .sh-design-page {
   grid-column: 2 / -1;
-  max-width: 1400px;
+  max-width: 1700px;
 }
 @media (max-width: 860px) {
   .sh-design-page {
@@ -118,12 +376,17 @@
 .sh-design-saving {
   color: var(--muted);
 }
+/* The board takes the whole width; what describes the design sits under it, in two columns. */
 .sh-design-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
   gap: var(--s-5);
-  align-items: start;
   margin-top: var(--s-4);
+}
+.sh-design-details {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(260px, 2fr);
+  gap: var(--s-6);
+  align-items: start;
 }
 .sh-design-side {
   display: grid;
@@ -193,89 +456,6 @@
   border-top: var(--bw) solid var(--border);
 }
 
-/* The board */
-.sh-board {
-  display: grid;
-  gap: var(--s-2);
-}
-.sh-board-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-2) var(--s-4);
-  padding: var(--s-2);
-  border: var(--bw) solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--surface);
-}
-.sh-board-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-.sh-ink {
-  position: relative;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: var(--bw) solid var(--border-strong);
-  border-radius: 50%;
-  cursor: pointer;
-}
-.sh-ink.is-current {
-  box-shadow:
-    0 0 0 2px var(--surface),
-    0 0 0 4px var(--accent);
-}
-.sh-ink:focus-visible,
-.sh-size:focus-visible {
-  outline: none;
-  box-shadow: var(--focus);
-}
-.sh-ink-any {
-  overflow: hidden;
-  background: conic-gradient(var(--tone-bad), var(--tone-warn), var(--tone-good), var(--accent), var(--tone-bad));
-}
-.sh-ink-any input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-.sh-size {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: var(--bw) solid transparent;
-  border-radius: var(--r-sm);
-  background: none;
-  cursor: pointer;
-}
-.sh-size span {
-  border-radius: 50%;
-  background: var(--text);
-}
-.sh-size.is-current {
-  border-color: var(--accent-line);
-  background: var(--accent-soft);
-}
-.sh-board-paper {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 4 / 3;
-  border: var(--bw) solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--paper);
-  box-shadow: var(--shadow-1);
-  touch-action: none;
-}
-.sh-board[data-editable] .sh-board-paper {
-  cursor: crosshair;
-}
-
 /* A page's design block */
 .sh-design-block {
   display: grid;
@@ -337,14 +517,25 @@
 
 /* Lists here are grids, also inside an article. */
 .sh-designs .sh-designs-grid,
+.sh-designs .sh-groups-grid,
+.sh-designs-trail ol,
 .sh-design-side .sh-design-pictures,
 .sh-design-block .sh-design-pictures {
   margin: 0;
   padding: 0;
 }
 
-@media (max-width: 960px) {
-  .sh-design-layout {
+@media (max-width: 860px) {
+  .sh-design-details {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* "Ready to add", at the end of the page head's line. */
+.sh-design-ready {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  margin-left: auto;
 }

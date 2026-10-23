@@ -1,6 +1,6 @@
 // Designs (ADR-0006): what people make in the app for a wiki's collection — a drawing, a description and reference
 // pictures — kept as plain files the agent can open: `<wiki>/designs/<collection>/<id>/design.json`, `board.png` and
-// the pictures. This folder and the wiki's `data/` are the only places the app writes. Nothing is deleted: removing
+// the pictures. Groups that sort them are in designGroups.ts. This folder and the wiki's `data/` are the only places the app writes. Nothing is deleted: removing
 // a design or a picture moves it into `designs/_removed/`.
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
@@ -11,7 +11,7 @@ import type { Wiki } from "./registry.ts";
 
 export const DESIGN_LIMITS = {
   /** Bytes of a drawing (PNG) and of a reference picture. */
-  board: 4 * 1024 * 1024,
+  board: 8 * 1024 * 1024,
   picture: 6 * 1024 * 1024,
   /** Pixels on each side of a drawing. */
   boardSide: 4000,
@@ -63,6 +63,8 @@ export const designSchema = z.strictObject({
   note: z.string(),
   /** The owner hid a guest's design from guests. */
   hidden: z.boolean(),
+  /** The group it sits in (designGroups.ts), or null at the top of the collection. Older designs have none. */
+  group: z.string().nullable().default(null),
 });
 export type Design = z.infer<typeof designSchema>;
 export type Author = z.infer<typeof authorSchema>;
@@ -74,7 +76,7 @@ const collectionDir = (wiki: Wiki, collection: string) => join(wiki.root, "desig
 const designDir = (wiki: Wiki, collection: string, id: string) => join(collectionDir(wiki, collection), id);
 
 /** Writes through a temporary file, so a reader never sees half a file. */
-function writeAtomic(file: string, data: string | Buffer) {
+export function writeAtomic(file: string, data: string | Buffer) {
   const tmp = `${file}.${randomBytes(4).toString("hex")}.tmp`;
   writeFileSync(tmp, data);
   renameSync(tmp, file);
@@ -106,7 +108,13 @@ export function listDesigns(wiki: Wiki, collection: string): Design[] {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-export function createDesign(wiki: Wiki, collection: string, name: string, author: Author): Design {
+export function createDesign(
+  wiki: Wiki,
+  collection: string,
+  name: string,
+  author: Author,
+  group: string | null = null,
+): Design {
   const base = slug(name).slice(0, 40) || "design";
   let id = "";
   do id = `${base}-${randomBytes(3).toString("hex").slice(0, 4)}`;
@@ -127,6 +135,7 @@ export function createDesign(wiki: Wiki, collection: string, name: string, autho
     page: null,
     note: "",
     hidden: false,
+    group,
   };
   save(wiki, design);
   return design;
@@ -135,7 +144,7 @@ export function createDesign(wiki: Wiki, collection: string, name: string, autho
 export function updateDesign(
   wiki: Wiki,
   d: Design,
-  patch: Partial<Pick<Design, "name" | "description" | "status" | "hidden" | "page" | "note">>,
+  patch: Partial<Pick<Design, "name" | "description" | "status" | "hidden" | "page" | "note" | "group">>,
 ): Design {
   const next = { ...d, ...patch, updatedAt: nowIso() };
   save(wiki, next);
@@ -184,7 +193,7 @@ export function addPicture(wiki: Wiki, d: Design, type: string, data: Buffer, ca
 }
 
 /** Where removed things go: `designs/_removed/<when>-<collection>-<id>[-<file>]`. */
-function removedPath(wiki: Wiki, ...parts: string[]) {
+export function removedPath(wiki: Wiki, ...parts: string[]) {
   const dir = join(wiki.root, "designs", "_removed");
   mkdirSync(dir, { recursive: true });
   return join(dir, [nowIso().replace(/[:.]/g, "-"), ...parts].join("-"));

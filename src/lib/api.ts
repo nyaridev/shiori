@@ -1,5 +1,7 @@
 import type {
   Answer,
+  DesignCollection,
+  DesignGroupInfo,
   DesignInfo,
   GitInfo,
   GuestSession,
@@ -183,21 +185,36 @@ export const api = {
       method: "DELETE",
       keepalive: true,
     }).catch(() => undefined),
-  /** Designs (ADR-0006): a collection's, one, and the changes a person may make. */
+  /** Designs (ADR-0006): a collection's designs and groups, one design, and the changes a person may make. */
   designs: (id: string, collection: string) =>
-    request<{ designs: DesignInfo[] }>(`/api/wikis/${enc(id)}/designs/${enc(collection)}`).then((r) => r.designs),
+    request<DesignCollection>(`/api/wikis/${enc(id)}/designs/${enc(collection)}`),
   design: (id: string, collection: string, design: string) =>
     request<DesignInfo>(`/api/wikis/${enc(id)}/designs/${enc(collection)}/${enc(design)}`),
-  newDesign: (id: string, collection: string, name: string) =>
+  newDesign: (id: string, collection: string, name: string, group: string | null = null) =>
     request<DesignInfo>(`/api/wikis/${enc(id)}/designs/${enc(collection)}`, {
       method: "POST",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, group }),
     }),
+  newGroup: (id: string, collection: string, name: string, parent: string | null) =>
+    request<DesignGroupInfo>(`/api/wikis/${enc(id)}/designs/${enc(collection)}/_groups`, {
+      method: "POST",
+      body: JSON.stringify({ name, parent }),
+    }),
+  changeGroup: (id: string, collection: string, group: string, patch: { name?: string; parent?: string | null }) =>
+    request<DesignGroupInfo>(`/api/wikis/${enc(id)}/designs/${enc(collection)}/_groups/${enc(group)}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  removeGroup: (id: string, collection: string, group: string) =>
+    request<{ groups: number; designs: number }>(
+      `/api/wikis/${enc(id)}/designs/${enc(collection)}/_groups/${enc(group)}`,
+      { method: "DELETE" },
+    ),
   changeDesign: (
     id: string,
     collection: string,
     design: string,
-    patch: { name?: string; description?: string; status?: "draft" | "ready" },
+    patch: { name?: string; description?: string; status?: "draft" | "ready"; group?: string | null },
   ) =>
     request<DesignInfo>(`/api/wikis/${enc(id)}/designs/${enc(collection)}/${enc(design)}`, {
       method: "PATCH",

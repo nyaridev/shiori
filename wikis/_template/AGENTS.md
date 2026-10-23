@@ -21,7 +21,7 @@ their content with the project's own, rename or delete what doesn't fit, and add
 | `sheets/` | Data sheets: `<name>.json` tables of game data people may tune, like every mob's health (see Data sheets). Written by agents only |
 | `sync/` | Comments and answers from each PC that has this wiki, one file per PC (`pnpm shiori sync`). Commit them; never edit them |
 | `layouts/` | Page layouts: how a kind of page is arranged (see Layouts and designs) |
-| `designs/` | What people drew and described in the app, one folder per design. Written by the app; commit it, never edit it by hand |
+| `designs/` | What people drew and described in the app, one folder per design, and the groups they sorted them into (`_groups/`). Written by the app; commit it, never edit it by hand |
 | `kits/` | Starting points for kinds of pages (`pnpm shiori kits`). Add your own `<name>.md` for kinds this project repeats; `{{page.title}}` and `{{page.date}}` are filled in |
 | `JOURNAL.md`, `journal/` | The development journal: what changed in the project, waiting to go into the wiki (see The journal) |
 | `data/` | Written by the app: `wiki.db` (comments, answers, test boards, sheet edits) and `attachments/` (pictures people added). Commit it with the wiki, but never edit it by hand. Its own `.gitignore` keeps out this PC's files: `machine.json`, `wiki.db-wal`/`-shm`, `cache/`, `export/` |
@@ -273,11 +273,14 @@ layout: no change to Shiori.
 
 **Designs.** A collection in `wiki.json` (`"collections": { "mobs": { "title": "Mobs", "item": "Mob" } }`) lets
 people make things in the app: a name, a drawing, a description and reference pictures. A page shows the
-collection with `::designs{collection="mobs"}` or a layout's `designs` block. People press **Ready to add** when
-one is done. Then:
+collection with `::designs{collection="mobs"}` or a layout's `designs` block. People sort a collection into groups,
+nested as deep as they like (Monsters › World 1 › Forest), in `designs/<collection>/_groups/`; a design's group is
+where it belongs in the world, so use it when you pick where its page goes. People press **Ready to add** when one
+is done. Then:
 
-1. `pnpm shiori designs {{id}}` lists the ready ones with their files; `pnpm shiori designs {{id}} show <collection>/<id>`
-   prints one. Open `board.png` and the pictures with your file tools: they're the design.
+1. `pnpm shiori designs {{id}}` lists the ready ones with their files and groups; `pnpm shiori designs {{id}} show
+   <collection>/<id>` prints one, and `pnpm shiori designs {{id}} groups` prints the groups as a tree. Open
+   `board.png` and the pictures with your file tools: they're the design.
 2. Write its page (a kit with a layout that has a `design` block suits it), with `design: <collection>/<id>` in the
    frontmatter so the page shows the drawing.
 3. `pnpm shiori designs {{id}} done <collection>/<id> --page <path> --note "…"`: the person sees the note and the page.

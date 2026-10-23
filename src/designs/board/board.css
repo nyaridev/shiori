@@ -1,0 +1,416 @@
+/* The drawing board (Board.tsx): its toolbar, the stage the paper sits on, the stroke layer, the brush outline, the
+   mirror's axis, fullscreen, and the paper's resize handles. */
+.sh-board {
+  display: grid;
+  gap: var(--s-2);
+}
+
+/* Fullscreen: the board over the whole window, the page under it kept still. */
+.sh-board[data-full] {
+  position: fixed;
+  inset: 0;
+  z-index: 38;
+  grid-template-areas:
+    "top top"
+    "side stage";
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: var(--s-2);
+  background: var(--bg);
+}
+
+html.sh-board-open,
+html.sh-board-open body {
+  overflow: hidden;
+}
+
+/* Toolbar */
+.sh-board-tools {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sh-board-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+}
+.sh-board-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.sh-board-end {
+  margin-left: auto;
+}
+.sh-board-settings {
+  padding-top: var(--s-2);
+  border-top: var(--bw) solid var(--border);
+}
+.sh-board-sliders {
+  gap: var(--s-2) var(--s-5);
+  font-size: var(--t-xs);
+}
+.sh-board-paper-info {
+  margin-left: auto;
+  gap: var(--s-3);
+  font-size: var(--t-xs);
+}
+.sh-board-tool-name {
+  min-width: 72px;
+  color: var(--text);
+  font-weight: 650;
+}
+.sh-board-slider {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--muted);
+}
+.sh-board-slider input {
+  width: 110px;
+  accent-color: var(--accent);
+}
+.sh-board-slider output {
+  min-width: 4ch;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+.sh-board-hint {
+  color: var(--muted);
+}
+.sh-board-size {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sh-board-zoom {
+  min-width: 52px;
+  padding: 4px var(--s-1);
+  border: var(--bw) solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.sh-board-zoom:hover {
+  border-color: var(--border);
+}
+.sh-board-zoom:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* Inks */
+.sh-ink {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: var(--bw) solid var(--border-strong);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.sh-ink.is-current {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--accent);
+}
+.sh-ink:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.sh-ink-any {
+  overflow: hidden;
+  background: conic-gradient(var(--tone-bad), var(--tone-warn), var(--tone-good), var(--accent), var(--tone-bad));
+}
+/* The colour picked with "any colour", as a dot in the middle of the rainbow. */
+.sh-ink-any span {
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.2);
+}
+.sh-ink-any input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Where the paper sits: as large as it fits whole, with room around it for the handles. */
+.sh-board-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+}
+.sh-board[data-editable] .sh-board-stage {
+  border: var(--bw) dashed var(--border);
+  background: color-mix(in oklab, var(--surface) 60%, transparent);
+}
+.sh-board-stage[data-grab] {
+  cursor: grab;
+}
+.sh-board-stage[data-panning] {
+  cursor: grabbing;
+}
+.sh-board-frame {
+  position: relative;
+  width: 100%;
+  transform-origin: 0 0;
+}
+.sh-board-paper {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--paper);
+  box-shadow: var(--shadow-1);
+  touch-action: none;
+}
+.sh-board[data-editable] .sh-board-paper {
+  cursor: crosshair;
+}
+.sh-board-stage[data-grab] .sh-board-paper {
+  cursor: grab;
+}
+.sh-board-paper[data-tool="picker"] {
+  cursor: copy;
+}
+/* The stroke being drawn, over the paper until it joins it. */
+.sh-board-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-sm);
+  pointer-events: none;
+}
+/* The brush's size under the pointer: a dark ring inside a light one, seen on any colour. */
+.sh-board-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 1px solid rgb(0 0 0 / 0.6);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.7);
+  pointer-events: none;
+}
+.sh-board-cursor[hidden] {
+  display: none;
+}
+/* The mirror's axis, down the middle. */
+.sh-board-axis {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 1px dashed var(--accent);
+  opacity: 0.6;
+  pointer-events: none;
+}
+/* The new size while a handle is dragged. */
+.sh-board-outline {
+  position: absolute;
+  border: 2px dashed var(--accent);
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--accent) 8%, transparent);
+  pointer-events: none;
+}
+
+/* Eight handles: a bar along each edge and a square at each corner. */
+.sh-board-handle {
+  position: absolute;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  touch-action: none;
+}
+.sh-board-handle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border: var(--bw) solid var(--accent-line);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  transition:
+    background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+.sh-board-handle:hover::after,
+.sh-board-handle:active::after {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.sh-board-handle:focus-visible {
+  outline: none;
+}
+.sh-board-handle:focus-visible::after {
+  box-shadow: var(--focus);
+}
+.sh-board-handle[data-edge="n"],
+.sh-board-handle[data-edge="s"] {
+  left: 24px;
+  right: 24px;
+  height: 22px;
+  cursor: ns-resize;
+}
+.sh-board-handle[data-edge="e"],
+.sh-board-handle[data-edge="w"] {
+  top: 24px;
+  bottom: 24px;
+  width: 22px;
+  cursor: ew-resize;
+}
+.sh-board-handle[data-edge="n"] {
+  top: -11px;
+}
+.sh-board-handle[data-edge="s"] {
+  bottom: -11px;
+}
+.sh-board-handle[data-edge="e"] {
+  right: -11px;
+}
+.sh-board-handle[data-edge="w"] {
+  left: -11px;
+}
+.sh-board-handle[data-edge="n"]::after,
+.sh-board-handle[data-edge="s"]::after {
+  width: 44px;
+  height: 8px;
+}
+.sh-board-handle[data-edge="e"]::after,
+.sh-board-handle[data-edge="w"]::after {
+  width: 8px;
+  height: 44px;
+}
+.sh-board-handle[data-edge="ne"],
+.sh-board-handle[data-edge="nw"],
+.sh-board-handle[data-edge="se"],
+.sh-board-handle[data-edge="sw"] {
+  width: 24px;
+  height: 24px;
+}
+.sh-board-handle[data-edge="nw"] {
+  top: -12px;
+  left: -12px;
+  cursor: nwse-resize;
+}
+.sh-board-handle[data-edge="se"] {
+  right: -12px;
+  bottom: -12px;
+  cursor: nwse-resize;
+}
+.sh-board-handle[data-edge="ne"] {
+  top: -12px;
+  right: -12px;
+  cursor: nesw-resize;
+}
+.sh-board-handle[data-edge="sw"] {
+  bottom: -12px;
+  left: -12px;
+  cursor: nesw-resize;
+}
+.sh-board-handle[data-edge="ne"]::after,
+.sh-board-handle[data-edge="nw"]::after,
+.sh-board-handle[data-edge="se"]::after,
+.sh-board-handle[data-edge="sw"]::after {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--r-sm);
+}
+.sh-board[data-editable] .sh-board-paper {
+  cursor: crosshair;
+}
+
+/* The tools and the inks are fieldsets: no frame of their own. */
+fieldset.sh-board-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Fullscreen, like a paint program: inks, sliders and actions across the top, the tools down the left, and the
+   paper on a plain grey desk. */
+.sh-board-top,
+.sh-board-side {
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sh-board-top {
+  grid-area: top;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+  padding: var(--s-1) var(--s-2);
+}
+.sh-board-top .sh-board-end {
+  margin-left: 0;
+}
+.sh-board-side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-1);
+  overflow: hidden auto;
+}
+.sh-board-side .sh-board-toolset {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 2px;
+}
+.sh-board[data-full] .sh-board-stage {
+  grid-area: stage;
+  border: 0;
+  background: color-mix(in oklab, var(--text) 9%, var(--bg));
+}
+/* The ink being drawn with, under the tools. */
+.sh-board-swatch {
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: var(--bw) solid var(--border-strong);
+  border-radius: var(--r-md);
+  box-shadow:
+    inset 0 0 0 2px var(--surface),
+    var(--shadow-1);
+  cursor: pointer;
+}
+.sh-board-swatch:focus-within {
+  box-shadow:
+    inset 0 0 0 2px var(--surface),
+    var(--focus);
+}
+.sh-board-swatch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.sh-board-divider {
+  align-self: stretch;
+  width: var(--bw);
+  min-height: 20px;
+  background: var(--border);
+}
