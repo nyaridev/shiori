@@ -68,11 +68,14 @@ export const PREVIEW_VARS = (appRoot: string): TemplateVars => ({
   shiori: appRoot,
 });
 
-/** (Re)build the dev preview from the template. Its `data/` (comments made while testing) survives. */
+/** What people made in the preview while testing: comments and the like (`data/`) and designs (`designs/`). */
+const PREVIEW_KEEPS = new Set(["data", "designs"]);
+
+/** (Re)build the dev preview from the template. What people made in it while testing survives. */
 export function buildPreview(appRoot: string, dest = previewDir()): string {
   mkdirSync(dest, { recursive: true });
   for (const name of readdirSync(dest)) {
-    if (name !== "data") rmSync(join(dest, name), { recursive: true, force: true });
+    if (!PREVIEW_KEEPS.has(name)) rmSync(join(dest, name), { recursive: true, force: true });
   }
   copyTemplate(appRoot, dest, PREVIEW_VARS(appRoot));
   return dest;

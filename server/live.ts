@@ -59,7 +59,6 @@ export function createLive(registry: Registry) {
   const start = () => {
     for (const w of watchers.splice(0)) w.close();
     for (const dir of registry.watchDirs()) watchTree(dir);
-    if (registry.dev) return;
     const rootWatch = watch(registry.appRoot, (_e, file) => {
       if (String(file) !== LINKS_FILE) return;
       registry.invalidate();

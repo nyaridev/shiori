@@ -83,7 +83,7 @@ describe("pages and threads", () => {
 });
 
 describe("dev mode", () => {
-  it("shows only the template, filled in, and ignores everything else", () => {
+  it("shows the template, filled in, first and then this PC's wikis", () => {
     const template = join(app, "wikis", "_template");
     mkdirSync(join(template, "pages"), { recursive: true });
     writeFileSync(join(template, "wiki.json"), JSON.stringify({ schema: 1, id: "{{id}}", title: "{{title}}" }));
@@ -91,13 +91,26 @@ describe("dev mode", () => {
     writeFileSync(join(template, "cover.svg"), '<svg fill="{{accent}}"/>');
     writeFileSync(join(template, "pages", "index.md"), "# {{title}}");
     wiki(join(app, "wikis", "alpha"), "alpha");
+    wiki(join(app, "elsewhere"), "beta");
+    wiki(join(app, "wikis", "clash"), "template");
+    writeLinks(app, [join(app, "elsewhere")]);
 
     const preview = join(app, "preview");
     const registry = createRegistry(app, { dev: true, preview });
-    expect(registry.all().map((w) => [w.id, w.manifest.title, w.problems])).toEqual([["template", "Template", []]]);
+    expect(registry.all().map((w) => [w.id, w.manifest.title, w.problems])).toEqual([
+      ["template", "Template", []],
+      ["alpha", "ALPHA", []],
+      ["beta", "BETA", []],
+    ]);
+    expect(registry.broken().map((b) => b.problems)).toEqual([['id "template" is the template\'s in dev']]);
     expect(registry.classify(join(template, "pages", "index.md"))).toEqual({ wiki: "template", area: "pages" });
+    expect(registry.classify(join(template, "data", "wiki.db")).area).toBe("ignore");
     expect(registry.classify(join(preview, "data", "wiki.db"))).toEqual({ wiki: "template", area: "data" });
-    expect(registry.classify(join(app, "wikis", "alpha", "pages", "index.md")).area).toBe("ignore");
+    expect(registry.classify(join(app, "wikis", "alpha", "pages", "index.md"))).toEqual({
+      wiki: "alpha",
+      area: "pages",
+    });
+    expect(registry.classify(join(app, "elsewhere", "data", "wiki.db"))).toEqual({ wiki: "beta", area: "data" });
   });
 
   it("keeps a page added to the preview until the template changes", () => {
@@ -117,6 +130,20 @@ describe("dev mode", () => {
     registry.classify(join(template, "pages", "index.md"));
     registry.invalidate();
     expect(existsSync(tried)).toBe(false);
+  });
+
+  it("keeps designs drawn in the preview when it's rebuilt", () => {
+    const template = join(app, "wikis", "_template");
+    mkdirSync(join(template, "pages"), { recursive: true });
+    writeFileSync(join(template, "wiki.json"), JSON.stringify({ schema: 1, id: "{{id}}", title: "{{title}}" }));
+    const preview = join(app, "preview");
+    createRegistry(app, { dev: true, preview });
+    const drawn = join(preview, "designs", "sketches", "fox-0000", "design.json");
+    mkdirSync(join(drawn, ".."), { recursive: true });
+    writeFileSync(drawn, "{}");
+    // A restart of the dev server builds the preview again.
+    createRegistry(app, { dev: true, preview });
+    expect(existsSync(drawn)).toBe(true);
   });
 });
 

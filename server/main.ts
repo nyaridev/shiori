@@ -1,7 +1,7 @@
 // Starts the Shiori server. `--static` also serves the built UI from dist/ (start-web.bat) and can
 // share wikis: the guest server (ADR-0003) listens on its own port while at least one share link is active, and
 // cloudflared's Quick Tunnel gives it a public address.
-// `--dev` shows only the template, filled in as a preview (pnpm dev), and can't share.
+// `--dev` shows the template, filled in as a preview, beside this PC's wikis (pnpm dev), and can't share.
 import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -73,8 +73,9 @@ const editions = createEditions(data);
 const app = buildApp({ registry, live, data, shares, tunnel, presence, staticDir: servedDir, editions });
 
 const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
-  const n = registry.all().length;
-  const what = values.dev ? "dev: the template only" : `${n} wiki${n === 1 ? "" : "s"}`;
+  // In dev, the first wiki is the template's preview.
+  const n = registry.all().length - (values.dev ? 1 : 0);
+  const what = `${values.dev ? "dev: the template and " : ""}${n} wiki${n === 1 ? "" : "s"}`;
   console.log(`Shiori server on http://localhost:${port} (${what})`);
   for (const b of registry.broken()) console.warn(`  skipped ${b.root}: ${b.problems.join("; ")}`);
 });

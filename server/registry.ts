@@ -150,11 +150,27 @@ const within = (root: string, file: string) => {
   return rel.startsWith("..") || isAbsolute(rel) ? null : rel.split(sep);
 };
 
+/** Dev mode's discovery: the template's preview first, then this PC's wikis, as `discover` finds them. */
+function discoverDev(appRoot: string, preview: string): Discovery {
+  const found = discover(appRoot);
+  const w = loadWiki(preview, "local");
+  if (!("id" in w)) return { wikis: found.wikis, broken: [w, ...found.broken] };
+  const clash = found.wikis.filter((x) => x.id === w.id);
+  return {
+    wikis: [w, ...found.wikis.filter((x) => x.id !== w.id)],
+    broken: [
+      ...found.broken,
+      ...clash.map((x) => ({ root: x.root, source: x.source, problems: [`id "${x.id}" is the template's in dev`] })),
+    ],
+  };
+}
+
 /**
  * Cached discovery; `live.ts` invalidates it when files change.
- * Dev mode (`pnpm dev`) shows only the template, filled in as a preview outside the app folder. A change to the
- * template rebuilds the preview; a change made in the preview itself (a page added to try something) shows as it is
- * and lasts until the template changes next.
+ * Dev mode (`pnpm dev`) shows the template, filled in as a preview outside the app folder, and then this PC's wikis,
+ * so the template can be worked on with no wikis around and changes to the app show on real wikis too. A change to
+ * the template rebuilds the preview; a change made in the preview itself (a page added to try something) shows as it
+ * is and lasts until the template changes next.
  */
 export function createRegistry(appRoot: string, { dev = false, preview = previewDir() } = {}) {
   let cache: Discovery | null = null;
@@ -162,14 +178,10 @@ export function createRegistry(appRoot: string, { dev = false, preview = preview
   let stale = false;
   if (dev) buildPreview(appRoot, preview);
   const current = () => {
-    if (!cache) {
-      if (dev) {
-        const w = loadWiki(preview, "local");
-        cache = "id" in w ? { wikis: [w], broken: [] } : { wikis: [], broken: [w] };
-      } else cache = discover(appRoot);
-    }
+    if (!cache) cache = dev ? discoverDev(appRoot, preview) : discover(appRoot);
     return cache;
   };
+  const wikiDirs = () => [join(appRoot, "wikis"), ...readLinks(appRoot).map((p) => resolve(appRoot, p))];
   return {
     appRoot,
     dev,
@@ -182,20 +194,20 @@ export function createRegistry(appRoot: string, { dev = false, preview = preview
       stale = false;
     },
     /** Folders to watch, recursively. */
-    watchDirs: (): string[] =>
-      dev
-        ? [templateDir(appRoot), preview]
-        : [join(appRoot, "wikis"), ...readLinks(appRoot).map((p) => resolve(appRoot, p))],
+    watchDirs: (): string[] => (dev ? [preview, ...wikiDirs()] : wikiDirs()),
     classify: (file: string): Change => {
       if (dev) {
-        const id = current().wikis[0]?.id ?? null;
-        const w = current().wikis[0];
+        // The preview is the first wiki when it loads; when it doesn't, its changes still refresh the deck.
+        const w = current().wikis.find((x) => x.root === preview);
+        const id = w?.id ?? null;
         const inPreview = within(preview, file);
         if (inPreview) return { wiki: id, area: w ? areaOf(w, inPreview) : "meta" };
         const rel = within(templateDir(appRoot), file);
-        if (!rel || rel[0] === "data") return { wiki: null, area: "ignore" };
-        stale = true;
-        return { wiki: id, area: w ? areaOf(w, rel) : "meta" };
+        if (rel) {
+          if (rel[0] === "data") return { wiki: null, area: "ignore" };
+          stale = true;
+          return { wiki: id, area: w ? areaOf(w, rel) : "meta" };
+        }
       }
       for (const w of current().wikis) {
         const rel = within(w.root, file);

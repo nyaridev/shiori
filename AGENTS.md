@@ -91,7 +91,7 @@ history, math, diagrams and data tables, 0009 question lists at scale, 0010 test
 | Command | What |
 |---|---|
 | `start-web.bat` / `pnpm build && pnpm start` | Built app on http://localhost:4400. Only the built app shares wikis (ADR-0003): while a share link is active, its guest server listens on 127.0.0.1:4420 and `cloudflared` (`winget install Cloudflare.cloudflared`) gives it a public address |
-| `start-dev.bat` / `pnpm dev` | Vite on http://localhost:4410 + API server on 4411, both reloading. Dev shows **only the template** (filled in, in the OS temp folder), repeated around the deck |
+| `start-dev.bat` / `pnpm dev` | Vite on http://localhost:4410 + API server on 4411, both reloading. Dev shows **the template first** (filled in, in the OS temp folder), then this PC's wikis (`wikis/` and `wikis.local.json`), all live, so app changes show on real wikis too and the template still works with none around |
 | `pnpm check` | `tsc` + Biome + Vitest; must pass before a task is done |
 | `pnpm format` | Biome fixes |
 

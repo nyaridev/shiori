@@ -24,7 +24,7 @@ can't be edited by hand: select text and comment, and the agent answers and upda
 ## Run
 
 `start-web.bat` builds the app and opens http://localhost:4400. `start-dev.bat` runs hot-reload dev mode on
-http://localhost:4410 with only the template wiki. Needs Node 25+ and pnpm.
+http://localhost:4410 with the template wiki first, then your own. Needs Node 25+ and pnpm.
 
 Agents work through `pnpm shiori` (new wikis, pages, the comment inbox, checks): see [AGENTS.md](AGENTS.md).
 
