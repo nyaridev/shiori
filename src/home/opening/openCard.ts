@@ -47,7 +47,7 @@ async function prefetch(id: string): Promise<string> {
   const [wiki, page] = await Promise.all([api.wiki(id), api.page(id, "")]);
   prime(`wiki:${id}`, wiki);
   prime(`page:${id}:`, page);
-  return themeVars(wiki.theme, viewerMode() ?? wiki.theme.mode)["--bg"] ?? FALLBACK_BG;
+  return themeVars(wiki.theme, viewerMode())["--bg"] ?? FALLBACK_BG;
 }
 
 function within<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {

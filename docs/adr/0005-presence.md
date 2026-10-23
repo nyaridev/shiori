@@ -65,8 +65,9 @@ Share dialog); the avatars of everyone else (`src/presence/`), whose list opens 
 switch at the far right. On narrow screens it also holds the page list, search and comments buttons that the old
 floating mobile bar had.
 
-**Day or night.** The viewer can flip a wiki between day and night; the choice is remembered in the browser
-(`localStorage`) for every wiki, and going back to a wiki's own mode forgets it. In the other mode a wiki keeps its
+**Day or night.** Wikis open in the system's day or night (`prefers-color-scheme`, followed live), and the public
+wiki does the same. The viewer can flip it; the choice is remembered in the browser (`localStorage`) for every wiki,
+and going back to the system's mode forgets it. In the mode that isn't the theme's own, a wiki keeps its
 accent, corners, borders, shadows and fonts on that mode's palette (its own backgrounds and text were chosen for its
 own mode), and the accent is pulled toward the text until it stands out from the new background
 (`themeColors` in `shared/theme.ts`). It's the same tokens, so every theme still works.

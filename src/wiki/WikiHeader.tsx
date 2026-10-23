@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router";
 import type { Person, WikiDetail } from "../../shared/api.ts";
 import { useGuest } from "../guest/GuestContext.ts";
 import { picture } from "../lib/base.ts";
-import { setViewerMode, useViewerMode } from "../lib/viewerMode.ts";
+import { setViewerMode, usePickedMode, useViewerMode } from "../lib/viewerMode.ts";
 import { PresenceBar } from "../presence/PresenceBar.tsx";
 import { LiveBadge } from "../sharing/LiveBadge.tsx";
 import { ShareDialog } from "../sharing/ShareDialog.tsx";
@@ -105,7 +105,7 @@ export function WikiHeader({
         {onComments && (
           <IconButton filled icon="comment" label="Comments" className="sh-head-rail" onClick={onComments} />
         )}
-        <ModeSwitch own={wiki.theme.mode} />
+        <ModeSwitch />
       </div>
       {!wide && <ReadingProgress />}
     </header>
@@ -113,22 +113,17 @@ export function WikiHeader({
 }
 
 /**
- * Day or night for this browser, over every wiki's own mode. Switching back to the wiki's own mode forgets the
- * choice, so each wiki shows as its theme meant again.
+ * Day or night for this browser, over the system's preference. Switching back to the system's mode forgets the
+ * choice, so wikis follow the system again.
  */
-function ModeSwitch({ own }: { own: "dark" | "light" }) {
-  const picked = useViewerMode();
-  const mode = picked ?? own;
+function ModeSwitch() {
+  const picked = usePickedMode();
+  const mode = useViewerMode();
   const next = mode === "dark" ? "light" : "dark";
   const label = next === "light" ? "Switch to day" : "Switch to night";
   return (
-    <Tooltip content={picked && next === own ? `${label}: this wiki's own look` : label} side="bottom">
-      <IconButton
-        filled
-        icon={mode === "dark" ? "sun" : "moon"}
-        label={label}
-        onClick={() => setViewerMode(next === own ? null : next)}
-      />
+    <Tooltip content={picked ? `${label}: as your system` : label} side="bottom">
+      <IconButton filled icon={mode === "dark" ? "sun" : "moon"} label={label} onClick={() => setViewerMode(next)} />
     </Tooltip>
   );
 }
