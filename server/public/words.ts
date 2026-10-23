@@ -15,7 +15,7 @@ export const ENGLISH: Words = {
   updated: "Updated",
   previous: "Previous",
   next: "Next",
-  pages: "Pages",
+  pages: "Navigation",
   notFound: "This page isn't in the wiki.",
   skip: "Skip to the page",
   day: "Day",
