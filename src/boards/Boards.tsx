@@ -1,13 +1,15 @@
-// The owner's test boards (ADR-0010), at `_/boards`: make one, and see how many reports each has.
+// The owner's test boards (ADR-0010), at `_/boards`: make one, and see how many reports each has. Each card's ⋯ menu
+// moves it to the trash, which is under them (ADR-0014).
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import type { Board } from "../../shared/api.ts";
 import { useLive } from "../lib/live.ts";
 import { useResource } from "../lib/useResource.ts";
-import { Badge, Button, Input, Segmented } from "../ui/index.ts";
+import { Badge, Button, IconButton, Input, Menu, MenuContent, MenuItem, MenuTrigger, Segmented } from "../ui/index.ts";
 import { specialHref } from "../wiki/PageHead.tsx";
 import { PageIcon } from "../wiki/PageIcon.tsx";
 import { boardsApi } from "./api.ts";
+import { BoardTrash } from "./Trash.tsx";
 import "./boards.css";
 
 export const VISIBILITY: { value: Board["visibility"]; label: string; hint: string }[] = [
@@ -27,21 +29,29 @@ export function useBoards(wikiId: string) {
 
 export function Boards({ wikiId }: { wikiId: string }) {
   const boards = useBoards(wikiId);
+  const active = boards.data?.filter((b) => !b.trashedAt) ?? [];
+  const trashed = boards.data?.filter((b) => b.trashedAt) ?? [];
+  const toTrash = async (uid: string) => {
+    await boardsApi.change(wikiId, uid, { trashed: true });
+    boards.reload();
+  };
   return (
     <div className="sh-boards">
       <NewBoard wikiId={wikiId} />
       {boards.error && <p className="sh-special-empty">Couldn't load the boards: {boards.error.message}</p>}
-      {boards.data && !boards.data.length && (
+      {boards.data && !active.length && (
         <p className="sh-special-empty">
-          No boards yet. Make one, share it with your testers, and their bug reports, changes and ideas land here.
+          {trashed.length
+            ? "No boards outside the trash. Make one, or restore one from the trash below."
+            : "No boards yet. Make one, share it with your testers, and their bug reports, changes and ideas land here."}
         </p>
       )}
       <ul className="sh-boards-list">
-        {boards.data?.map((b) => {
+        {active.map((b) => {
           const total = b.counts?.total ?? 0;
           const done = b.counts?.done ?? 0;
           return (
-            <li key={b.uid}>
+            <li key={b.uid} className="sh-boards-item">
               <Link
                 to={specialHref(wikiId, "boards", b.uid)}
                 className="sh-boards-card"
@@ -66,10 +76,22 @@ export function Boards({ wikiId }: { wikiId: string }) {
                   {total ? `${done} of ${total} report${total === 1 ? "" : "s"} done with` : "No reports yet"}
                 </span>
               </Link>
+              {/* Beside the link, not in it: a button can't sit inside a link. Placed over the card's corner. */}
+              <Menu>
+                <MenuTrigger asChild>
+                  <IconButton icon="dots" label={`Actions for ${b.name}`} size="sm" className="sh-boards-menu" />
+                </MenuTrigger>
+                <MenuContent align="end">
+                  <MenuItem icon="trash" danger onSelect={() => void toTrash(b.uid)}>
+                    Move to trash
+                  </MenuItem>
+                </MenuContent>
+              </Menu>
             </li>
           );
         })}
       </ul>
+      <BoardTrash wikiId={wikiId} boards={trashed} onChange={boards.reload} />
     </div>
   );
 }

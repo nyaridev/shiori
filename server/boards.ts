@@ -1,7 +1,18 @@
 // Test boards (ADR-0010): testers report bugs, changes and ideas through a link that shows only the board. Boards and
-// reports live in the wiki's `data/wiki.db` beside the comments, so they outlast the links to them. Nothing is
-// deleted: removing marks a report, closing marks a board.
-import type { Board, BoardVisibility, Report, ReportKind, ReportStatus } from "../shared/api.ts";
+// reports live in the wiki's `data/wiki.db` beside the comments, so they outlast the links to them. Removing marks a
+// report, closing marks a board. The one thing deleted for good is a board from the trash (ADR-0014): after
+// `BOARD_TRASH_DAYS`, or when the owner empties it, with its reports and their pictures.
+import { rmSync } from "node:fs";
+import { join } from "node:path";
+import {
+  BOARD_TRASH_DAYS,
+  type Board,
+  type BoardVisibility,
+  type Report,
+  type ReportKind,
+  type ReportStatus,
+} from "../shared/api.ts";
+import { ATTACHMENT_NAME, attachmentsDir } from "./attachments.ts";
 import { newUid } from "./ids.ts";
 import { authorColumns, authoredOf, dbFor, type Writer } from "./threads.ts";
 
@@ -13,6 +24,7 @@ interface BoardRow {
   visibility: BoardVisibility;
   created_at: string;
   closed_at: string | null;
+  trashed_at: string | null;
   updated_at: string;
 }
 
@@ -42,6 +54,7 @@ const boardOf = (r: BoardRow): Board => ({
   visibility: r.visibility,
   createdAt: r.created_at,
   closedAt: r.closed_at,
+  trashedAt: r.trashed_at,
   updatedAt: r.updated_at,
 });
 
@@ -102,20 +115,105 @@ export function createBoard(root: string, name: string, visibility: BoardVisibil
   return getBoard(root, uid) as Board;
 }
 
-/** Renames a board, changes who sees what, or closes and reopens it. Null when there's no such board. */
+/**
+ * Renames a board, changes who sees what, closes and reopens it, or moves it to the trash and back. Null when there's
+ * no such board.
+ */
 export function updateBoard(
   root: string,
   uid: string,
-  change: { name?: string; visibility?: BoardVisibility; closed?: boolean },
+  change: { name?: string; visibility?: BoardVisibility; closed?: boolean; trashed?: boolean },
 ): Board | null {
   const board = getBoard(root, uid);
   if (!board) return null;
   const at = now();
-  const closedAt = change.closed === undefined ? board.closedAt : change.closed ? (board.closedAt ?? at) : null;
+  const stamp = (on: boolean | undefined, was: string | null) => (on === undefined ? was : on ? (was ?? at) : null);
   dbFor(root)
-    .prepare("update boards set name = ?, visibility = ?, closed_at = ?, updated_at = ? where uid = ?")
-    .run(change.name ?? board.name, change.visibility ?? board.visibility, closedAt, at, uid);
+    .prepare("update boards set name = ?, visibility = ?, closed_at = ?, trashed_at = ?, updated_at = ? where uid = ?")
+    .run(
+      change.name ?? board.name,
+      change.visibility ?? board.visibility,
+      stamp(change.closed, board.closedAt),
+      stamp(change.trashed, board.trashedAt),
+      at,
+      uid,
+    );
   return getBoard(root, uid);
+}
+
+type Db = ReturnType<typeof dbFor>;
+
+/**
+ * Deletes a board's rows for good (ADR-0014): the board and every report on it, removed ones too. Their uids go in
+ * `purged`, so a merge from another PC doesn't bring them back. Runs inside the caller's transaction; answers the
+ * pictures the reports carried, for `removePictures` once it's committed.
+ */
+export function deleteBoardRows(db: Db, uid: string, at: string): string[] {
+  const reports = db.prepare("select uid, images from reports where board_uid = ?").all(uid) as {
+    uid: string;
+    images: string;
+  }[];
+  const mark = db.prepare("insert or ignore into purged (uid, kind, purged_at) values (?, ?, ?)");
+  mark.run(uid, "board", at);
+  for (const r of reports) mark.run(r.uid, "report", at);
+  db.prepare("delete from reports where board_uid = ?").run(uid);
+  db.prepare("delete from boards where uid = ?").run(uid);
+  return reports.flatMap((r) => imagesOf(r.images));
+}
+
+/** Deletes pictures of deleted reports from `data/attachments/`, unless a comment or another report still uses one. */
+export function removePictures(root: string, files: string[]) {
+  const db = dbFor(root);
+  const used = db.prepare(
+    "select 1 from messages where images like ? union all select 1 from reports where images like ? limit 1",
+  );
+  for (const file of files) {
+    if (!ATTACHMENT_NAME.test(file)) continue;
+    const pattern = `%"${file}"%`;
+    if (used.get(pattern, pattern)) continue;
+    rmSync(join(attachmentsDir(root), file), { force: true });
+  }
+}
+
+/** Deletes a board for good, with its reports and their pictures. Null when there's no such board. */
+export function purgeBoard(root: string, uid: string): { reports: number } | null {
+  const db = dbFor(root);
+  if (!getBoard(root, uid)) return null;
+  const count = db.prepare("select count(*) as n from reports where board_uid = ?").get(uid) as { n: number };
+  db.exec("begin");
+  let pictures: string[];
+  try {
+    pictures = deleteBoardRows(db, uid, now());
+    db.exec("commit");
+  } catch (error) {
+    db.exec("rollback");
+    throw error;
+  }
+  removePictures(root, pictures);
+  return { reports: count.n };
+}
+
+/** When a board in the trash will be deleted for good. */
+export const purgeDate = (trashedAt: string) =>
+  new Date(Date.parse(trashedAt) + BOARD_TRASH_DAYS * 24 * 60 * 60 * 1000);
+
+/** Deletes every board that has been in the trash for `BOARD_TRASH_DAYS` (when Shiori starts). Answers their names. */
+export function purgeExpired(root: string, at = new Date()): string[] {
+  const gone: string[] = [];
+  for (const b of listBoards(root))
+    if (b.trashedAt && purgeDate(b.trashedAt) <= at && purgeBoard(root, b.uid)) gone.push(b.name);
+  return gone;
+}
+
+/** What was deleted for good, for backups and sync. */
+export function listPurged(root: string): { uid: string; kind: "board" | "report"; purgedAt: string }[] {
+  return (
+    dbFor(root).prepare("select uid, kind, purged_at from purged order by purged_at, uid").all() as {
+      uid: string;
+      kind: "board" | "report";
+      purged_at: string;
+    }[]
+  ).map((p) => ({ uid: p.uid, kind: p.kind, purgedAt: p.purged_at }));
 }
 
 /**

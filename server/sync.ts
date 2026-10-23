@@ -9,6 +9,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { hostname } from "node:os";
 import { join } from "node:path";
 import { type Backup, backupSchema, exportData, insertPlayData, writer } from "./backup.ts";
+import { deleteBoardRows, removePictures } from "./boards.ts";
 import { dataDir } from "./paths.ts";
 import { authorColumns, dbFor } from "./threads.ts";
 
@@ -54,6 +55,8 @@ export function mergeData(root: string, data: Backup, into: Merged = emptyMerge(
   type Local = { id: number; updated_at: string } | undefined;
   const find = (table: string, uid: string) =>
     db.prepare(`select id, updated_at from ${table} where uid = ?`).get(uid) as Local;
+  // Pictures of boards another PC deleted for good (ADR-0014), deleted here once the merge is committed.
+  const pictures: string[] = [];
   db.exec("begin");
   try {
     for (const t of data.threads) {
@@ -148,36 +151,38 @@ export function mergeData(root: string, data: Backup, into: Merged = emptyMerge(
         into.updated++;
       }
     }
-    mergePlayData(db, data, into);
+    mergePlayData(db, data, into, pictures);
     db.exec("commit");
   } catch (error) {
     db.exec("rollback");
     throw error;
   }
+  removePictures(root, pictures);
   return into;
 }
 
 /**
  * Boards, reports and sheet edits (ADR-0010), by uid: new ones are added; for one both PCs have, the newer change
- * wins (a report's status or note, a board closed, an edit exported).
+ * wins (a report's status or note, a board closed or trashed, an edit exported). A board another PC deleted for good
+ * (ADR-0014) is deleted here too, and never added again.
  */
-function mergePlayData(db: ReturnType<typeof dbFor>, data: Backup, into: Merged) {
+function mergePlayData(db: ReturnType<typeof dbFor>, data: Backup, into: Merged, pictures: string[]) {
   const has = (table: string, uid: string) =>
     db.prepare(`select id, updated_at from ${table} where uid = ?`).get(uid) as
       | { id: number; updated_at: string }
       | undefined;
+  for (const p of data.purged) {
+    if (p.kind === "board" && has("boards", p.uid)) pictures.push(...deleteBoardRows(db, p.uid, p.purgedAt));
+    if (p.kind === "report") db.prepare("delete from reports where uid = ?").run(p.uid);
+  }
   const only = { boards: new Set<string>(), reports: new Set<string>(), edits: new Set<string>() };
   for (const b of data.boards) {
     const local = has("boards", b.uid);
     if (!local) only.boards.add(b.uid);
     else if ((b.updatedAt ?? b.createdAt) > local.updated_at) {
-      db.prepare("update boards set name = ?, visibility = ?, closed_at = ?, updated_at = ? where id = ?").run(
-        b.name,
-        b.visibility,
-        b.closedAt,
-        b.updatedAt ?? b.createdAt,
-        local.id,
-      );
+      db.prepare(
+        "update boards set name = ?, visibility = ?, closed_at = ?, trashed_at = ?, updated_at = ? where id = ?",
+      ).run(b.name, b.visibility, b.closedAt, b.trashedAt, b.updatedAt ?? b.createdAt, local.id);
       into.updated++;
     }
   }
@@ -259,8 +264,8 @@ export function syncFiles(root: string): FilesSynced {
   }
 
   // The file changes only when the data does, so a sync with nothing new makes no commit.
-  const { threads, answers, boards, reports, sheetEdits } = exportData(root);
-  const content = { threads, answers, boards, reports, sheetEdits };
+  const { threads, answers, boards, reports, sheetEdits, purged } = exportData(root);
+  const content = { threads, answers, boards, reports, sheetEdits, purged };
   const file = join(root, own);
   let previous: unknown = null;
   try {
@@ -271,6 +276,7 @@ export function syncFiles(root: string): FilesSynced {
       boards: old.boards ?? [],
       reports: old.reports ?? [],
       sheetEdits: old.sheetEdits ?? [],
+      purged: old.purged ?? [],
     };
   } catch {}
   const wrote = JSON.stringify(previous) !== JSON.stringify(content);

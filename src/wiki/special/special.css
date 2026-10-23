@@ -90,6 +90,12 @@
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: var(--s-3);
 }
+/* The By status and By type groups under the tag cards (or under "no tags yet") keep the gap groups have between
+   them, instead of touching the cards' bottom edge. */
+.sh-special-categories + .sh-special-group,
+.sh-special-empty + .sh-special-group {
+  margin-top: var(--s-5);
+}
 .sh-special-count {
   padding: 0 7px;
   border-radius: var(--r-sm);

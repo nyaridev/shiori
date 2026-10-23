@@ -91,10 +91,23 @@
 .sh-boards-card[data-closed] {
   opacity: 0.7;
 }
+/* A card's ⋯ menu (Move to trash) sits over its top right corner, beside the link rather than inside it. */
+.sh-boards-item {
+  position: relative;
+}
+.sh-boards-menu {
+  position: absolute;
+  top: var(--s-2);
+  right: var(--s-2);
+}
 .sh-boards-top {
   display: flex;
   align-items: center;
   gap: var(--s-3);
+}
+/* Room for the ⋯ over the corner, so the "new" badge stays clear of it. */
+.sh-boards-item .sh-boards-top {
+  padding-right: var(--s-6);
 }
 .sh-boards-name {
   flex: 1;
@@ -594,6 +607,93 @@
   margin: 0;
   font-family: var(--font-heading);
   font-size: var(--t-lg);
+}
+
+/* ── The boards' trash (Trash.tsx, ADR-0014): under the list, and a banner on a trashed board ──────────────────── */
+.sh-trash {
+  display: grid;
+  gap: var(--s-3);
+  padding-top: var(--s-4);
+  border-top: var(--bw) solid var(--border);
+}
+.sh-trash-head h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--t-lg);
+}
+.sh-trash-head p {
+  margin: var(--s-1) 0 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.sh-trash-list {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-trash-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  border: var(--bw) dashed var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sh-trash-what {
+  display: grid;
+  flex: 1 1 220px;
+  gap: 2px;
+  min-width: 0;
+}
+.sh-trash-name {
+  color: var(--text);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.sh-trash-meta {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-trash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+}
+/* Delete now, asked twice, in the row or the banner; the last button says it in the bad tone. */
+.sh-trash-confirm,
+.sh-trash-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-2);
+  padding: var(--s-2);
+  border-radius: var(--r-sm);
+  background: var(--hover);
+  color: var(--text-soft);
+  font-size: var(--t-xs);
+}
+.sh-trash-confirm {
+  flex-basis: 100%;
+}
+.sh-trash-banner {
+  padding: var(--s-3);
+  border: var(--bw) solid var(--border-strong);
+  border-radius: var(--r-lg);
+  font-size: var(--t-sm);
+}
+.sh-trash-confirm-text {
+  flex: 1 1 240px;
+}
+.sh-trash-confirm .sh-button:last-of-type {
+  color: var(--tone-bad);
+}
+.sh-trash-confirm .sh-discussion-problem {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 @media (max-width: 640px) {

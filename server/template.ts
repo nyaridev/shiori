@@ -1,9 +1,9 @@
 // wikis/_template: copying it into a new wiki (`pnpm shiori new`) and, in dev, into a filled-in preview.
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
 import { DEFAULT_PALETTE, NEW_WIKI_PALETTES, type Palette } from "../shared/palettes.ts";
-import { slashes } from "./paths.ts";
+import { ensureDataGitignore, slashes } from "./paths.ts";
 
 export interface TemplateVars {
   id: string;
@@ -41,13 +41,19 @@ function fill(dir: string, vars: TemplateVars) {
   }
 }
 
-/** Copy the template into `dest` (never its `data/`) and fill it in. */
+/**
+ * Copy the template into `dest` (never its `data/`) and fill it in. The wiki starts with its `data/` and that
+ * folder's `.gitignore` (ADR-0014), so its first commit already keeps this PC's files out.
+ */
 export function copyTemplate(appRoot: string, dest: string, vars: TemplateVars) {
   cpSync(templateDir(appRoot), dest, {
     recursive: true,
     filter: (src) => basename(src) !== "data",
   });
   fill(dest, vars);
+  const data = join(dest, "data");
+  mkdirSync(data, { recursive: true });
+  ensureDataGitignore(data);
 }
 
 /** Where dev mode keeps the filled-in template. Outside the app, so the app folder stays read-only. */
@@ -69,10 +75,5 @@ export function buildPreview(appRoot: string, dest = previewDir()): string {
     if (name !== "data") rmSync(join(dest, name), { recursive: true, force: true });
   }
   copyTemplate(appRoot, dest, PREVIEW_VARS(appRoot));
-  const data = join(dest, "data");
-  if (!existsSync(data)) {
-    mkdirSync(data);
-    writeFileSync(join(data, ".gitignore"), "*\n");
-  }
   return dest;
 }

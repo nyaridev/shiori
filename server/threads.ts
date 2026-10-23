@@ -128,6 +128,14 @@ const MIGRATIONS = [
      updated_at text not null
    );
    create index sheet_edits_cell on sheet_edits(sheet, row_key, column_id, id);`,
+  // The boards' trash (ADR-0014): a trashed board waits there, then is deleted for good. `purged` remembers what was
+  // deleted, by uid, so a merge from another PC doesn't bring it back.
+  `alter table boards add column trashed_at text;
+   create table purged (
+     uid text primary key,
+     kind text not null check (kind in ('board', 'report')),
+     purged_at text not null
+   );`,
 ];
 
 /** Gives rows made before uids (or restored from an old backup) theirs, and an `updated_at`. */
@@ -147,7 +155,7 @@ const open = new Map<string, DatabaseSync>();
 export function dbFor(root: string): DatabaseSync {
   const existing = open.get(root);
   if (existing) return existing;
-  // Comments are local; `data/` is never committed.
+  // `wiki.db` is committed with the wiki (ADR-0014); `checkpointAll` keeps it whole between writes.
   const db = new DatabaseSync(join(dataDir(root), "wiki.db"));
   db.exec("pragma journal_mode = wal; pragma foreign_keys = on; pragma busy_timeout = 3000;");
   const version = Number((db.prepare("pragma user_version").get() as { user_version: number }).user_version);
@@ -162,7 +170,20 @@ export function dbFor(root: string): DatabaseSync {
   return db;
 }
 
+/**
+ * Copies what's waiting in each open database's `wiki.db-wal` into `wiki.db` (ADR-0014), so a commit of `data/`
+ * holds every change. `truncate` also empties the WAL file, which needs no other reader: on closing.
+ */
+export function checkpointAll(mode: "passive" | "truncate" = "passive") {
+  for (const db of open.values()) {
+    try {
+      db.exec(`pragma wal_checkpoint(${mode})`);
+    } catch {}
+  }
+}
+
 export function closeAll() {
+  checkpointAll("truncate");
   for (const db of open.values()) db.close();
   open.clear();
 }

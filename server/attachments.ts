@@ -1,5 +1,5 @@
 // Pictures attached to comments: a screenshot with a change request, say. They're kept in the wiki's
-// `data/attachments/` (like the comments, never committed), named by a fresh uid so nothing can be overwritten or
+// `data/attachments/` (committed with the wiki, like the comments: ADR-0014), named by a fresh uid so nothing can be overwritten or
 // guessed into another folder. Only PNG, JPEG, WebP and GIF whose bytes match their type; never SVG.
 import { existsSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

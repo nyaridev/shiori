@@ -60,6 +60,8 @@ const HELP = `Shiori CLI
   pnpm shiori boards <id>                            Test boards (ADR-0010): testers' bug, change and idea reports
   pnpm shiori reports <id> [board] [--all]           New and planned reports (--all: every one), with pictures
   pnpm shiori report <id> <n> [--status s] [--note "…"]
+  pnpm shiori boards <id> trash|restore <board>      Move a board to the trash and back (ADR-0014); the app
+                                                   deletes it 30 days later, or the owner does from the trash
                                                    planned, fixed, wontfix, duplicate; the tester sees the note
   pnpm shiori sheets <id>                            Data sheets (sheets/*.json) and their changes not exported
   pnpm shiori sheet <id> new <name> [--title "T"]    A new sheet file to fill in
@@ -460,7 +462,7 @@ const commands: Record<string, () => void> = {
     console.log(`\n${GUEST_DESIGNS}`);
   },
 
-  boards: () => boards(wikiById(args[0])),
+  boards: () => boards(wikiById(args[0]), args.slice(1), fail),
   reports: () => reports(wikiById(args[0]), args[1], values.all, fail),
   report: () => report(wikiById(args[0]), args[1], values.status, values.note, fail),
   sheets: () => sheets(wikiById(args[0])),

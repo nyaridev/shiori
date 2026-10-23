@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MAX_PICTURE_BYTES, mediaProblems, serveFile } from "./files.ts";
+import { DATA_GITIGNORE } from "./paths.ts";
 
 let root: string;
 let app: Hono;
@@ -36,7 +37,9 @@ describe("pictures", () => {
     expect([meta.format, meta.width, meta.height]).toEqual(["webp", 480, 240]);
     const cached = readdirSync(join(root, "data", "cache", "pictures"));
     expect(cached).toHaveLength(1);
-    expect(readFileSync(join(root, "data", ".gitignore"), "utf8")).toBe("*\n");
+    // Resized copies are made again, so they stay out of git though data/ is committed (ADR-0014).
+    expect(readFileSync(join(root, "data", ".gitignore"), "utf8")).toBe(DATA_GITIGNORE);
+    expect(DATA_GITIGNORE).toContain("cache/");
 
     // Never made bigger than the original; SVGs never rasterized.
     const big = await get("assets/wide.png?w=2400");

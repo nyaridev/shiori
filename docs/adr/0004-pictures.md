@@ -38,7 +38,8 @@ Only these widths are made, so the cache stays bounded. SVGs are always sent as 
 animated WebP. The original file is never touched.
 
 **Cache in `data/`.** Each copy is written once to `<wiki>/data/cache/pictures/`, named by a hash of the file's
-path, size, modified time and width, so an edited picture gets new copies. `data/` keeps its `.gitignore` of `*`.
+path, size, modified time and width, so an edited picture gets new copies. `data/` keeps its `.gitignore` of `*`
+(since ADR-0014, `data/` is committed and its `.gitignore` names `cache/` among this PC's files).
 Copies are made on first request and shared by concurrent requests. Every response carries an ETag from the same
 hash, so a browser that already has a picture gets a `304`; guests' pictures are `private, no-cache`, so Cloudflare
 never keeps them.

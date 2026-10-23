@@ -1,12 +1,12 @@
-// Backups of a wiki's data (comments and answers to questions) as `backup.json` in the wiki folder. The database in
-// `data/` is never committed; this file can be, so discussions live with the pages. Only the CLI writes it: the app
-// itself never writes outside `data/`.
+// Backups of a wiki's data (comments, answers, boards and sheet edits) as `backup.json` in the wiki folder: readable
+// text beside the committed database (ADR-0014), and the way to load the data on a fresh database. Only the CLI writes
+// it: the app itself never writes outside `data/`.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { REACTIONS } from "../shared/api.ts";
 import { listAnswers } from "./answers.ts";
-import { allReports, listBoards } from "./boards.ts";
+import { allReports, listBoards, listPurged } from "./boards.ts";
 import { slashes } from "./paths.ts";
 import { allEdits } from "./sheets.ts";
 import { authorColumns, dbFor, fillUids, listThreads, type Writer } from "./threads.ts";
@@ -82,10 +82,14 @@ export const backupSchema = z.object({
         visibility: z.enum(["global", "private"]),
         createdAt: z.string(),
         closedAt: z.string().nullable(),
+        // The trash (ADR-0014). Older files have none.
+        trashedAt: z.string().nullable().default(null),
         updatedAt: z.string().optional(),
       }),
     )
     .default([]),
+  // What was deleted for good (ADR-0014), so a merge or restore doesn't bring it back. Older files have none.
+  purged: z.array(z.object({ uid: z.string(), kind: z.enum(["board", "report"]), purgedAt: z.string() })).default([]),
   reports: z
     .array(
       z.object({
@@ -140,6 +144,7 @@ export function exportData(root: string): Backup {
     boards: listBoards(root).map(({ counts: _, ...b }) => ({ ...b, updatedAt: b.updatedAt ?? b.createdAt })),
     reports: allReports(root, { removed: true }).map(({ mine: _, ...r }) => ({ ...r, uid: r.uid as string })),
     sheetEdits: allEdits(root),
+    purged: listPurged(root),
   };
 }
 
@@ -162,22 +167,29 @@ export function readBackup(root: string): Backup {
 
 type Db = ReturnType<typeof dbFor>;
 
-/** Inserts boards, reports and sheet edits (ADR-0010). `keepIds` keeps reports' numbers (a restore). */
+/**
+ * Inserts boards, reports and sheet edits (ADR-0010), and what was deleted for good (ADR-0014), which is never
+ * inserted again. `keepIds` keeps reports' numbers (a restore).
+ */
 export function insertPlayData(
   db: Db,
-  data: Pick<Backup, "boards" | "reports" | "sheetEdits">,
+  data: Pick<Backup, "boards" | "reports" | "sheetEdits" | "purged">,
   {
     keepIds = false,
     only,
   }: { keepIds?: boolean; only?: { boards: Set<string>; reports: Set<string>; edits: Set<string> } } = {},
 ) {
+  const mark = db.prepare("insert or ignore into purged (uid, kind, purged_at) values (?, ?, ?)");
+  for (const p of data.purged) mark.run(p.uid, p.kind, p.purgedAt);
+  const isPurged = db.prepare("select 1 from purged where uid = ?");
+  const gone = (uid: string) => !!isPurged.get(uid);
   for (const b of data.boards)
-    if (!only || only.boards.has(b.uid))
+    if ((!only || only.boards.has(b.uid)) && !gone(b.uid))
       db.prepare(
-        "insert into boards (uid, name, visibility, created_at, closed_at, updated_at) values (?, ?, ?, ?, ?, ?)",
-      ).run(b.uid, b.name, b.visibility, b.createdAt, b.closedAt, b.updatedAt ?? b.createdAt);
+        "insert into boards (uid, name, visibility, created_at, closed_at, trashed_at, updated_at) values (?, ?, ?, ?, ?, ?, ?)",
+      ).run(b.uid, b.name, b.visibility, b.createdAt, b.closedAt, b.trashedAt, b.updatedAt ?? b.createdAt);
   for (const r of data.reports)
-    if (!only || only.reports.has(r.uid))
+    if ((!only || only.reports.has(r.uid)) && !gone(r.uid))
       db.prepare(
         "insert into reports (id, uid, board_uid, kind, title, body, images, author, guest_id, guest_name, status, note, created_at, edited_at, hidden, removed_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       ).run(
@@ -228,7 +240,7 @@ export function importData(root: string, data: Backup, { replace = false } = {})
   db.exec("begin");
   try {
     db.exec(
-      "delete from messages; delete from threads; delete from answers; delete from boards; delete from reports; delete from sheet_edits;",
+      "delete from messages; delete from threads; delete from answers; delete from boards; delete from reports; delete from sheet_edits; delete from purged;",
     );
     const thread = db.prepare(
       "insert into threads (id, page, quote, status, created_at, resolved_at, removed_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",

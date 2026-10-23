@@ -394,6 +394,8 @@ export interface ShareTarget {
 
 /** Global: testers see every report on the board. Private: each tester sees only their own. */
 export type BoardVisibility = "global" | "private";
+/** How long a board stays in the trash before Shiori deletes it for good (ADR-0014). */
+export const BOARD_TRASH_DAYS = 30;
 export type ReportKind = "bug" | "change" | "idea";
 export type ReportStatus = "new" | "planned" | "fixed" | "wontfix" | "duplicate";
 
@@ -408,6 +410,11 @@ export interface Board extends Synced {
   createdAt: string;
   /** A closed board keeps its reports and takes no new ones. */
   closedAt: string | null;
+  /**
+   * In the trash since then (ADR-0014): its links stop working, and Shiori deletes it for good, with its reports and
+   * their pictures, `BOARD_TRASH_DAYS` later; the owner can also delete it at once from the trash.
+   */
+  trashedAt: string | null;
   /** Reports on it (not removed), how many are still new, and how many are done with (fixed, won't fix, duplicate). Owner only. */
   counts?: { total: number; new: number; done: number };
 }

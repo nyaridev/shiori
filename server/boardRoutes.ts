@@ -1,5 +1,6 @@
 // The owner's routes for test boards (ADR-0010), under `/api/wikis/:id/boards`: make boards, read every report, and
-// say where each one stands. Testers reach boards only through a board link (server/sharing/boards.ts).
+// say where each one stands; move a board to the trash and back, or delete one from the trash for good (ADR-0014).
+// Testers reach boards only through a board link (server/sharing/boards.ts).
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { REPORT_STATUSES } from "../shared/api.ts";
@@ -9,6 +10,7 @@ import {
   getReport,
   listBoards,
   listReports,
+  purgeBoard,
   removeReport,
   triageReport,
   updateBoard,
@@ -22,6 +24,7 @@ const boardChangeSchema = z.strictObject({
   name: boardName.optional(),
   visibility: visibility.optional(),
   closed: z.boolean().optional(),
+  trashed: z.boolean().optional(),
 });
 const triageSchema = z.strictObject({
   status: z.enum(REPORT_STATUSES as [string, ...string[]]).optional(),
@@ -53,6 +56,16 @@ export function ownerBoardRoutes(wikiOf: (c: Context) => Wiki | Response) {
     if (!parsed.success) return c.json({ error: "bad request" }, 400);
     const board = updateBoard(w.root, c.req.param("bid"), parsed.data);
     return board ? c.json(board) : c.json({ error: "no such board" }, 404);
+  });
+
+  // Deleting for good: only a board already in the trash, so one click on an open board can't lose its reports.
+  app.delete("/:bid", (c) => {
+    const w = wikiOf(c);
+    if (w instanceof Response) return w;
+    const board = getBoard(w.root, c.req.param("bid"));
+    if (!board) return c.json({ error: "no such board" }, 404);
+    if (!board.trashedAt) return c.json({ error: "Move the board to the trash first." }, 409);
+    return c.json(purgeBoard(w.root, board.uid));
   });
 
   app.get("/:bid/reports", (c) => {

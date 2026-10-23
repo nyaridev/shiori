@@ -532,6 +532,7 @@ export function buildApp({
     if (link.kind === "board") {
       const board = targetId ? getBoard(w.root, targetId) : null;
       if (!board) return c.json({ error: "no such board" }, 404);
+      if (board.trashedAt) return c.json({ error: "This board is in the trash. Restore it to share it." }, 409);
       if (board.closedAt) return c.json({ error: "This board is closed. Open it again to share it." }, 409);
       target = { id: board.uid, title: board.name };
     } else if (link.kind === "sheet") {

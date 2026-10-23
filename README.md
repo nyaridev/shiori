@@ -19,7 +19,7 @@ can't be edited by hand: select text and comment, and the agent answers and upda
 - **One look, many themes.** Every wiki shares the same pages, elements and layout, with its own colors and fonts.
 - **Made for planning.** Roadmaps, tasks, questions and suggestions to answer, diagrams, data tables and page history
   from git.
-- **Wikis live anywhere.** In `wikis/`, or any folder you link; comments stay in each wiki's `data/`.
+- **Wikis live anywhere.** In `wikis/`, or any folder you link; comments stay in each wiki's `data/`, committed with it.
 
 ## Run
 

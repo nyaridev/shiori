@@ -8,6 +8,7 @@ import { join, relative } from "node:path";
 import { parseArgs } from "node:util";
 import { type ServerType, serve } from "@hono/node-server";
 import { buildApp } from "./app.ts";
+import { purgeExpired } from "./boards.ts";
 import { createLive } from "./live.ts";
 import { APP_ROOT } from "./paths.ts";
 import { createEditions } from "./public/output.ts";
@@ -16,7 +17,7 @@ import { buildGuestApp } from "./sharing/guest.ts";
 import { presenceFor } from "./sharing/presence.ts";
 import { createShares } from "./sharing/shares.ts";
 import { createTunnel } from "./sharing/tunnel.ts";
-import { closeAll } from "./threads.ts";
+import { checkpointAll, closeAll } from "./threads.ts";
 import { createWikiData } from "./wikiData.ts";
 
 const { values } = parseArgs({
@@ -39,6 +40,25 @@ const servedDir = values.static ? relative(process.cwd(), staticDir) : undefined
 const registry = createRegistry(APP_ROOT, { dev: values.dev });
 const live = createLive(registry);
 live.start();
+
+// The boards' trash (ADR-0014): boards there for 30 days are deleted for good when Shiori starts, and each day while
+// it runs. Only wikis that already have a database: a new one isn't made just to look.
+const emptyTrash = () => {
+  for (const w of registry.all()) {
+    if (!existsSync(join(w.root, "data", "wiki.db"))) continue;
+    try {
+      const gone = purgeExpired(w.root);
+      if (gone.length) console.log(`  ${w.id}: deleted ${gone.join(", ")} from the trash (30 days)`);
+    } catch (e) {
+      console.warn(`  ${w.id}: couldn't empty the boards' trash: ${(e as Error).message}`);
+    }
+  }
+};
+emptyTrash();
+setInterval(emptyTrash, 24 * 60 * 60 * 1000).unref();
+// `data/` is committed with the wiki (ADR-0014): write what waits in each database's WAL into `wiki.db` every
+// half minute, so a commit always holds every change.
+setInterval(() => checkpointAll(), 30_000).unref();
 const data = createWikiData(live);
 const tunnel = createTunnel({ port: guestPort, log: (line) => console.log(line) });
 // Until the tunnel is up, links point at the guest server itself and work on this PC only.

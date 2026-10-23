@@ -34,7 +34,11 @@ export function boardRoutes(kit: GuestKit) {
   app.use("*", only("board", kit));
   const { shares, now } = kit;
 
-  const boardOf = (c: Context<TargetEnv>) => getBoard(c.get("wiki").root, c.get("share").target?.id ?? "");
+  /** The link's board; a board in the trash (ADR-0014) is gone for its testers. */
+  const boardOf = (c: Context<TargetEnv>) => {
+    const board = getBoard(c.get("wiki").root, c.get("share").target?.id ?? "");
+    return board && !board.trashedAt ? board : null;
+  };
   /** A report as testers see it: never guest ids or the hidden flag; theirs marked `mine`. */
   const forTester = (r: Report, c: Context<TargetEnv>): Report => {
     const { guestId, hidden: _, ...rest } = r;

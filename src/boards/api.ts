@@ -21,8 +21,11 @@ export const boardsApi = {
   change: (
     wikiId: string,
     uid: string,
-    change: { name?: string; visibility?: Board["visibility"]; closed?: boolean },
+    change: { name?: string; visibility?: Board["visibility"]; closed?: boolean; trashed?: boolean },
   ) => request<Board>(`${at(wikiId)}/${enc(uid)}`, { method: "PATCH", body: JSON.stringify(change) }),
+  /** Deletes a board in the trash for good, with its reports and pictures (ADR-0014). */
+  purge: (wikiId: string, uid: string) =>
+    request<{ reports: number }>(`${at(wikiId)}/${enc(uid)}`, { method: "DELETE" }),
   reports: (wikiId: string, uid: string) =>
     request<{ board: Board; reports: Report[] }>(`${at(wikiId)}/${enc(uid)}/reports`),
   triage: (

@@ -253,3 +253,38 @@ describe("pictures on reports", () => {
     expect(HOST).toBeTruthy();
   });
 });
+
+describe("the boards' trash (ADR-0014)", () => {
+  it("a trashed board's link stops working, it can't be shared, and coming back restores the link", async () => {
+    const b = await board();
+    const share = await link(b);
+    const t = await tester(share, "Ana");
+    expect((await report(t)).status).toBe(201);
+    const trashed = await s.owner(`${BOARDS}/${b.uid}`, { method: "PATCH", body: { trashed: true } });
+    expect((await json<Board>(trashed)).trashedAt).toBeTruthy();
+    expect((await t.get("/api/board")).status).toBe(404);
+    expect((await report(t, "Still here?")).status).toBe(404);
+    const refused = await s.owner("/api/shares", {
+      method: "POST",
+      body: { wiki: "alpha", kind: "board", target: b.uid },
+    });
+    expect(refused.status).toBe(409);
+
+    await s.owner(`${BOARDS}/${b.uid}`, { method: "PATCH", body: { trashed: false } });
+    expect((await view(t)).reports.map((r) => r.title)).toEqual(["Tree won't grow"]);
+  });
+
+  it("deletes a board for good only from the trash, with its reports", async () => {
+    const b = await board();
+    const t = await tester(await link(b), "Ana");
+    await report(t);
+    expect((await s.owner(`${BOARDS}/${b.uid}`, { method: "DELETE" })).status).toBe(409);
+    await s.owner(`${BOARDS}/${b.uid}`, { method: "PATCH", body: { trashed: true } });
+    const gone = await s.owner(`${BOARDS}/${b.uid}`, { method: "DELETE" });
+    expect(gone.status).toBe(200);
+    expect(await json<{ reports: number }>(gone)).toEqual({ reports: 1 });
+    expect((await s.owner(`${BOARDS}/${b.uid}/reports`)).status).toBe(404);
+    expect((await s.owner(`${BOARDS}/${b.uid}`, { method: "DELETE" })).status).toBe(404);
+    expect((await json<{ boards: Board[] }>(await s.owner(BOARDS))).boards).toEqual([]);
+  });
+});

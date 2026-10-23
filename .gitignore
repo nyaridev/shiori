@@ -8,7 +8,7 @@ wikis/*
 !wikis/_template/
 wikis.local.json
 
-# Comment databases (also ignored inside each wiki)
+# Stray databases in this repo (dev runs). A wiki commits its own data/ (ADR-0014)
 *.db
 *.db-wal
 *.db-shm
