@@ -2,6 +2,7 @@
 import { posix } from "node:path";
 import type { Element, Root } from "hast";
 import { visit } from "unist-util-visit";
+import type { NavNode } from "../../shared/api.ts";
 import { ICON_NAME, iconSet } from "../icons.ts";
 import type { TableSource } from "./tables.ts";
 import type { Found } from "./wikilinks.ts";
@@ -19,6 +20,10 @@ export interface LinkContext {
   files?: (rel: string) => string;
   /** Where `::table` reads its rows (tables.ts): the wiki's data files and its pages. */
   tables?: TableSource;
+  /** The page's own path, so a navbox marks it (navbox.ts). */
+  path?: string;
+  /** The sidebar's page tree, for `::navbox{from}`. */
+  nav?: () => NavNode[];
 }
 
 const EXTERNAL = /^([a-z][a-z0-9+.-]*:|\/\/)/i;

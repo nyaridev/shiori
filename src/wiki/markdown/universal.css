@@ -111,9 +111,12 @@
   margin-left: auto;
   padding-left: var(--s-4);
   color: var(--muted);
+}
+/* Only the arrow turns, not its padded box, so it flips in place. */
+.sh-inline-toc-chevron > .sh-icon {
   transition: rotate 200ms var(--ease);
 }
-.sh-inline-toc[open] .sh-inline-toc-chevron {
+.sh-inline-toc[open] .sh-inline-toc-chevron > .sh-icon {
   rotate: 180deg;
 }
 .sh-prose .sh-inline-toc ol {

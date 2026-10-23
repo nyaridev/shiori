@@ -280,30 +280,63 @@
   }
 
   // ── Picture viewer ────────────────────────────────────────────────────────────────────────────────────────────
+  // A card in the middle of the window: the picture on a quiet stage, its caption under it. Any click closes it.
   const viewer = document.createElement("dialog");
   viewer.className = "pw-viewer";
   viewer.innerHTML =
-    '<button type="button" class="sh-button sh-icon-button pw-viewer-close" data-variant="ghost" data-size="md" aria-label="Close">×</button><img alt="">';
+    '<figure class="pw-viewer-frame"><div class="pw-viewer-stage"><img alt=""></div><figcaption class="pw-viewer-caption"></figcaption></figure>' +
+    '<button type="button" class="pw-viewer-close" aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
   document.body.append(viewer);
   const big = viewer.querySelector("img");
-  viewer.addEventListener("click", (e) => {
-    if (e.target !== big) viewer.close();
-  });
-  const open = (src, alt) => {
+  const caption = viewer.querySelector("figcaption");
+  viewer.addEventListener("click", () => viewer.close());
+  const open = (src, alt, text) => {
     big.src = src;
     big.alt = alt || "";
+    caption.textContent = text || alt || "";
+    caption.hidden = !caption.textContent;
     viewer.showModal();
   };
   for (const a of document.querySelectorAll(".pw-zoom")) {
     a.addEventListener("click", (e) => {
       e.preventDefault();
-      open(a.getAttribute("href"), a.querySelector("img")?.alt);
+      open(a.getAttribute("href"), a.querySelector("img")?.alt, a.querySelector(".sh-shot-caption")?.textContent);
     });
   }
   for (const img of document.querySelectorAll(".sh-prose img:not(.pw-zoom img):not(a img):not(.sh-icon-img)")) {
     img.classList.add("pw-zoomable");
     img.addEventListener("click", () => open(img.currentSrc || img.src, img.alt));
   }
+
+  // ── Citations (article.tsx's CiteEl) ──────────────────────────────────────────────────────────────────────────
+  // What a citation cites, in the app's tooltip above it, on the page itself so no section or table cuts it off.
+  const tip = document.createElement("div");
+  tip.className = "sh-tooltip pw-cite-tip";
+  tip.setAttribute("role", "tooltip");
+  tip.hidden = true;
+  document.body.append(tip);
+  const showTip = (cite) => {
+    const note = cite.querySelector(".sh-cite-note")?.textContent;
+    if (!note) return;
+    tip.textContent = note;
+    tip.hidden = false;
+    const at = cite.getBoundingClientRect();
+    const box = tip.getBoundingClientRect();
+    const left = Math.min(Math.max(8, at.left + at.width / 2 - box.width / 2), innerWidth - box.width - 8);
+    const top = at.top - box.height - 6 < 8 ? at.bottom + 6 : at.top - box.height - 6;
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+  };
+  const hideTip = () => {
+    tip.hidden = true;
+  };
+  for (const cite of document.querySelectorAll(".sh-cite")) {
+    cite.addEventListener("pointerenter", () => showTip(cite));
+    cite.addEventListener("pointerleave", hideTip);
+    cite.addEventListener("focusin", () => showTip(cite));
+    cite.addEventListener("focusout", hideTip);
+  }
+  addEventListener("scroll", hideTip, { passive: true, capture: true });
 
   // ── Search ────────────────────────────────────────────────────────────────────────────────────────────────────
   const input = document.getElementById("pw-q");

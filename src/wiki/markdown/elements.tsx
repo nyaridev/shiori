@@ -43,13 +43,22 @@ type LinkProps = Props<{
   rel?: string;
   "data-missing"?: string;
   "data-chip"?: string;
+  /** A navbox's link to the page it's on. */
+  "aria-current"?: "page";
 }>;
 
 /**
  * Links in pages. Links to a page preview it on hover (ADR-0002); a link to a page not written yet is a red link,
  * like on Wikipedia.
  */
-export function WikiLink({ href, children, "data-missing": missing, "data-chip": chip, ...rest }: LinkProps) {
+export function WikiLink({
+  href,
+  children,
+  "data-missing": missing,
+  "data-chip": chip,
+  "aria-current": current,
+  ...rest
+}: LinkProps) {
   const page = usePageAt(href);
   if (href?.startsWith("/w/") || href?.startsWith("/dev/")) {
     const isMissing = missing !== undefined;
@@ -58,6 +67,7 @@ export function WikiLink({ href, children, "data-missing": missing, "data-chip":
       <Link
         to={href}
         className={chip === undefined ? "sh-link" : "sh-link sh-link-chip"}
+        aria-current={current}
         data-missing={isMissing || undefined}
         title={isMissing ? "This page hasn't been written yet" : undefined}
       >

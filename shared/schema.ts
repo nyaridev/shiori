@@ -63,7 +63,7 @@ export const frameSchema = z.strictObject({
   width: z.enum(["standard", "narrow", "wide", "full"]).default("standard"),
   /** Where the sections card sits; `none` makes it the menu drawer phones use, on every screen. */
   sidebar: z.enum(["left", "right", "none"]).default("left"),
-  /** Behind the cards: a slate, the theme's background, the accent washed in, or a public picture from the wiki root. */
+  /** Behind the cards: `slate` (by night a near-black, #121314), the theme's background, the accent washed in, or a public picture from the wiki root. */
   backdrop: z
     .union([
       z.enum(["slate", "page", "tint"]),

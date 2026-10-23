@@ -12,6 +12,8 @@ import { rehypeCode } from "./code.ts";
 import { remarkElements, textOf } from "./elements.ts";
 import { type LinkContext, rehypeLinks } from "./links.ts";
 import { rehypeMath } from "./math.ts";
+import { rehypeNavboxHere, remarkNavboxFrom } from "./navbox.ts";
+import { rehypeReferences } from "./references.ts";
 import { remarkTables } from "./tables.ts";
 import { remarkWikilinks } from "./wikilinks.ts";
 
@@ -31,11 +33,14 @@ export function renderMarkdown(body: string, ctx: LinkContext, lineOffset = 0): 
     // `$$…$$` only: a lone `$` is a price, not math.
     .use(remarkMath, { singleDollarTextMath: false })
     .use(remarkElements, problems, lineOffset)
+    .use(remarkNavboxFrom, ctx.nav, problems, lineOffset)
     .use(remarkTables, { pageDir: ctx.pageDir, ...ctx.tables }, problems, lineOffset)
     .use(remarkWikilinks, ctx.findPage ?? (() => ({ page: null, others: [] })), problems, lineOffset)
     .use(remarkRehype)
     .use(rehypeSlug)
+    .use(rehypeReferences)
     .use(rehypeLinks, ctx, problems, lineOffset)
+    .use(rehypeNavboxHere, ctx.path === undefined ? undefined : `/w/${ctx.wikiId}${ctx.path ? `/${ctx.path}` : ""}`)
     .use(rehypeMath, problems, lineOffset)
     .use(rehypeCode, problems, lineOffset);
   const hast = processor.runSync(processor.parse(body)) as Root;

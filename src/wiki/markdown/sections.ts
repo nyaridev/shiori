@@ -49,7 +49,13 @@ export function fingerprints(hast: Root): Record<string, string> {
  * the rest. It carries the heading's anchor and text.
  */
 export function sectioned(hast: Root): Root {
-  const { intro, sections } = split(hast);
+  // The navboxes that close the page come after its last section, not inside it.
+  const all = hast.children;
+  let end = all.length;
+  const navbox = (n: RootContent) => n.type === "element" && n.tagName === "sh-navbox";
+  while (end > 0 && (navbox(all[end - 1]) || (all[end - 1].type === "text" && !textOf(all[end - 1]).trim()))) end--;
+  const outro = all.slice(end);
+  const { intro, sections } = split({ ...hast, children: all.slice(0, end) });
   if (!sections.length) return hast;
   const body = (children: RootContent[]): Element => ({
     type: "element",
@@ -69,6 +75,7 @@ export function sectioned(hast: Root): Root {
           children: [h2 as Element, body(rest)],
         }),
       ),
+      ...outro,
     ],
   };
 }

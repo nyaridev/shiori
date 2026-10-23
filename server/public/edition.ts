@@ -119,6 +119,7 @@ export const APP_STYLES = [
   "src/wiki/markdown/prose.css",
   "src/wiki/markdown/planning.css",
   "src/wiki/markdown/universal.css",
+  "src/wiki/markdown/article.css",
   "src/wiki/markdown/data.css",
   "src/wiki/markdown/code.css",
   "src/wiki/markdown/diagram.css",

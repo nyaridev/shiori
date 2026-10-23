@@ -2,7 +2,7 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
-import { NEW_WIKI_PALETTES, type Palette } from "../shared/palettes.ts";
+import { DEFAULT_PALETTE, NEW_WIKI_PALETTES, type Palette } from "../shared/palettes.ts";
 import { slashes } from "./paths.ts";
 
 export interface TemplateVars {
@@ -58,7 +58,7 @@ export const PREVIEW_VARS = (appRoot: string): TemplateVars => ({
   title: "Template",
   tagline: "The default wiki every new project starts from",
   // Not the app's own sand-colored chrome, so it's clear what the theme changes.
-  palette: NEW_WIKI_PALETTES.frost,
+  palette: NEW_WIKI_PALETTES[DEFAULT_PALETTE],
   shiori: appRoot,
 });
 

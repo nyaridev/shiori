@@ -252,6 +252,8 @@ export function renderPage(
   const ctx: LinkContext = {
     wikiId: wiki.id,
     pageDir,
+    path,
+    nav: () => nav,
     findPage: pageFinder(pages, pageDir),
     pageExists: (p) => known.has(p),
     fileExists: (rel) => {

@@ -640,3 +640,81 @@ name from Shiori's set, a picture of the wiki's own such as `/assets/icons/carro
 :::
 ::::
 ```
+
+## Changelog
+
+A page's History, as on a game wiki: each version with what changed in it, oldest last. Give it a title for each
+platform or edition when they differ.
+
+:::changelog[PC]
+- 0.3: Light radius raised from 10 to 12.
+- 0.2:
+  - Ember moths put out a lantern when five or more swarm it.
+  - Costs 15 coins, down from 20.
+- 0.1: Added.
+:::
+
+```md
+## History
+
+:::changelog[PC]
+- 0.3: Light radius raised from 10 to 12.
+- 0.2:
+  - Ember moths put out a lantern when five or more swarm it.
+  - Costs 15 coins, down from 20.
+:::
+```
+
+## Navbox
+
+A box of related pages in labelled rows, at the very end of an article, below its References. It folds, and the
+page it sits on is marked in it. Write the rows as a list: `Label: link · link`, a label over a nested list of rows,
+or links alone. Separate links with ` · `.
+
+:::navbox[The world]
+- Creatures: [[Moss fox]] · [[Ember moth]]
+- Items
+  - Tools: [[Glow lantern]]
+  - Materials: [[Lantern oil]] · [[Fox fur]]
+- Places: [[Old Grove]] · [[Willow River]]
+:::
+
+```md
+:::navbox[The world]
+- Creatures: [[Moss fox]] · [[Ember moth]]
+- Items
+  - Tools: [[Glow lantern]]
+  - Materials: [[Lantern oil]] · [[Fox fur]]
+:::
+```
+
+Or build it from a section of the page tree, so it never needs updating: a row for each folder, with its pages.
+`[Title]` changes its title, which is the section's otherwise.
+
+```md
+::navbox{from="world"}
+```
+
+## Footnotes and references
+
+Cite where a fact comes from with a footnote: `[^radius]` in the text, and `[^radius]: Where it's from.` on a line of
+its own anywhere in the page. Citations are numbered in the order they appear, show what they cite on hover, and
+jump to the page's references, which link back.[^radius] The list goes at the end of the article: under its last
+heading when nothing is written under it (end the page with an empty `## References`, or the same in the wiki's
+language), else under a "References" heading of its own. Navboxes stay after it.
+
+A page that's read by players ends like a game wiki's article, in this order: `## Notes` (what to know that the
+sections above don't say), `## Tips`, `## See also` when there's more to read, `## History` with a `:::changelog`,
+`## References`, then the navboxes.
+
+[^radius]: Measured in the 0.3 build: the light's range in studs, as players see it.
+
+```md
+The light reaches 12 studs.[^radius]
+
+## References
+
+[^radius]: Measured in the 0.3 build.
+
+::navbox{from="world"}
+```

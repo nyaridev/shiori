@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import * as home from "../home/blocks.tsx";
 import { RoadmapEl, RoadmapMilestoneEl } from "../roadmap/Roadmap.tsx";
+import * as article from "./article.tsx";
 import { CodeBlock } from "./code.tsx";
 import { DataTableEl } from "./DataTable.tsx";
 import { DiagramEl } from "./Diagram.tsx";
@@ -75,6 +76,16 @@ const components = {
   "sh-section": SectionEl,
   "sh-diagram": DiagramEl,
   "sh-table": DataTableEl,
+  "sh-cite": article.CiteEl,
+  "sh-references": article.ReferencesEl,
+  "sh-reference": article.ReferenceEl,
+  "sh-changelog": article.ChangelogEl,
+  "sh-change": article.ChangeEl,
+  "sh-navbox": article.NavboxEl,
+  "sh-navbox-group": article.NavboxGroupEl,
+  "sh-navbox-label": article.NavboxLabelEl,
+  "sh-navbox-items": article.NavboxItemsEl,
+  "sh-navbox-item": article.NavboxItemEl,
   "sh-unknown": el.UnknownEl,
 } as unknown as Components;
 

@@ -28,4 +28,14 @@ there's art.
 
 ## Notes
 
-Balance ideas, and the items it's compared with.
+- What players should know that the sections above don't say: exceptions, interactions, surprises.
+
+## Tips
+
+- How to make the most of it.
+
+## History
+
+:::changelog
+- 0.1: Added.
+:::

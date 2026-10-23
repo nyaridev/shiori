@@ -113,6 +113,22 @@ const SAFE_URL = /^(https?:|mailto:|#|\.{0,2}\/|[^:]*$)/i;
 
 const CALLOUT_ICONS: Record<string, string> = { note: "info", tip: "tip", warning: "warning", danger: "danger" };
 
+/** A reference's ways back to where it's cited: one arrow, or a letter for each citation when there are several. */
+function referenceBacks(cites: string): Element {
+  const ids = cites.split(" ").filter(Boolean);
+  return h(
+    "span",
+    cls("sh-reference-back"),
+    ids.length === 1
+      ? h("a", { href: `#${ids[0]}`, ariaLabel: "Back to the text", title: "Back to the text" }, uiIcon("reply", 13))
+      : ids.map((id, i) =>
+          h("a", { href: `#${id}`, ariaLabel: `Back to citation ${i + 1}` }, String.fromCharCode(97 + i)),
+        ),
+  );
+}
+
+const cls = (...names: string[]) => ({ className: names });
+
 /** A table that scrolls sideways inside its panel when it's wider than the page. */
 const tableWrap = (table: Element) => h("div", { className: ["sh-table-wrap", "pw-scroll-x"] }, table);
 
@@ -327,7 +343,6 @@ const LANGS: Record<string, string> = {
 function convert(el: Element, ctx: StaticContext): ElementContent | ElementContent[] | null {
   const p = el.properties;
   const kids = () => convertAll(el.children, ctx);
-  const cls = (...names: string[]) => ({ className: names });
   switch (el.tagName) {
     case "a": {
       const href = str(p.href);
@@ -340,6 +355,7 @@ function convert(el: Element, ctx: StaticContext): ElementContent | ElementConte
           href,
           className: chip ? ["sh-link", "sh-link-chip"] : ["sh-link"],
           ...(external ? { target: "_blank", rel: ["noreferrer"] } : {}),
+          ...(p.ariaCurrent ? { ariaCurrent: str(p.ariaCurrent) } : {}),
         },
         chip ? glyph("page") : null,
         kids(),
@@ -680,6 +696,66 @@ function convert(el: Element, ctx: StaticContext): ElementContent | ElementConte
     }
     case "sh-sheet":
       return sheetTable(str(p.name), ctx);
+    case "sh-cite": {
+      const n = str(p.n);
+      return h(
+        "sup",
+        { className: ["sh-cite"], id: str(p.id) },
+        h("a", { href: `#ref-${n}`, ariaLabel: `Reference ${n}` }, n),
+        // site.js shows it in a tooltip.
+        p.note ? h("span", { className: ["sh-cite-note"], hidden: true }, str(p.note)) : null,
+      );
+    }
+    case "sh-references":
+      return h("ol", cls("sh-references"), kids());
+    case "sh-reference":
+      return h(
+        "li",
+        { className: ["sh-reference"], id: str(p.id) },
+        h("span", cls("sh-reference-n"), str(p.n)),
+        h("span", cls("sh-reference-body"), kids()),
+        referenceBacks(str(p.cites)),
+      );
+    case "sh-changelog":
+      return h(
+        "div",
+        cls("sh-changelog"),
+        p.title ? h("p", cls("sh-changelog-title"), str(p.title)) : null,
+        h("ol", cls("sh-changelog-list"), kids()),
+      );
+    case "sh-change":
+      return h(
+        "li",
+        cls("sh-change"),
+        h("span", cls("sh-change-version"), str(p.version)),
+        h("div", cls("sh-change-body"), kids()),
+      );
+    case "sh-navbox":
+      return h(
+        "details",
+        { className: ["sh-navbox"], open: true },
+        h(
+          "summary",
+          cls("sh-navbox-head"),
+          h("span", cls("sh-navbox-title"), str(p.title) || "See also"),
+          h("span", cls("sh-navbox-fold"), uiIcon("chevronDown", 16)),
+        ),
+        h("div", cls("sh-navbox-body"), kids()),
+      );
+    case "sh-navbox-group": {
+      const label = el.children.find((c): c is Element => c.type === "element" && c.tagName === "sh-navbox-label");
+      const rest = el.children.filter((c) => c !== label);
+      return h(
+        "div",
+        { className: ["sh-navbox-group"], dataBare: label ? undefined : "" },
+        label ? h("div", cls("sh-navbox-label"), convertAll(label.children, ctx)) : null,
+        h("div", cls("sh-navbox-content"), convertAll(rest, ctx)),
+      );
+    }
+    case "sh-navbox-items":
+      return h("ul", cls("sh-navbox-items"), kids());
+    case "sh-navbox-item":
+      return h("li", {}, kids());
     case "sh-diagram":
       ctx.needs.diagrams = true;
       return h("figure", cls("sh-diagram", "pw-scroll-x"), h("pre", cls("pw-diagram"), textIn(el)));
@@ -710,7 +786,13 @@ function convertAll(children: ElementContent[], ctx: StaticContext): ElementCont
  * Each `##` section as the app's Section.tsx draws it: the heading over a thin line with its fold button, then its
  * body. The text before the first `##` stays as it is.
  */
-function sectioned(nodes: RootContent[]): RootContent[] {
+function sectioned(all: RootContent[]): RootContent[] {
+  // The navboxes that close the page come after its last section, not inside it.
+  const navbox = (n: RootContent) =>
+    n.type === "element" && Array.isArray(n.properties.className) && n.properties.className.includes("sh-navbox");
+  let end = all.length;
+  while (end > 0 && (navbox(all[end - 1]) || (all[end - 1].type === "text" && !textIn(all[end - 1]).trim()))) end--;
+  const nodes = all.slice(0, end);
   const out: RootContent[] = [];
   let body: Element | null = null;
   for (const node of nodes) {
@@ -747,7 +829,7 @@ function sectioned(nodes: RootContent[]): RootContent[] {
     } else if (body) body.children.push(node as ElementContent);
     else out.push(node);
   }
-  return out;
+  return [...out, ...all.slice(end)];
 }
 
 /** A stripped page (or fragment) as the public wiki's HTML; `sections` cuts it into the app's `##` sections. */

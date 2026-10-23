@@ -13,7 +13,7 @@ infobox:
 ---
 
 Who {{page.title}} is and why they matter to the story. Add `image:` and `caption:` to the frontmatter once there's
-art, and the references below.
+art, and the concept art below.
 
 ## Look
 
@@ -28,6 +28,20 @@ Where they come from, what they want, and how they change.
 - Where they appear
 - What they give or ask for
 
-## References
+## Concept art
 
 Concept art and inspiration: a `:::gallery` with one picture per line once there are any.
+
+## Notes
+
+- What players should know that the sections above don't say: exceptions, interactions, surprises.
+
+## Tips
+
+- How to make the most of it.
+
+## History
+
+:::changelog
+- 0.1: Added.
+:::

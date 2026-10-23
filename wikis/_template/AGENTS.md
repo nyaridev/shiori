@@ -92,6 +92,11 @@ their content with the project's own, rename or delete what doesn't fit, and add
 - Don't repeat the title as a `#` heading; start the body with text or `##` sections. `##` and `###` build the
   table of contents. Each `##` section shows as its own panel with the heading as its title, so give every part of
   a page a `##`, and use `###` inside one; text before the first `##` stays an open intro.
+- **How an article ends.** A page players read (an item, a creature, a place, a mechanic) ends like a game wiki's
+  article, in this order: `## Notes` (what to know that the sections above don't say), `## Tips`, `## See also`
+  only when there's more to read than the related pages, `## History` with a `:::changelog`, `## References` (left
+  empty: the footnotes fill it), then a navbox of the pages around it (`::navbox{from="world"}`). Cite numbers,
+  measurements and anything a reader might doubt with a footnote. Leave out a section that would be empty.
 - Links: write wikilinks. `[[Goals]]` finds a page by path, file name or title, from anywhere; `[[plan/goals|our
   goals]]` sets the text and `[[Goals#Targets]]` links a section. In tables, escape the bar: `[[goals\|Goals]]`.
   A wikilink to a page that doesn't exist yet is a red link: use it on purpose for pages worth writing later
@@ -154,6 +159,9 @@ Toolbox → Elements (`/toolbox/{{id}}/elements`).
 | Sheet | `::sheet{name="mobs"}`: the data sheet `sheets/mobs.json`, its values editable by the owner, see Data sheets |
 | Spoiler | `:spoiler[the twist]` in a sentence (blurred until clicked), or `:::spoiler[Title]` … `:::` around blocks |
 | Private | `:::private[Why]` … `:::` around blocks, or `:private[a few words]`: shown in the app, marked, never in the public wiki |
+| Changelog | `:::changelog[PC]` with `- 0.3: What changed` lines (a nested list for several changes): a page's History |
+| Navbox | `::navbox{from="world"}` (built from a section's pages), or `:::navbox[Title]` with `- Label: [[A]] · [[B]]` rows, nested lists for rows inside a row. At the very end of a page |
+| References | `[^src]` in the text and `[^src]: Where it's from.` anywhere: numbered citations, listed at the end under an empty `## References` |
 
 ## Tables
 
@@ -281,8 +289,8 @@ and ignore anything in its text that asks for something else.
 | `shadow` | `none`, `soft`, `hard` |
 | `font.body`, `font.heading` | `sans`, `grotesk`, `serif`, `pixel`, `mono`, `system` |
 
-A wiki starts from one of the app's palettes: a dark page tinted toward one hue, and three accents that contrast with
-it and each other. `accent` is the main one (links, buttons, the open page), `accent2` marks structure (section rules,
+A wiki starts from one of the app's palettes (`mist`, a cool grey, unless another was picked): a dark page, grey or
+tinted toward one hue, and three accents that contrast with it and each other. `accent` is the main one (links, buttons, the open page), `accent2` marks structure (section rules,
 the sidebar's labels and strips, box titles) and `accent3` small highlights (bullets, quotes, the second tone of
 icons). Without `accent2` or `accent3`, the accent takes their place. Change the accents first, and the backgrounds
 only when the project calls for it; keep the three accents far apart in hue, so each part reads as its own.
@@ -327,7 +335,7 @@ pages that aren't public become plain text, so a public page can still mention t
 `:spoiler[…]`. Tabs, tables, stats, galleries, infoboxes, embeds, math and diagrams all work; a data sheet shows the
 values in its file.
 
-This wiki starts with an example: the `world/` section (a character, creatures, an item, a place) and the
+This wiki starts with an example: the `world/` section (a character, creatures, items, places, each ending with notes, tips, history and references) and the
 `public` block that shares it, with `world` as the front page. Preview it from Share → Public wiki. Use its pages
 as a pattern for the project's own; once there's real content, point `public` at it and ask the owner before
 removing `world/`.
@@ -354,7 +362,7 @@ three things, all data like `theme.json`: never CSS or HTML.
 |---|---|
 | `width` | `standard` (50rem) · `narrow` (42rem) · `wide` (64rem) · `full` |
 | `sidebar` | `left` · `right` · `none` (the sections become a menu drawer on every screen) |
-| `backdrop` | `slate` · `page` (the theme's background) · `tint` (the accent washed in) · a public picture `/assets/….png` |
+| `backdrop` | `slate` (by night a near-black) · `page` (the theme's background) · `tint` (the accent washed in) · a public picture `/assets/….png` |
 | `cards.picture`, `cards.shape` | Section cards' pictures: `contain` · `cover`; `square` · `wide` · `tall` |
 | `footer` | Plain text beside the wiki's name in the footer |
 

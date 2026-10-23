@@ -18,7 +18,7 @@ import { syncWiki } from "../server/sync.ts";
 import { copyTemplate } from "../server/template.ts";
 import { addMessage, closeAll, getThread, listThreads, setStatus, waitingForAgent } from "../server/threads.ts";
 import type { Answer, Authored, PageData, Question, Thread } from "../shared/api.ts";
-import { NEW_WIKI_PALETTES, PALETTE_NAMES, type PaletteName } from "../shared/palettes.ts";
+import { DEFAULT_PALETTE, NEW_WIKI_PALETTES, PALETTE_NAMES, type PaletteName } from "../shared/palettes.ts";
 import { isPageComment } from "../shared/quote.ts";
 import { wikiIdSchema } from "../shared/schema.ts";
 import { boards, report, reports } from "./boards.ts";
@@ -31,7 +31,7 @@ const HELP = `Shiori CLI
   pnpm shiori new <id> [--title "T"] [--tagline "…"] [--at <folder>]
                      [--palette <name>] [--accent "#rrggbb"]
                                                    New wiki from wikis/_template (--at: outside the app, linked;
-                                                   --palette: its colors, random unless given; --accent: its first)
+                                                   --palette: its colors, mist unless given; --accent: its first)
   pnpm shiori link <folder>                          Show a wiki that lives elsewhere (wikis.local.json)
   pnpm shiori unlink <id|folder>                     Stop showing a linked wiki (its files stay)
   pnpm shiori check [id]                             Validate wiki.json, theme.json, pages, links, files, elements
@@ -193,7 +193,7 @@ const commands: Record<string, () => void> = {
     if (discover(APP_ROOT).wikis.some((w) => w.id === id)) fail(`A wiki "${id}" already exists.`);
     const dest = values.at ? resolve(values.at) : join(APP_ROOT, "wikis", id);
     if (existsSync(dest) && readdirSync(dest).length) fail(`${slashes(dest)} isn't empty.`);
-    const name = (values.palette ?? PALETTE_NAMES[Math.floor(Math.random() * PALETTE_NAMES.length)]) as PaletteName;
+    const name = (values.palette ?? DEFAULT_PALETTE) as PaletteName;
     if (!PALETTE_NAMES.includes(name)) fail(`--palette is one of ${PALETTE_NAMES.join(", ")}.`);
     if (values.accent && !/^#[0-9a-fA-F]{6}$/.test(values.accent)) fail("--accent must be #rrggbb.");
     const palette = { ...NEW_WIKI_PALETTES[name], ...(values.accent && { accent: values.accent }) };

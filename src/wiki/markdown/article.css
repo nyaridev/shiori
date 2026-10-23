@@ -1,0 +1,284 @@
+/* The end of an article (article.tsx, and the public wiki's same markup from server/public/html.ts): citations and
+   References, a changelog for History, and navboxes. */
+
+/* ── Citations: a small number in a pill that previews the reference in a tooltip ─────────────────────────── */
+.sh-cite {
+  position: relative;
+  margin-left: 1px;
+  line-height: 0;
+  scroll-margin-top: var(--s-7);
+}
+.sh-cite > a {
+  display: inline-block;
+  min-width: 1.45em;
+  padding: 0.25em 0.35em;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 0.68em;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  transition: background var(--fast) var(--ease);
+}
+.sh-cite > a:hover,
+.sh-cite > a:focus-visible {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.sh-cite:target > a {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.sh-cite-tip {
+  display: block;
+  max-width: 320px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+/* The public wiki's citation keeps its note here for site.js, which shows it in a tooltip on the page itself, where
+   no section or table can cut it off. */
+.sh-cite-note {
+  display: none;
+}
+
+/* ── References: numbered rows, the cited one lit when a citation jumps to it ─────────────────────────────── */
+.sh-prose .sh-references {
+  display: grid;
+  gap: 2px;
+  margin: var(--s-3) 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-prose .sh-reference {
+  display: grid;
+  margin: 0;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--s-2);
+  align-items: baseline;
+  padding: 6px var(--s-2);
+  border-radius: var(--r-sm);
+  color: var(--text-soft);
+  font-size: var(--t-sm);
+  scroll-margin-top: var(--s-7);
+  transition: background 600ms var(--ease);
+}
+.sh-reference:target {
+  background: var(--accent-soft);
+}
+.sh-reference-n {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.7em;
+  height: 1.7em;
+  padding: 0 0.3em;
+  border-radius: 999px;
+  background: var(--raised);
+  color: var(--accent-ink);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.sh-reference-body > p:first-child {
+  margin-top: 0;
+}
+.sh-reference-body > p:last-child {
+  margin-bottom: 0;
+}
+.sh-reference-back {
+  display: inline-flex;
+  gap: 4px;
+  align-self: center;
+}
+.sh-reference > .sh-reference-back > a {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  text-decoration: none;
+}
+.sh-reference > .sh-reference-back > a:hover {
+  background: var(--hover);
+  color: var(--accent-ink);
+}
+
+/* ── Changelog: a version pill beside what changed, the rows lined up across the list ─────────────────────── */
+.sh-changelog {
+  margin: var(--s-4) 0;
+}
+.sh-changelog + .sh-changelog {
+  margin-top: var(--s-5);
+}
+.sh-prose .sh-changelog-title {
+  margin: 0 0 var(--s-2);
+  color: var(--text);
+  font-weight: 650;
+}
+.sh-prose .sh-changelog-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sh-prose .sh-change {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  gap: var(--s-3);
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+}
+.sh-change + .sh-change {
+  border-top: var(--bw) solid var(--border);
+}
+.sh-change-version {
+  align-self: start;
+  justify-self: start;
+  margin-top: 1px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sh-change-body {
+  min-width: 0;
+  color: var(--text-soft);
+}
+.sh-change-body > :first-child {
+  margin-top: 0;
+}
+.sh-change-body > :last-child {
+  margin-bottom: 0;
+}
+.sh-prose .sh-change-body ul {
+  padding-left: 1.1em;
+}
+
+/* ── Navbox: a box of related pages at the very end, in labelled rows; it folds without scripts ────────────── */
+.sh-navbox {
+  margin: var(--s-6) 0 var(--s-3);
+  overflow: hidden;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.sh-navbox + .sh-navbox {
+  margin-top: var(--s-3);
+}
+.sh-navbox-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  background: color-mix(in oklab, var(--accent-soft) 70%, var(--surface));
+  color: var(--text);
+  font-weight: 650;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.sh-navbox-head::-webkit-details-marker {
+  display: none;
+}
+.sh-navbox-head:hover {
+  background: color-mix(in oklab, var(--accent-soft) 100%, var(--surface));
+}
+.sh-navbox-fold {
+  display: inline-flex;
+  margin-left: auto;
+  color: var(--muted);
+}
+.sh-navbox-fold > .sh-icon {
+  transition: rotate 200ms var(--ease);
+}
+.sh-navbox[open] .sh-navbox-fold > .sh-icon {
+  rotate: 180deg;
+}
+.sh-navbox[open] > .sh-navbox-head {
+  border-bottom: var(--bw) solid var(--border);
+}
+
+.sh-navbox-group {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 9.5rem) 1fr;
+}
+.sh-navbox-group[data-bare] {
+  grid-template-columns: 1fr;
+}
+/* A line between rows, and between a row's links and the rows inside it. */
+.sh-navbox-group + .sh-navbox-group,
+.sh-navbox-items + .sh-navbox-group {
+  border-top: var(--bw) solid var(--border);
+}
+.sh-navbox-label {
+  display: flex;
+  align-items: center;
+  padding: var(--s-2) var(--s-3);
+  background: var(--raised);
+  color: var(--text);
+  font-size: var(--t-sm);
+  font-weight: 650;
+}
+.sh-navbox-content .sh-navbox-label {
+  background: color-mix(in oklab, var(--raised) 55%, var(--surface));
+  color: var(--text-soft);
+}
+.sh-navbox-content {
+  min-width: 0;
+}
+.sh-prose .sh-navbox-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  list-style: none;
+  font-size: var(--t-sm);
+  line-height: 1.7;
+}
+.sh-prose .sh-navbox-items > li {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+}
+.sh-navbox-items > li + li::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  margin: 0 0.6em;
+  border-radius: 50%;
+  background: var(--accent-3);
+  opacity: 0.7;
+}
+.sh-navbox a[aria-current="page"] {
+  padding: 0 6px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* On a phone a row's label sits over its links. */
+@media (max-width: 600px) {
+  .sh-navbox-group {
+    grid-template-columns: 1fr;
+  }
+  .sh-navbox-label {
+    padding-block: 6px;
+  }
+}

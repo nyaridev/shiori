@@ -3,6 +3,7 @@
 // is untouched. What's taken out is counted, so the owner sees what stayed home.
 import type { Element, ElementContent, Root, RootContent } from "hast";
 import type { PublicRemoved } from "../../shared/api.ts";
+import { isNavbox } from "../markdown/references.ts";
 import { fieldKey } from "./rules.ts";
 
 export type Removed = PublicRemoved;
@@ -145,7 +146,11 @@ function stripElement(el: Element, ctx: StripContext): Element | ElementContent[
         ctx.removed.links++;
         return stripChildren(el.children, ctx);
       }
-      el.properties = { href, ...(props.dataChip !== undefined ? { dataChip: "" } : {}) };
+      el.properties = {
+        href,
+        ...(props.dataChip !== undefined ? { dataChip: "" } : {}),
+        ...(props.ariaCurrent ? { ariaCurrent: props.ariaCurrent } : {}),
+      };
     }
   }
   if (tag === "img") {
@@ -182,7 +187,7 @@ function stripElement(el: Element, ctx: StripContext): Element | ElementContent[
     ctx.removed.fields++;
     return null;
   }
-  if (tag === "sh-card" && linksPrivatePage(el, ctx)) {
+  if ((tag === "sh-card" || tag === "sh-navbox-item") && linksPrivatePage(el, ctx)) {
     ctx.removed.links++;
     return null;
   }
@@ -195,6 +200,10 @@ function stripElement(el: Element, ctx: StripContext): Element | ElementContent[
   // A gallery tile whose picture was private, a paragraph whose only words were.
   if (tag === "sh-shot" && !elementsIn(el).some((c) => c.tagName === "img")) return null;
   if ((tag === "sh-gallery" || tag === "sh-cards" || tag === "sh-stats") && !elementsIn(el).length) return null;
+  // A navbox row whose pages were all private, and a navbox left with no rows.
+  if (tag === "sh-navbox-items" && !elementsIn(el).length) return null;
+  if (tag === "sh-navbox-group" && !elementsIn(el).some((c) => c.tagName !== "sh-navbox-label")) return null;
+  if (tag === "sh-navbox" && !elementsIn(el).length) return null;
   if (tag === "p" && !el.children.some((c) => c.type !== "text" || c.value.trim())) return null;
   return el;
 }
@@ -224,7 +233,8 @@ function dropEmptyHeadings(nodes: RootContent[]): RootContent[] {
     let j = i + 1;
     while (j < out.length && out[j].type === "text" && !(out[j] as { value: string }).value.trim()) j++;
     const next = out[j];
-    if (!next || (level(next) && level(next) <= l)) out.splice(i, j - i);
+    // The navboxes closing the page aren't under its last heading.
+    if (!next || (level(next) && level(next) <= l) || isNavbox(next)) out.splice(i, j - i);
   }
   return out;
 }
@@ -270,13 +280,59 @@ const KNOWN = new Set([
   "sh-sheet",
   "sh-diagram",
   "sh-spoiler",
+  "sh-cite",
+  "sh-references",
+  "sh-reference",
+  "sh-changelog",
+  "sh-change",
+  "sh-navbox",
+  "sh-navbox-group",
+  "sh-navbox-label",
+  "sh-navbox-items",
+  "sh-navbox-item",
 ]);
+
+/**
+ * References only for the citations still on the page (one in a private block went with it), numbered again in the
+ * order they're cited; the list goes when none are left.
+ */
+function renumberReferences(nodes: RootContent[]): RootContent[] {
+  const cites: Element[] = [];
+  const walk = (n: RootContent | ElementContent) => {
+    if (!isElement(n)) return;
+    if (n.tagName === "sh-cite") cites.push(n);
+    n.children.forEach(walk);
+  };
+  nodes.forEach(walk);
+  const next = new Map<string, number>();
+  const ids = new Map<number, string[]>();
+  for (const cite of cites) {
+    const old = String(cite.properties.n);
+    if (!next.has(old)) next.set(old, next.size + 1);
+    const n = next.get(old) as number;
+    const seen = ids.get(n) ?? [];
+    cite.properties.n = String(n);
+    cite.properties.id = seen.length ? `cite-${n}-${seen.length + 1}` : `cite-${n}`;
+    ids.set(n, [...seen, String(cite.properties.id)]);
+  }
+  return nodes.flatMap((node): RootContent[] => {
+    if (!isElement(node) || node.tagName !== "sh-references") return [node];
+    const kept = elementsIn(node)
+      .filter((r) => next.has(String(r.properties.n)))
+      .map((r): Element => {
+        const n = next.get(String(r.properties.n)) as number;
+        return { ...r, properties: { id: `ref-${n}`, n: String(n), cites: (ids.get(n) ?? []).join(" ") } };
+      })
+      .sort((a, b) => Number(a.properties.n) - Number(b.properties.n));
+    return kept.length ? [{ ...node, children: kept }] : [];
+  });
+}
 
 /** The public copy of a page's hast. */
 export function stripPage(tree: Root, ctx: StripContext): Root {
   const copy = structuredClone(tree);
   const children = stripChildren(copy.children as ElementContent[], ctx) as RootContent[];
-  return { type: "root", children: dropEmptyHeadings(children) };
+  return { type: "root", children: dropEmptyHeadings(renumberReferences(children)) };
 }
 
 /** An infobox value (frontmatter) cleaned the same way. */

@@ -18,6 +18,8 @@ or delete the `world/` folder and the `public` block. Private blocks like this o
 
 :::stats
 - Creatures: 2
-- Places: 1
-- Items: 1
+- Places: 2
+- Items: 3
 :::
+
+::navbox{from="world"}

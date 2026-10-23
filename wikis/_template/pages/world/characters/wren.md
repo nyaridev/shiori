@@ -34,8 +34,32 @@ Wren hands her lantern to the player and walks into the grove. The lanterns stay
 ## In the game
 
 - Teaches the first quest, *Light the path*
-- Sells lanterns and oil at her stall
+- Sells lanterns and [[Lantern oil|oil]] at her stall, and buys [[Fox fur]]
 
 :::private[Not in the game yet]
 A second chapter where Wren leaves the valley. Waiting for the writing pass.
 :::
+
+## Notes
+
+- Her stall is open from dawn to dusk. At night she walks the grove's paths, relighting lanterns the
+  [[Ember moth|ember moths]] put out.[^rounds]
+- The fox that follows her is a [[Moss fox]] that never steals from her.
+
+## Tips
+
+- Talk to her again after *Light the path*: she gives a second [[Lantern oil]] to anyone who finished it.
+
+## History
+
+:::changelog
+- 0.3: Buys [[Fox fur]] for 5 coins.
+- 0.2: Her stall opens; she sells the [[Glow lantern]] and oil.
+- 0.1: Added, with the quest *Light the path*.
+:::
+
+## References
+
+[^rounds]: Her night route is written up in the grove's level notes: the ring of paths, then the hollow tree.
+
+::navbox{from="world"}

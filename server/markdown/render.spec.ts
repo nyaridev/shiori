@@ -275,3 +275,126 @@ describe("paths", () => {
     expect(resolveFile("", "../../secret.txt")).toBeNull();
   });
 });
+
+describe("the end of an article", () => {
+  const text = (n: Root | RootContent): string =>
+    n.type === "text" ? n.value : "children" in n ? n.children.map(text).join("") : "";
+  const top = (hast: Root) =>
+    hast.children.filter((n): n is Element => n.type === "element").map((n) => `${n.tagName}:${text(n).slice(0, 12)}`);
+
+  it("numbers footnotes as citations and lists them under the page's empty last heading, before its navbox", () => {
+    const { hast, toc, problems } = renderMarkdown(
+      [
+        "Ten studs.[^b] Five moths.[^a] Ten again.[^b]",
+        "",
+        "## Notes",
+        "",
+        "Notes.",
+        "",
+        "## Sources",
+        "",
+        "::navbox{from=systems}",
+        "",
+        "[^a]: The design doc. :private[Page 4.]",
+        "[^b]: Measured.",
+      ].join("\n"),
+      { ...ctx, nav: () => [{ path: "systems", title: "Systems", isPage: true, children: [] }] },
+    );
+    expect(find(hast, "sh-cite").map((c) => c.properties)).toEqual([
+      { id: "cite-1", n: "1", note: "Measured." },
+      { id: "cite-2", n: "2", note: "The design doc." },
+      { id: "cite-1-2", n: "1", note: "Measured." },
+    ]);
+    const refs = find(hast, "sh-reference");
+    expect(refs.map((r) => r.properties)).toEqual([
+      { id: "ref-1", n: "1", cites: "cite-1 cite-1-2" },
+      { id: "ref-2", n: "2", cites: "cite-2" },
+    ]);
+    expect(text(refs[0])).toBe("Measured.");
+    expect(top(hast).slice(-3)).toEqual(["h2:Sources", "sh-references:Measured.The", "sh-navbox:"]);
+    expect(toc.map((e) => e.text)).toEqual(["Notes", "Sources"]);
+    expect(problems).toEqual([]);
+  });
+
+  it("gives the references a heading of their own when the last one has text under it", () => {
+    const { hast, toc } = renderMarkdown("A fact.[^1]\n\n## References\n\nSee the doc.\n\n[^1]: Source.", ctx);
+    expect(top(hast).slice(-2)).toEqual(["h2:References", "sh-references:Source."]);
+    expect(toc.map((e) => e.id)).toEqual(["references", "references-1"]);
+  });
+
+  it("reads a changelog's versions, and says when one has none", () => {
+    const { hast, problems } = renderMarkdown(
+      ":::changelog[PC]\n- 0.3: Brighter.\n- 0.2:\n  - Added.\n  - Cheaper.\n- Forgot the version\n:::",
+      ctx,
+    );
+    const [log] = find(hast, "sh-changelog");
+    expect(log.properties).toEqual({ title: "PC" });
+    const changes = find(hast, "sh-change");
+    expect(changes.map((c) => c.properties.version)).toEqual(["0.3", "0.2", ""]);
+    expect(find(changes[1], "li").map(text)).toEqual(["Added.", "Cheaper."]);
+    expect(problems).toEqual([expect.stringContaining("changelog: start each item with its version")]);
+  });
+
+  it("makes a navbox's rows from a list, and marks the page it's on", () => {
+    const { hast, problems } = renderMarkdown(
+      [
+        ":::navbox[Game]",
+        "- Combat: [[Combat]] · [Rats](/enemies/rat)",
+        "- Enemies",
+        "  - Small: [[Rat]]",
+        "- [[Combat]] · [[Magic]]",
+        ":::",
+      ].join("\n"),
+      {
+        ...ctx,
+        path: "systems/combat",
+        findPage: (n: string) => ({ page: { path: `systems/${n.toLowerCase()}`, title: n }, others: [] }),
+      },
+    );
+    const [box] = find(hast, "sh-navbox");
+    expect(box.properties).toEqual({ title: "Game" });
+    const rows = box.children.filter((c): c is Element => c.type === "element");
+    expect(rows.map((r) => find(r, "sh-navbox-label").map(text))).toEqual([["Combat"], ["Enemies", "Small"], []]);
+    expect(find(rows[0], "sh-navbox-item").map(text)).toEqual(["Combat", "Rats"]);
+    expect(find(rows[2], "sh-navbox-item").map(text)).toEqual(["Combat", "Magic"]);
+    expect(
+      find(box, "a")
+        .filter((a) => a.properties.ariaCurrent === "page")
+        .map(text),
+    ).toEqual(["Combat", "Combat"]);
+    expect(problems).toEqual([]);
+  });
+
+  it("builds a navbox from a section of the page tree", () => {
+    const nav = [
+      {
+        path: "world",
+        title: "The world",
+        isPage: true,
+        children: [
+          { path: "world/map", title: "Map", isPage: true, children: [] },
+          {
+            path: "world/mobs",
+            title: "Mobs",
+            isPage: true,
+            children: [{ path: "world/mobs/rat", title: "Rat", isPage: true, children: [] }],
+          },
+        ],
+      },
+    ];
+    const { hast, problems } = renderMarkdown('::navbox{from="world"}\n\n::navbox{from="nowhere"}', {
+      ...ctx,
+      pageExists: () => true,
+      nav: () => nav,
+    });
+    const [box] = find(hast, "sh-navbox");
+    expect(box.properties).toEqual({ from: "world", title: "The world" });
+    const rows = box.children.filter((c): c is Element => c.type === "element");
+    expect(rows.map((r) => [find(r, "sh-navbox-label").map(text), find(r, "sh-navbox-item").map(text)])).toEqual([
+      [[], ["Map"]],
+      [["Mobs"], ["Rat"]],
+    ]);
+    expect(find(rows[1], "a")[0].properties.href).toBe("/w/demo/world/mobs");
+    expect(problems).toEqual([expect.stringContaining('navbox: there\'s no section "nowhere"')]);
+  });
+});

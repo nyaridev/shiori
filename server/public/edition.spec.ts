@@ -186,6 +186,44 @@ describe("nothing private in any file", () => {
     expect(e.report.removed.pictures).toBeGreaterThanOrEqual(2);
   });
 
+  it("leaves private pages out of navboxes, and references cited only in private text out of the list", () => {
+    const w = sampleWiki();
+    write(
+      "pages/mobs/slime.md",
+      [
+        "---",
+        "title: Slime",
+        "---",
+        "Slimes split in two.[^split]",
+        "",
+        ":::private",
+        "Spawns often.[^rate]",
+        ":::",
+        "",
+        "They bounce twice.[^bounce]",
+        "",
+        "## References",
+        "",
+        "[^split]: Seen in the 0.2 build.",
+        "[^rate]: The spawner's RateTable.",
+        "[^bounce]: Measured.",
+        "",
+        '::navbox{from="mobs"}',
+      ].join("\n"),
+    );
+    const e = build(w);
+    const slime = page(e, "mobs/slime.html");
+    expect(allText(e)).not.toContain("RateTable");
+    expect(slime).toContain('id="ref-2"');
+    expect(slime).not.toContain('id="ref-3"');
+    expect(slime).toMatch(/href="#ref-2"[^>]*>2</);
+    // The boss page opts out: no link to it, and not its name either.
+    expect(slime).toMatch(/class="sh-navbox"/);
+    expect(slime).toMatch(/<a href="\.\.\/mobs\/rat\.html"[^>]*>Rat<\/a>/);
+    expect(slime).not.toContain("Boss");
+    expect(slime).toMatch(/<a href="\.\.\/mobs\/slime\.html"[^>]*aria-current="page"/);
+  });
+
   it("keeps links to public pages and turns the rest into text", () => {
     const rat = page(build(sampleWiki()), "mobs/rat.html");
     expect(rat).toMatch(/<a href="\.\.\/cheese\.html"[^>]*>Cheese<\/a>/);

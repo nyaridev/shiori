@@ -7,16 +7,16 @@
   --pw-head: 56px;
   --pw-nav: 264px;
   --pw-page: color-mix(in oklab, var(--surface) 40%, var(--bg));
-  /* Behind the cards: the theme's background by day; by night a muted slate, as on classic wikis. */
+  /* Behind the cards: the theme's background by day; by night a near-black, as #121314. */
   --pw-backdrop: var(--bg);
 }
 :root[data-mode="dark"] {
-  --pw-backdrop: #343b5b;
+  --pw-backdrop: #121314;
 }
-/* The slate in the hue of the wiki's own background, as light as #343b5b and greyer; a grey theme gets a grey one. */
+/* As dark as #121314, with only a breath of the wiki's own hue, so it sits with any theme. */
 @supports (color: oklch(from red l c h)) {
   :root[data-mode="dark"] {
-    --pw-backdrop: oklch(from var(--bg) 0.36 min(0.028, c) h);
+    --pw-backdrop: oklch(from var(--bg) 0.185 min(0.004, c) h);
   }
 }
 
@@ -231,7 +231,7 @@ html[data-mode="light"] .pw-sun {
   padding: var(--s-5) var(--s-4) var(--s-7);
 }
 
-/* The sidebar: a column of cards (Pages, then one per section), each with a header that folds it. The column
+/* The sidebar: a column of cards (Navigation, then one per section), each with a header that folds it. The column
    scrolls on its own when it's taller than the window. */
 .pw-nav {
   position: sticky;
@@ -321,7 +321,7 @@ html[data-mode="light"] .pw-sun {
 .pw-crumbs ol {
   margin-bottom: var(--s-2);
 }
-/* By night the crumbs sit on the lighter slate, where the muted grey fades: they take the text's color, softened. */
+/* By night the crumbs sit on the backdrop, not the page: they take the text's color, softened, to read on any of them. */
 :root[data-mode="dark"] .pw-crumbs :is(ol, a, span) {
   color: color-mix(in oklab, var(--text) 82%, var(--pw-backdrop));
 }
@@ -554,29 +554,92 @@ html.pw-spoilers-shown .sh-spoiler-inline > span {
   min-height: 32px;
 }
 
+/* The picture viewer: a card in the middle of the window, not the whole screen. Its width is set, so a picture
+   without a size of its own (an SVG with only a viewBox) still has room to draw. */
 .pw-viewer {
-  max-width: 96vw;
-  max-height: 94vh;
+  width: min(720px, calc(100vw - 2 * var(--s-4)));
+  max-width: none;
+  max-height: calc(100vh - 2 * var(--s-4));
   padding: 0;
-  border: 0;
-  background: transparent;
-}
-.pw-viewer::backdrop {
-  background: color-mix(in oklab, var(--bg) 88%, transparent);
-  backdrop-filter: blur(6px);
-}
-.pw-viewer img {
-  display: block;
-  max-width: 96vw;
-  max-height: 90vh;
-  object-fit: contain;
-  border-radius: var(--r-md);
+  overflow: hidden;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-2);
   cursor: zoom-out;
 }
+.pw-viewer[open] {
+  animation: pw-viewer-in 180ms var(--ease);
+}
+.pw-viewer::backdrop {
+  background: rgb(0 0 0 / 0.55);
+  backdrop-filter: blur(4px);
+}
+@keyframes pw-viewer-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-viewer[open] {
+    animation: none;
+  }
+}
+.pw-viewer-frame {
+  margin: 0;
+  padding: var(--s-2);
+}
+.pw-viewer-stage {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  border-radius: var(--r-md);
+  background: var(--bg);
+}
+.pw-viewer-stage img {
+  display: block;
+  max-width: 100%;
+  max-height: min(62vh, 540px);
+  object-fit: contain;
+  border-radius: var(--r-md);
+}
+.pw-viewer-caption {
+  padding: var(--s-2) var(--s-2) var(--s-1);
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
 .pw-viewer-close {
-  position: fixed;
-  top: var(--s-3);
+  position: absolute;
+  top: var(--s-4);
   right: var(--s-4);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: var(--bw) solid color-mix(in oklab, var(--border) 70%, transparent);
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--surface) 75%, transparent);
+  backdrop-filter: blur(6px);
+  color: var(--text);
+  cursor: pointer;
+}
+.pw-viewer-close:hover {
+  background: var(--raised);
+}
+
+/* A citation's tooltip (site.js), above the page, inside the window. */
+.pw-cite-tip {
+  position: fixed;
+  max-width: min(320px, calc(100vw - 16px));
+  font-weight: 500;
+  line-height: 1.45;
+  pointer-events: none;
+}
+.pw-cite-tip[hidden] {
+  display: none;
 }
 
 /* ── The frame's presets (ADR-0012): `public.frame` in wiki.json, as the body's attributes ─────────────────────── */

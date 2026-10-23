@@ -7,6 +7,7 @@ import { SKIP, visit } from "unist-util-visit";
 import { PAGE_STATUSES } from "../../shared/schema.ts";
 import { SHEET_NAME } from "../../shared/sheet.ts";
 import { iconSet } from "../icons.ts";
+import { navboxRows } from "./navbox.ts";
 
 type Directive = ContainerDirective | LeafDirective | TextDirective;
 
@@ -130,6 +131,22 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   },
   // A data sheet (ADR-0010): `sheets/<name>.json`, its values editable by the owner and shared by its own link.
   sheet: { type: "leafDirective", tag: "sh-sheet", attrs: { name: null }, transform: needsSheetName },
+  // The end of an article, as on a game wiki: what changed in each version, and a box of related pages (navbox.ts).
+  // Footnotes become its references (references.ts).
+  changelog: {
+    type: "containerDirective",
+    tag: "sh-changelog",
+    attrs: { title: null },
+    label: "title",
+    transform: changelogEntries,
+  },
+  navbox: {
+    type: ["containerDirective", "leafDirective"],
+    tag: "sh-navbox",
+    attrs: { title: null, from: null },
+    label: "title",
+    transform: navboxRows,
+  },
 };
 
 const COLONS: Record<Directive["type"], string> = {
@@ -249,6 +266,18 @@ function row(item: ListItem): RootContent {
   if (key === null) return el("sh-row", [el("sh-value", item.children)]);
   const [value, ...rest] = body as [Paragraph, ...RootContent[]];
   return el("sh-row", [el("sh-key", [{ type: "text", value: key }]), el("sh-value", [...value.children, ...rest])]);
+}
+
+/** Changelog lists become versions: `- 0.3: Brighter.` → version "0.3", its changes (a nested list for several). */
+function changelogEntries(node: Directive, problem: (message: string) => void) {
+  node.children = items(node, problem, 'write each version as a list item, "- 0.3: What changed"').map((item) => {
+    const { key, body } = splitKey(item);
+    if (key === null) problem('changelog: start each item with its version, "- 0.3: What changed"');
+    const [first, ...rest] = body;
+    // "- 0.2:" with its changes in a nested list leaves an empty first paragraph.
+    const empty = first?.type === "paragraph" && !textOf(first).trim();
+    return el("sh-change", empty ? rest : body, { version: key ?? "" });
+  }) as BlockContent[];
 }
 
 function onlyTabs(node: Directive, problem: (message: string) => void) {

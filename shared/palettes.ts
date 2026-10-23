@@ -1,6 +1,6 @@
-// The palettes a new wiki starts from (`pnpm shiori new`, the dev preview). Each is a dark page tinted toward one
-// hue, with three accents that contrast with it and with each other. They fill the template's `theme.json`; after
-// that, the wiki's theme is its own.
+// The palettes a new wiki starts from (`pnpm shiori new`, the dev preview): `mist` unless another is asked for. Each
+// is a dark page, grey or tinted toward one hue, with three accents that contrast with it and with each other. They
+// fill the template's `theme.json`; after that, the wiki's theme is its own.
 import type { ThemeColors } from "./theme.ts";
 
 export type Palette = Pick<
@@ -9,6 +9,17 @@ export type Palette = Pick<
 >;
 
 export const NEW_WIKI_PALETTES = {
+  /** The default: a cool grey page with soft blue, peach and mint. */
+  mist: {
+    bg: "#101419",
+    surface: "#161b20",
+    raised: "#1d2228",
+    border: "#2e343a",
+    muted: "#a2a8af",
+    accent: "#a8ceff",
+    accent2: "#fbbb87",
+    accent3: "#9bdda8",
+  },
   nebula: {
     bg: "#100e1d",
     surface: "#181527",
@@ -93,3 +104,4 @@ export const NEW_WIKI_PALETTES = {
 
 export type PaletteName = keyof typeof NEW_WIKI_PALETTES;
 export const PALETTE_NAMES = Object.keys(NEW_WIKI_PALETTES) as PaletteName[];
+export const DEFAULT_PALETTE: PaletteName = "mist";

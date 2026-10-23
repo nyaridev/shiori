@@ -25,3 +25,17 @@ How it's laid out and how you move through it.
 ## Connections
 
 Where it leads, and what has to happen first.
+
+## Notes
+
+- What players should know that the sections above don't say: exceptions, interactions, surprises.
+
+## Tips
+
+- How to make the most of it.
+
+## History
+
+:::changelog
+- 0.1: Added.
+:::
