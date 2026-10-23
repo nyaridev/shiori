@@ -14,6 +14,7 @@ import { pictureAt, publicPicture } from "../files.ts";
 import { ICON_NAME, ICONS_DIR, iconSet } from "../icons.ts";
 import { FRONT_LAYOUT, loadLayouts } from "../layouts.ts";
 import { resolveFile } from "../markdown/links.ts";
+import { isNavbox } from "../markdown/references.ts";
 import { buildNav, type PageFile, pageFinder, readingOrder } from "../pages.ts";
 import { APP_ROOT } from "../paths.ts";
 import type { Wiki } from "../registry.ts";
@@ -504,7 +505,14 @@ export function buildEdition(wiki: Wiki, files: PageFile[], corpus: Corpus): Edi
     return [{ ...card, title: n.title, ...(image ? { image } : {}) }];
   });
   const frontPage = front ? pageOf(front.path) : undefined;
-  const frontBody = frontPage ? render(frontPage, "", { toc: [], children: [], related: [] }) : null;
+  // The front page's cards already lead to every section, so it leaves the navboxes of its text out.
+  const frontBody = frontPage
+    ? render(
+        { ...frontPage, hast: { ...frontPage.hast, children: frontPage.hast.children.filter((n) => !isNavbox(n)) } },
+        "",
+        { toc: [], children: [], related: [] },
+      )
+    : null;
   if (frontPage)
     search.push({
       u: "index.html",

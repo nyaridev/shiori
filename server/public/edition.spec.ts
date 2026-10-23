@@ -224,6 +224,14 @@ describe("nothing private in any file", () => {
     expect(slime).toMatch(/<a href="\.\.\/mobs\/slime\.html"[^>]*aria-current="page"/);
   });
 
+  it("leaves the front page's navboxes out, as its cards lead to every section", () => {
+    const w = sampleWiki();
+    write("pages/about.md", 'The game, in short.\n\n::navbox{from="mobs"}\n');
+    const front = page(build(w), "index.html");
+    expect(front).toContain("The game, in short.");
+    expect(front).not.toContain("sh-navbox");
+  });
+
   it("keeps links to public pages and turns the rest into text", () => {
     const rat = page(build(sampleWiki()), "mobs/rat.html");
     expect(rat).toMatch(/<a href="\.\.\/cheese\.html"[^>]*>Cheese<\/a>/);
