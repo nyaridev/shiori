@@ -17,7 +17,7 @@ export function DialogContent({
   description?: string;
   /** `wide` for media: an image at a readable size. `palette`: near the top, no title bar (the title is for screen
    * readers), for a search box and its results. `lg`: a form with lists under it, scrolling when tall. `viewer`:
-   * the whole window, for looking through pictures. */
+   * a card in the middle of the window for a picture, no title bar, a round close button over its corner. */
   size?: "md" | "lg" | "wide" | "palette" | "viewer";
   children: ReactNode;
 }) {
@@ -27,6 +27,13 @@ export function DialogContent({
       <R.Content className="sh-dialog sh-surface" data-size={size}>
         {size === "palette" ? (
           <R.Title className="sh-sr-only">{title}</R.Title>
+        ) : size === "viewer" ? (
+          <>
+            <R.Title className="sh-sr-only">{title}</R.Title>
+            <R.Close asChild>
+              <IconButton icon="close" label="Close" size="sm" className="sh-dialog-float-close" />
+            </R.Close>
+          </>
         ) : (
           <header className="sh-dialog-head">
             <R.Title className="sh-dialog-title">{title}</R.Title>

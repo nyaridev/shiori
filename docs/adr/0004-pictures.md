@@ -28,7 +28,7 @@ as WebP, made with `sharp` (prebuilt binaries, nothing to compile on Windows):
 
 | Width | Used for |
 |---|---|
-| 160 | The image viewer's strip, the sidebar's cover |
+| 160 | Pictures used as icons, the header's cover |
 | 480 | Gallery tiles, link previews, the home page's cover |
 | 960 | Infobox pictures |
 | 1600 | Pictures in the text |
