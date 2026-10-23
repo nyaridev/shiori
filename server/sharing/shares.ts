@@ -45,6 +45,8 @@ export interface Share {
   blockedIps: Set<string>;
   activity: ShareActivity[];
   limits: LinkLimits;
+  /** A `public` link: pages readers opened through it. */
+  views: number;
 }
 
 export type Lookup = { share: Share } | { gone: true } | null;
@@ -137,6 +139,7 @@ export function createShares({
         blockedIps: new Set(),
         activity: [],
         limits: createLinkLimits(),
+        views: 0,
       };
       active.set(share.token, share);
       changed();
@@ -209,8 +212,14 @@ export function createShares({
 
     log,
 
+    /** A reader opened a page through a public link. */
+    viewed(share: Share) {
+      share.views++;
+      updated();
+    },
+
     info(share: Share): ShareInfo {
-      const path = `/s/${share.token}/`;
+      const path = share.kind === "public" ? `/p/${share.token}/` : `/s/${share.token}/`;
       return {
         id: share.id,
         wiki: share.wiki,
@@ -232,6 +241,7 @@ export function createShares({
         })),
         blockedIps: share.blockedIps.size,
         activity: share.activity.slice(-50),
+        ...(share.kind === "public" ? { views: share.views } : {}),
       };
     },
 

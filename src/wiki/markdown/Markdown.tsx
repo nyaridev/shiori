@@ -70,6 +70,8 @@ const components = {
   "sh-directory": home.DirectoryEl,
   "sh-designs": home.DesignsEl,
   "sh-sheet": el.SheetEl,
+  "sh-private": el.PrivateEl,
+  "sh-spoiler": el.SpoilerEl,
   "sh-section": SectionEl,
   "sh-diagram": DiagramEl,
   "sh-table": DataTableEl,

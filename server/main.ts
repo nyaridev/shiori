@@ -10,6 +10,7 @@ import { type ServerType, serve } from "@hono/node-server";
 import { buildApp } from "./app.ts";
 import { createLive } from "./live.ts";
 import { APP_ROOT } from "./paths.ts";
+import { createEditions } from "./public/output.ts";
 import { createRegistry } from "./registry.ts";
 import { buildGuestApp } from "./sharing/guest.ts";
 import { presenceFor } from "./sharing/presence.ts";
@@ -47,7 +48,9 @@ const shares = values.static
 // Who is on each wiki (ADR-0005), for both servers. Tabs that stop reporting leave after a while.
 const presence = presenceFor(shares);
 setInterval(() => presence.prune(), 10_000).unref();
-const app = buildApp({ registry, live, data, shares, tunnel, presence, staticDir: servedDir });
+// The wikis' public editions (ADR-0011): built once per version of their pages, for the preview, the export and links.
+const editions = createEditions(data);
+const app = buildApp({ registry, live, data, shares, tunnel, presence, staticDir: servedDir, editions });
 
 const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
   const n = registry.all().length;
@@ -67,6 +70,7 @@ if (shares) {
     staticDir: servedDir,
     secret: randomBytes(32).toString("base64url"),
     presence,
+    editions,
   });
   shares.onChange(() => {
     const active = shares.list().length > 0;

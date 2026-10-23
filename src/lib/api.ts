@@ -10,6 +10,7 @@ import type {
   PageHistory,
   PageVersionDetail,
   Person,
+  PublicReport,
   QuestionPage,
   QuestionQuery,
   QuestionsWaiting,
@@ -144,6 +145,8 @@ export const api = {
     }),
   hideAnswer: (id: string, answer: number, hidden: boolean) =>
     request<Answer>(`/api/wikis/${enc(id)}/answers/${answer}`, { method: "PATCH", body: JSON.stringify({ hidden }) }),
+  /** The public wiki (ADR-0011): what goes public and what stays home. Its preview and export are plain URLs. */
+  publicReport: (id: string) => request<PublicReport>(`/api/wikis/${enc(id)}/public`),
   /** Share links (ADR-0003), for the owner's Share dialog. */
   shares: () => request<SharesState>("/api/shares"),
   share: (link: {

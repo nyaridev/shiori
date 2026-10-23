@@ -17,9 +17,11 @@
   box-shadow: 0 8px 24px -12px rgb(0 0 0 / 0.45);
   backdrop-filter: blur(12px);
 }
-/* Headings jumped to from the contents or search land below the header. */
+/* Headings jumped to from the contents or search land below the header, and the page's scrollbar starts under it
+   (its height, `--head` in wiki.css). */
 html:has(.sh-wiki-head) {
   scroll-padding-top: 56px;
+  --page-bar-top: 52px;
 }
 .sh-head-start,
 .sh-head-end {

@@ -769,8 +769,10 @@
 .sh-scrollbar[data-none] {
   display: none;
 }
+/* The window's scrollbar starts under a sticky header: a page with one sets `--page-bar-top` to its height. */
 .sh-scrollbar-page {
   position: fixed;
+  top: calc(var(--page-bar-top, 0px) + 2px);
   z-index: 35;
 }
 .sh-scrollbar-thumb {

@@ -25,6 +25,7 @@ import { designRoutes } from "../designRoutes.ts";
 import { PICTURE_MIME } from "../designs.ts";
 import { serveFile } from "../files.ts";
 import { historyOf, versionOf } from "../history.ts";
+import { createEditions, type Editions } from "../public/output.ts";
 import { listQuestions, questionQueryFrom, questionsWaiting } from "../questionList.ts";
 import type { Registry, Wiki } from "../registry.ts";
 import { filterFrom, notesOf, search, searchNotes } from "../search.ts";
@@ -48,6 +49,7 @@ import { boardRoutes } from "./boards.ts";
 import type { GuestKit, TargetEnv } from "./kit.ts";
 import { LIMITS } from "./limits.ts";
 import { type Presence, placeOf, presenceFor, withTitles } from "./presence.ts";
+import { mountPublicSite } from "./public.ts";
 import { type Guest, newGuestId, type Share, type Shares, TOKEN } from "./shares.ts";
 import { sheetRoutes } from "./sheets.ts";
 
@@ -123,6 +125,8 @@ export interface GuestAppOptions {
   secret: string;
   /** Who is on each wiki (ADR-0005), shared with the owner's server. */
   presence?: Presence;
+  /** The wikis' public editions (ADR-0011), shared with the owner's server. */
+  editions?: Editions;
 }
 
 export function buildGuestApp({
@@ -132,6 +136,7 @@ export function buildGuestApp({
   staticDir,
   secret,
   presence = presenceFor(shares),
+  editions = createEditions(data),
 }: GuestAppOptions) {
   const app = new Hono<Env>();
   const now = () => shares.now();
@@ -191,6 +196,8 @@ export function buildGuestApp({
     if (!found) return refuse(c, 404, "not found");
     if ("gone" in found) return refuse(c, 410, "this link has expired or was turned off");
     const { share } = found;
+    // A public link (ADR-0011) opens only its static site, under /p/.
+    if (share.kind === "public") return refuse(c, 404, "not found");
     // cloudflared is the only client of this loopback server, and it sets the visitor's address.
     const incoming = (c.env as { incoming?: IncomingMessage } | undefined)?.incoming;
     const ip = c.req.header("cf-connecting-ip") ?? incoming?.socket.remoteAddress ?? "local";
@@ -711,6 +718,9 @@ export function buildGuestApp({
   app.route("/s/:token/api/board", boardRoutes(kit) as unknown as Hono<Env>);
   app.route("/s/:token/api/sheet", sheetRoutes(kit) as unknown as Hono<Env>);
   app.route("/s/:token/api", api as unknown as Hono<Env>);
+
+  // Public links (ADR-0011): the public edition's files, and nothing else.
+  mountPublicSite(app, { registry, shares, editions, now });
 
   // Any other path under a link is the app, which routes itself.
   app.get("/s/:token/*", (c) => {

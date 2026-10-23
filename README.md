@@ -35,6 +35,11 @@ and [cloudflared](https://github.com/cloudflare/cloudflared) (`winget install Cl
 address; without it, links only work on this PC. Links end when they expire, are revoked, or Shiori closes
 ([ADR-0003](docs/adr/0003-sharing-a-wiki-by-link.md)).
 
+A wiki can also have a **public wiki**: a read-only website of the pages it marks public, in its own theme, for
+players and other readers. Preview it or download it as a `.zip` static site from the Share dialog, or pick
+"Public wiki" there for a link. Everything is private unless the wiki says otherwise
+([ADR-0011](docs/adr/0011-public-wiki.md)).
+
 ## Develop
 
 ```bash

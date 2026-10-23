@@ -123,7 +123,8 @@ function useOverlay(
     };
 
     const sizes = new ResizeObserver(schedule);
-    for (const w of [el, ...src.watch, ...(src.parent?.children ?? [])]) sizes.observe(w);
+    // The track too: the page's gets shorter under a header.
+    for (const w of [el, bar, ...src.watch, ...(src.parent?.children ?? [])]) sizes.observe(w);
     const children = new MutationObserver((changes) => {
       for (const change of changes)
         for (const node of change.addedNodes) if (node instanceof Element) sizes.observe(node);

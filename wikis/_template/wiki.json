@@ -9,5 +9,12 @@
   "pinned": ["Roadmap"],
   "collections": {
     "sketches": { "title": "Sketches", "item": "Sketch" }
+  },
+  "public": {
+    "tagline": "The player's guide to {{title}}",
+    "pages": ["world/**"],
+    "front": "world",
+    "banner": "/assets/grove.svg",
+    "privateFields": ["Script", "Asset id"]
   }
 }

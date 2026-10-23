@@ -324,6 +324,55 @@ export function ProgressEl({ value, max, children }: Props<{ value?: string; max
   );
 }
 
+/**
+ * `:::private` and `:private[…]` (ADR-0011): shown here, marked, and left out of the public wiki. A block says why
+ * when its `note` does.
+ */
+export function PrivateEl({ note, children, inline }: Props<{ note?: string; inline?: string }>) {
+  if (inline !== undefined)
+    return (
+      <span className="sh-private-inline" title="Not in the public wiki">
+        {children}
+      </span>
+    );
+  return (
+    <section className="sh-private" aria-label="Private: not in the public wiki">
+      <p className="sh-private-label">
+        <Icon name="eyeOff" size={13} />
+        Not in the public wiki{note ? ` · ${note}` : ""}
+      </p>
+      {children}
+    </section>
+  );
+}
+
+/** `:spoiler[…]` and `:::spoiler[Title]`: hidden until the reader opens it. */
+export function SpoilerEl({ title, children, inline }: Props<{ title?: string; inline?: string }>) {
+  const [shown, setShown] = useState(false);
+  if (inline !== undefined)
+    return (
+      <button
+        type="button"
+        className="sh-spoiler-inline"
+        data-shown={shown || undefined}
+        aria-pressed={shown}
+        aria-label={shown ? undefined : "Spoiler: show it"}
+        onClick={() => setShown(true)}
+      >
+        <span aria-hidden={!shown}>{children}</span>
+      </button>
+    );
+  return (
+    <details className="sh-details sh-spoiler">
+      <summary>
+        <Icon name="chevronRight" size={16} />
+        {title || "Spoiler"}
+      </summary>
+      <div className="sh-details-body">{children}</div>
+    </details>
+  );
+}
+
 export const UnknownEl = ({ name, children }: Props<{ name?: string }>) => (
   <Callout tone="danger" title={`Unknown element ${name ?? ""}`}>
     {children}

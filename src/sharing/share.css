@@ -195,3 +195,20 @@
     animation: none;
   }
 }
+
+/* The public wiki (ADR-0011): what goes public, its preview and export. */
+.sh-share-public {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font-size: var(--t-sm);
+}
+.sh-share-public-problems {
+  margin: 0;
+  padding-left: var(--s-4);
+  color: var(--tone-warn);
+  font-size: var(--t-xs);
+}

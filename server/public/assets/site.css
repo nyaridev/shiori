@@ -1,0 +1,512 @@
+/* The public wiki (ADR-0011): only its frame lives here. The header, the sidebar card and the page card are laid out
+   like a fandom wiki; everything in them is the app's own parts, styled by the app's stylesheets bundled above this
+   one (page.css, prose.css, planning.css…), so the public wiki looks like the wiki in the app. Values come only from
+   the tokens, so every wiki's theme applies. */
+
+:root {
+  --pw-head: 56px;
+  --pw-nav: 264px;
+  --pw-max: 1320px;
+  --pw-page: color-mix(in oklab, var(--surface) 40%, var(--bg));
+}
+
+/* The app fills the window; a website scrolls as usual. Its scrollbar is the app's, drawn over the page by site.js
+   (base.css hides the browser's), so moving between a short page and a long one never shifts the layout. Without
+   the script, the browser's own comes back. */
+html,
+body {
+  height: auto;
+}
+html {
+  scroll-padding-top: calc(var(--pw-head) + var(--s-4));
+}
+html:not(.pw-js) {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--text) 30%, transparent) transparent;
+}
+html:not(.pw-js)::-webkit-scrollbar {
+  display: block;
+}
+body.pw {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.pw-skip {
+  position: absolute;
+  top: -100px;
+  left: var(--s-3);
+  z-index: 50;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 650;
+}
+.pw-skip:focus {
+  top: var(--s-2);
+}
+
+/* A table, code or a formula wider than the page scrolls sideways in its own box (the app's ScrollArea). */
+.pw-scroll-x {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* ── Header: the app's wiki header, across the page ──────────────────────────────────────────────────────────── */
+
+.pw-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 460px) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s-3);
+  min-height: var(--pw-head);
+  padding: 0 max(var(--s-4), calc((100vw - var(--pw-max)) / 2 + var(--s-4)));
+  border-bottom: var(--bw) solid var(--border);
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  box-shadow: 0 8px 24px -12px rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(12px);
+}
+.pw-head-start,
+.pw-head-end {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+}
+.pw-head-end {
+  justify-content: flex-end;
+}
+.pw-logo {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  border-radius: var(--r-md);
+}
+.pw-menu {
+  display: none;
+}
+
+.pw-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+}
+.pw-search > .sh-icon {
+  position: absolute;
+  left: var(--s-3);
+  pointer-events: none;
+}
+.pw-search input {
+  width: 100%;
+  height: 36px;
+  padding: 0 40px 0 34px;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--t-sm);
+  transition:
+    border-color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+.pw-search input::placeholder {
+  color: var(--muted);
+}
+.pw-search input:hover {
+  border-color: var(--border-strong);
+}
+.pw-search input:focus {
+  outline: none;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.pw-search input::-webkit-search-cancel-button {
+  display: none;
+}
+.pw-search-key {
+  position: absolute;
+  right: var(--s-2);
+  pointer-events: none;
+}
+.pw-search:focus-within .pw-search-key {
+  display: none;
+}
+.pw-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  max-height: min(70vh, 520px);
+  overflow: auto;
+  padding: var(--s-1);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--raised);
+  box-shadow: var(--shadow-2);
+}
+.pw-results[hidden] {
+  display: none;
+}
+.pw-result {
+  display: grid;
+  gap: 2px;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  color: var(--text);
+  text-decoration: none;
+}
+.pw-result strong {
+  font-size: var(--t-sm);
+  font-weight: 650;
+}
+.pw-result span {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+}
+.pw-result:hover,
+.pw-result[data-active] {
+  background: var(--accent-soft);
+}
+.pw-result-none {
+  margin: 0;
+  padding: var(--s-3);
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.pw-spoilers {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--text-soft);
+  font-size: var(--t-xs);
+  font-weight: 560;
+  white-space: nowrap;
+  cursor: pointer;
+}
+html[data-mode="dark"] .pw-moon,
+html[data-mode="light"] .pw-sun {
+  display: none;
+}
+.pw-sun,
+.pw-moon {
+  display: inline-flex;
+}
+
+/* ── Layout: the sidebar card beside the page card ───────────────────────────────────────────────────────────── */
+
+.pw-body {
+  display: grid;
+  grid-template-columns: var(--pw-nav) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--s-5);
+  max-width: var(--pw-max);
+  margin: 0 auto;
+  padding: var(--s-5) var(--s-4) var(--s-7);
+}
+
+/* The sidebar: the app's tree, in a card of its own. */
+.pw-nav {
+  position: sticky;
+  top: calc(var(--pw-head) + var(--s-4));
+  max-height: calc(100vh - var(--pw-head) - var(--s-6));
+  overflow: auto;
+  padding: var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  scrollbar-width: thin;
+}
+.pw-nav-section {
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: var(--bw) solid var(--border);
+}
+.pw-nav-label {
+  margin: 0 0 var(--s-1);
+  padding: 2px var(--s-2);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.pw-nav-label a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: inherit;
+  text-decoration: none;
+}
+.pw-nav-label a:hover,
+.pw-nav-label a.active {
+  color: var(--accent-ink);
+}
+/* The open page: its name in the accent with the tint and edge of the app's sliding marker. */
+.pw-nav a.sh-nav-link:hover {
+  background: var(--hover);
+}
+.pw-nav a.sh-nav-link.active {
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* The page: crumbs above, then a card holding the page as the app draws it. */
+.pw-main {
+  min-width: 0;
+}
+.pw-main:focus {
+  outline: none;
+}
+.pw-crumbs ol {
+  margin-bottom: var(--s-2);
+}
+.pw-article {
+  display: flow-root;
+  padding: var(--s-6) var(--s-6) var(--s-5);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--pw-page);
+  box-shadow: var(--shadow-1);
+}
+.pw-article .sh-page-head {
+  margin-bottom: var(--s-5);
+}
+.pw-article .sh-page-foot {
+  margin-top: var(--s-6);
+}
+.pw-article .sh-page-foot:empty {
+  display: none;
+}
+.sh-page-infobox-figure a {
+  display: block;
+}
+
+/* A banner across the top of the card (the front page's, a page's `banner`), the name under it. */
+.pw-banner {
+  display: block;
+  width: calc(100% + 2 * var(--s-6));
+  height: clamp(140px, 22vw, 300px);
+  margin: calc(-1 * var(--s-6)) calc(-1 * var(--s-6)) var(--s-5);
+  object-fit: cover;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+.pw-front .sh-page-title {
+  font-size: clamp(1.9rem, 1.4rem + 1.6vw, 2.6rem);
+}
+
+/* Section cards with the page's picture on top (the front page's sections, a section's pages). */
+.sh-section-card.pw-card-art {
+  overflow: hidden;
+  padding-top: 0;
+}
+.pw-card-picture {
+  display: block;
+  aspect-ratio: 4 / 3;
+  margin: 0 calc(-1 * var(--s-4)) var(--s-2);
+  overflow: hidden;
+  border-bottom: var(--bw) solid var(--border);
+  background: var(--raised);
+}
+.pw-card-picture img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: scale 260ms var(--ease);
+}
+.sh-section-card.pw-card-art:hover .pw-card-picture img {
+  scale: 1.04;
+}
+.pw-card-art .sh-section-top {
+  display: none;
+}
+.pw-start-grid {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+
+/* Previous and next, at the page's end. */
+.pw-pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+.pw-pager-card[data-dir="next"] {
+  text-align: right;
+}
+.pw-pager-label {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pw-site-foot {
+  display: flex;
+  justify-content: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-4) var(--s-6);
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+/* ── What the app's components do, done by site.js ──────────────────────────────────────────────────────────── */
+
+/* Gallery tiles and pictures open in the viewer. */
+a.sh-shot {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+.pw-zoomable {
+  cursor: zoom-in;
+}
+/* Every spoiler at once, from the header's switch. */
+/* An inline spoiler is a span here, so it wraps with its sentence; each line keeps its rounded background. */
+.sh-spoiler-inline {
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+html.pw-spoilers-shown .sh-spoiler-inline > span {
+  filter: none;
+  user-select: auto;
+}
+/* Mermaid's source until it's drawn. */
+.pw-diagram {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  text-align: center;
+  white-space: pre;
+}
+.pw-diagram[data-processed] {
+  white-space: normal;
+}
+.pw-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+.pw-data-filter {
+  flex: 1;
+  height: 32px;
+  min-height: 32px;
+}
+
+.pw-viewer {
+  max-width: 96vw;
+  max-height: 94vh;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.pw-viewer::backdrop {
+  background: color-mix(in oklab, var(--bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+}
+.pw-viewer img {
+  display: block;
+  max-width: 96vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: var(--r-md);
+  cursor: zoom-out;
+}
+.pw-viewer-close {
+  position: fixed;
+  top: var(--s-3);
+  right: var(--s-4);
+}
+
+/* ── Narrow screens: search on a row of its own, the sidebar a drawer ────────────────────────────────────────── */
+
+@media (max-width: 1040px) {
+  .pw-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: var(--s-2);
+    padding: var(--s-2) var(--s-3);
+  }
+  .pw-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .pw-menu {
+    display: inline-flex;
+  }
+  .pw-body {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--s-4) var(--s-3) var(--s-6);
+  }
+  .pw-nav {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    width: min(320px, 86vw);
+    max-height: none;
+    border-radius: 0 var(--r-lg) var(--r-lg) 0;
+    box-shadow: var(--shadow-2);
+    translate: -105% 0;
+    visibility: hidden;
+    transition:
+      translate 180ms var(--ease),
+      visibility 0s 180ms;
+  }
+  html.pw-menu-open .pw-nav {
+    translate: 0 0;
+    visibility: visible;
+    transition: translate 180ms var(--ease);
+  }
+  html.pw-menu-open body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: color-mix(in oklab, var(--bg) 60%, transparent);
+  }
+}
+
+@media (max-width: 720px) {
+  .pw-article {
+    padding: var(--s-5) var(--s-4) var(--s-4);
+  }
+  .pw-banner {
+    width: calc(100% + 2 * var(--s-4));
+    margin: calc(-1 * var(--s-5)) calc(-1 * var(--s-4)) var(--s-4);
+  }
+  .pw-spoilers-label,
+  .sh-head-tagline {
+    display: none;
+  }
+  .pw-start-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media print {
+  .pw-header,
+  .pw-nav,
+  .pw-pager,
+  .pw-site-foot,
+  .sh-section-tools {
+    display: none;
+  }
+  .pw-body {
+    display: block;
+  }
+  .pw-article {
+    border: 0;
+    box-shadow: none;
+  }
+}

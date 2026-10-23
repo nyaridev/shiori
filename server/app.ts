@@ -18,6 +18,7 @@ import { serveFile } from "./files.ts";
 import { forgetGit, gitInfo } from "./git.ts";
 import { historyOf, versionOf } from "./history.ts";
 import type { Live } from "./live.ts";
+import { createEditions, type Editions, editionResponse, zipEdition, zipName } from "./public/output.ts";
 import { listQuestions, questionQueryFrom, questionsWaiting } from "./questionList.ts";
 import { type Registry, toCard, type Wiki } from "./registry.ts";
 import { filterFrom, notesOf, search, searchNotes } from "./search.ts";
@@ -69,7 +70,7 @@ const editSchema = z.strictObject({ body: z.string().trim().min(1) });
 export const reactionSchema = z.strictObject({ emoji: z.enum(REACTIONS), on: z.boolean() });
 const newShareSchema = z.strictObject({
   wiki: z.string(),
-  kind: z.enum(["view", "comment", "board", "sheet"]),
+  kind: z.enum(["view", "comment", "board", "sheet", "public"]),
   /** A `board` link's board (its uid), a `sheet` link's sheet (its name). */
   target: z.string().max(80).optional(),
   /** A `sheet` link: its guests may change values. */
@@ -121,6 +122,8 @@ export interface AppOptions {
   presence?: Presence;
   /** Serve the built UI from this folder (start-web). */
   staticDir?: string;
+  /** The wikis' public editions (ADR-0011), shared with the guest server. */
+  editions?: Editions;
 }
 
 export function buildApp({
@@ -131,6 +134,7 @@ export function buildApp({
   tunnel,
   presence = presenceFor(shares),
   staticDir,
+  editions = createEditions(data),
 }: AppOptions) {
   const app = new Hono();
   const { pagesOf, corpusOf } = data;
@@ -353,6 +357,32 @@ export function buildApp({
     return t ? c.json(t) : c.notFound();
   });
   app.patch("/api/wikis/:id/answers/:mid", (c) => hide(c, setAnswerHidden));
+
+  // The public wiki (ADR-0011): what goes public, a preview of it as readers see it, and the export.
+  app.get("/api/wikis/:id/public", (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    return c.json(editions.of(w).report);
+  });
+
+  app.get("/api/wikis/:id/public.zip", async (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const body = await zipEdition(w, editions.of(w));
+    return c.body(new Uint8Array(body), 200, {
+      "content-type": "application/zip",
+      "content-disposition": `attachment; filename="${zipName(w)}"`,
+      "cache-control": "no-store",
+    });
+  });
+
+  app.get("/api/wikis/:id/public/site", (c) => c.redirect(`${c.req.path}/`, 301));
+  app.get("/api/wikis/:id/public/site/*", async (c) => {
+    const w = wikiOr404(c);
+    if (w instanceof Response) return w;
+    const rest = c.req.path.slice(`/api/wikis/${w.id}/public/site/`.length);
+    return editionResponse(c, w, editions.of(w), rest);
+  });
 
   /** The element reference (docs/elements.md), rendered for the toolbox's design system. */
   app.get("/api/dev/elements", (c) => c.json(renderElements(registry.appRoot)));

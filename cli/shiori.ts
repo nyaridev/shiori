@@ -21,6 +21,7 @@ import type { Answer, Authored, PageData, Question, Thread } from "../shared/api
 import { isPageComment } from "../shared/quote.ts";
 import { wikiIdSchema } from "../shared/schema.ts";
 import { boards, report, reports } from "./boards.ts";
+import { exportPublic, publicProblems, showPublic } from "./public.ts";
 import { sheet, sheets } from "./sheets.ts";
 
 const HELP = `Shiori CLI
@@ -60,7 +61,12 @@ const HELP = `Shiori CLI
   pnpm shiori sheet <id> <name>                      Its current values and what people changed since the export
   pnpm shiori sheet <id> <name> export [--json <file>] [--luau <file>] [--apply]
                                                    Write the values for the game; --apply makes them the
-                                                   file's defaults`;
+                                                   file's defaults
+  pnpm shiori public <id>                            The public wiki (ADR-0011): which pages go public and what
+                                                   stays out of it
+  pnpm shiori export <id> [--out <file.zip>] [--dir <folder>]
+                                                   The public wiki as a static site: a .zip (by default in the
+                                                   wiki's data/export/), or files in a folder`;
 
 const ACCENTS = ["#e8b86d", "#7fb7a4", "#8fa8e8", "#e0846b", "#c49be0", "#d4c46a", "#6fb3d4", "#e08aa8"];
 
@@ -84,6 +90,8 @@ const { positionals, values } = parseArgs({
     json: { type: "string" },
     luau: { type: "string" },
     apply: { type: "boolean", default: false },
+    out: { type: "string" },
+    dir: { type: "string" },
     help: { type: "boolean", short: "h", default: false },
   },
 });
@@ -225,6 +233,7 @@ const commands: Record<string, () => void> = {
       if (!pages.some((p) => p.path === "")) problems.push("pages/index.md (the home page) is missing");
       const layouts = loadLayouts(w);
       problems.push(...layouts.problems);
+      problems.push(...publicProblems(w, pages));
       for (const p of pages)
         for (const msg of renderPage(w, pages, p.path, layouts)?.problems ?? []) problems.push(`${p.file} ${msg}`);
       count += problems.length;
@@ -448,6 +457,11 @@ const commands: Record<string, () => void> = {
       { title: values.title, json: values.json, luau: values.luau, apply: values.apply },
       fail,
     ),
+
+  public: () => showPublic(wikiById(args[0])),
+  export: () => {
+    exportPublic(wikiById(args[0]), { out: values.out, dir: values.dir }, fail).catch((e) => fail(String(e)));
+  },
 
   reopen() {
     const w = wikiById(args[0]);

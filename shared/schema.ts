@@ -33,6 +33,62 @@ export const DEFAULT_SETTINGS: Settings = settingsSchema.parse({});
 
 export const WIKI_SCHEMA = 1;
 
+/** The public wiki's own words, which a wiki may say in its language (server/public/words.ts has the English). */
+export const PUBLIC_WORDS = [
+  "home",
+  "search",
+  "start",
+  "spoilers",
+  "contents",
+  "related",
+  "inSection",
+  "noResults",
+  "updated",
+  "previous",
+  "next",
+  "pages",
+  "notFound",
+  "skip",
+  "day",
+  "night",
+] as const;
+
+/**
+ * The public wiki (ADR-0011): a read-only edition for players and other readers, exported as a static site or shared
+ * by a public link. Pages are private until `pages` (or a page's own `public: true`) says otherwise.
+ */
+export const publicSchema = z.strictObject({
+  /** The public wiki's name and line under it; the wiki's own without them. */
+  title: z.string().min(1).max(80).optional(),
+  tagline: z.string().max(200).optional(),
+  /** Which pages go public, as page paths with `*` (one level) and `**` (any depth): `mobs/**`, `items`. */
+  pages: z.array(z.string().min(1).max(200)).max(100).default([]),
+  /** A page whose text becomes the public front page (it isn't listed again on its own). */
+  front: z.string().min(1).optional(),
+  /** A wide picture across the top of the front page, from the wiki root: `/assets/banner.png`. */
+  banner: z.string().min(1).optional(),
+  /** The picture beside the name in the header, from the wiki root; the wiki's icon without one. */
+  logo: z.string().min(1).optional(),
+  /** The language its pages are written in, for browsers and screen readers: `en`, `pl`. */
+  lang: z
+    .string()
+    .regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, "a language code, as en or pl")
+    .default("en"),
+  /** The public wiki's own words (menus, search, "Where to start") in the wiki's language. */
+  words: z.partialRecord(z.enum(PUBLIC_WORDS), z.string().min(1).max(80)).default({}),
+  /** Infobox rows, page fields and table or sheet columns never shown, by their label: `Script`, `Asset id`. */
+  privateFields: z.array(z.string().min(1).max(80)).max(200).default([]),
+  /**
+   * Pictures never shown, as paths from the wiki root with `*` and `**`: `assets/concepts/**`. Pictures in a
+   * `private/` folder or named `*.private.*` never are, whatever this says.
+   */
+  privateFiles: z.array(z.string().min(1).max(200)).max(200).default([]),
+  /** Code blocks are left out of the public wiki unless this is true. Diagrams and math stay. */
+  code: z.boolean().default(false),
+});
+export type PublicSettings = z.infer<typeof publicSchema>;
+export const DEFAULT_PUBLIC: PublicSettings = publicSchema.parse({});
+
 export const wikiIdSchema = z
   .string()
   .regex(/^[a-z0-9][a-z0-9-]*$/, "use lowercase letters, digits and dashes (kebab-case)");
@@ -69,6 +125,8 @@ export const manifestSchema = z.strictObject({
       }),
     )
     .default({}),
+  /** The public wiki (ADR-0011): which pages readers outside see, and what never leaves. */
+  public: publicSchema.optional(),
 });
 export type Manifest = z.infer<typeof manifestSchema>;
 
@@ -126,6 +184,13 @@ export const frontmatterSchema = z.looseObject({
    * what's there. People answer them like questions; they show in green, below the questions.
    */
   suggestions: z.array(decisionSchema).optional(),
+  /**
+   * The public wiki (ADR-0011): `true` puts the page in it, `false` keeps it out even when wiki.json's `public.pages`
+   * lists it.
+   */
+  public: z.boolean().optional(),
+  /** Infobox rows and fields of this page the public wiki leaves out, by label. */
+  private: z.array(z.string().min(1)).optional(),
   /** A layout from the wiki's `layouts/` that arranges this page (ADR-0006). */
   layout: z.string().min(1).optional(),
   /** The design this page was made from, as `<collection>/<id>`; a layout's `design` block shows it. */
@@ -191,6 +256,16 @@ export const FRONTMATTER_FIELDS: { key: keyof Frontmatter; what: string; example
     key: "suggestions",
     what: "The agent's ideas for the page, written while reviewing it: what to add or improve. Same fields as questions; they show in green, below the questions.",
     example: 'suggestions:\n  - id: s1\n    text: "Add a weekly leaderboard?"\n    options: [Yes, Later, No]',
+  },
+  {
+    key: "public",
+    what: "true puts the page in the public wiki (exported or shared by a public link); false keeps it out, even when wiki.json's public.pages lists it.",
+    example: "public: true",
+  },
+  {
+    key: "private",
+    what: "Infobox rows and fields the public wiki leaves out, by label. The app still shows them.",
+    example: "private: [Script, Spawn weight]",
   },
   {
     key: "layout",

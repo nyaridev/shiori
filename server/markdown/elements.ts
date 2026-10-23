@@ -112,6 +112,22 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   },
   // A collection's designs (ADR-0006), with the button that makes a new one.
   designs: { type: "leafDirective", tag: "sh-designs", attrs: { collection: null }, transform: needsCollection },
+  // The public wiki (ADR-0011): `:::private` and `:private[…]` never leave the app; spoilers hide story secrets until
+  // a reader opens them, in the app and the public wiki alike.
+  private: {
+    type: ["containerDirective", "textDirective"],
+    tag: "sh-private",
+    attrs: { note: null },
+    label: "note",
+    transform: markInline,
+  },
+  spoiler: {
+    type: ["containerDirective", "textDirective"],
+    tag: "sh-spoiler",
+    attrs: { title: null },
+    label: "title",
+    transform: markInline,
+  },
   // A data sheet (ADR-0010): `sheets/<name>.json`, its values editable by the owner and shared by its own link.
   sheet: { type: "leafDirective", tag: "sh-sheet", attrs: { name: null }, transform: needsSheetName },
 };
@@ -316,6 +332,11 @@ function needsSheetName(node: Directive, problem: (message: string) => void) {
 function checkCount(node: Directive, problem: (message: string) => void) {
   const count = node.attributes?.count;
   if (count != null && !/^([1-9]|[1-4]\d|50)$/.test(count)) problem(`${node.name}: count is a number from 1 to 50`);
+}
+
+/** An element written both ways says which: `:private[…]` in a sentence, `:::private` around blocks. */
+function markInline(node: Directive) {
+  if (node.type === "textDirective") return { inline: "" };
 }
 
 /** Columns are separated by `---` lines. */

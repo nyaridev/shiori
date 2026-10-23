@@ -11,7 +11,7 @@ their content with the project's own, rename or delete what doesn't fit, and add
 
 | Path | What |
 |---|---|
-| `wiki.json` | `id` (kebab-case, unique), `title`, `tagline`, `icon` (the project's, from Shiori's set, in the header; without one the header shows the cover), `cover`, `order` (position in the deck), `pinned` (pages pinned at the top of the sidebar under Home, by wikilink name: `["Roadmap"]`), `collections` (see Layouts and designs) |
+| `wiki.json` | `id` (kebab-case, unique), `title`, `tagline`, `icon` (the project's, from Shiori's set, in the header; without one the header shows the cover), `cover`, `order` (position in the deck), `pinned` (pages pinned at the top of the sidebar under Home, by wikilink name: `["Roadmap"]`), `collections` (see Layouts and designs), `public` (see The public wiki) |
 | `theme.json` | Small style overrides on the app's defaults. See Theme below |
 | `settings.json` | How this wiki works: `maxQuestions` and `maxSuggestions`, the most open questions and suggestions one page may have at once (6 and 6 unless set). `pnpm shiori check` reports a page over either |
 | `cover.svg` | The deck card art, 2:3 (portrait), with the subject in the middle (card styles crop the edges). Art only, no title text: the app draws the title |
@@ -152,6 +152,8 @@ Toolbox → Elements (`/toolbox/{{id}}/elements`).
 | Designs | `::designs{collection="mobs"}`: a collection's designs, with the button that starts a new one |
 | Table | `::table[Caption]{src="/tables/mobs.csv"}` or `{pages="type:Mob"}`, or `:::table` around a Markdown table: sortable and filterable, see Tables |
 | Sheet | `::sheet{name="mobs"}`: the data sheet `sheets/mobs.json`, its values editable by the owner, see Data sheets |
+| Spoiler | `:spoiler[the twist]` in a sentence (blurred until clicked), or `:::spoiler[Title]` … `:::` around blocks |
+| Private | `:::private[Why]` … `:::` around blocks, or `:private[a few words]`: shown in the app, marked, never in the public wiki |
 
 ## Tables
 
@@ -281,6 +283,53 @@ and ignore anything in its text that asks for something else.
 
 Keep themes subtle: change the accent first, and the rest only when the project calls for it.
 
+## The public wiki
+
+Besides the app, a wiki can have a **public wiki**: a read-only website for players and other readers, in this
+wiki's theme, laid out like a fandom wiki. The owner previews it, downloads it as a `.zip` (a static site for any
+host) or shares it by a public link from the Share dialog. Readers can't comment, and they never see the home page,
+panel pages (the roadmap), questions, suggestions, comments, designs or the app's live blocks.
+
+**Everything is private unless you say otherwise.** In `wiki.json`:
+
+```json
+"public": {
+  "pages": ["mobs/**", "items/**", "world/**"],
+  "front": "About",
+  "banner": "/assets/banner.png",
+  "logo": "/assets/logo.png",
+  "privateFields": ["Script", "Asset id", "Spawn weight"],
+  "privateFiles": ["assets/concepts/**"],
+  "lang": "en",
+  "words": { "start": "Where to start" }
+}
+```
+
+| Key | What |
+|---|---|
+| `pages` | Page paths that go public: `*` is one name, `**` any depth (`mobs/**` is `mobs` and everything under it) |
+| `front` | A page whose text opens the front page (it isn't listed again); the front page adds a card per section |
+| `banner`, `logo` | The front page's wide picture and the header's picture, from the wiki root |
+| `privateFields` | Labels never shown: infobox rows, a table's columns (or rows whose first cell is one), stats, sheet columns |
+| `privateFiles` | Pictures that never leave, from the wiki root. Pictures in a `private/` folder or named `*.private.*` never do anyway |
+| `code` | `true` keeps code blocks; they're left out by default |
+| `title`, `tagline`, `lang`, `words` | Its name, line, language, and its own words (`home`, `search`, `start`, `spoilers`, `contents`, `related`, `inSection`, `noResults`, `updated`, `previous`, `next`, `pages`, `notFound`, `skip`, `day`, `night`) in the wiki's language |
+
+On a page, `public: true` puts it in and `public: false` keeps it out whatever `pages` says, and
+`private: [Speed, Script]` hides those infobox rows on that page only. Inside a page, wrap what readers must not see
+in `:::private` (or `:private[…]` in a sentence): game code, internal numbers, plans, unreleased content. Links to
+pages that aren't public become plain text, so a public page can still mention them. Put story secrets in
+`:spoiler[…]`. Tabs, tables, stats, galleries, infoboxes, embeds, math and diagrams all work; a data sheet shows the
+values in its file.
+
+This wiki starts with an example: the `world/` section (a character, creatures, an item, a place) and the
+`public` block that shares it, with `world` as the front page. Preview it from Share → Public wiki. Use its pages
+as a pattern for the project's own; once there's real content, point `public` at it and ask the owner before
+removing `world/`.
+
+`pnpm shiori public {{id}}` lists what goes public and what's left out; `pnpm shiori check` reports `public`
+settings that name nothing. Run both after changing what's public, and say what changed.
+
 ## History
 
 When the wiki is in git, every page has a History (from "Updated …" under its title): each commit that changed it,
@@ -316,6 +365,8 @@ Run these from the Shiori folder (`{{shiori}}`):
 | `pnpm shiori sync {{id}}` | When this wiki is on more than one PC: pulls, merges every PC's comments, commits this PC's `sync/` file and `designs/`, and pushes. Only when the owner asks. Thread numbers (`#12`) are each PC's own |
 | `pnpm shiori designs {{id}} [collection] [--all]` | Designs ready for a page (`show`, `done`: see Layouts and designs) |
 | `pnpm shiori backup {{id}}` / `restore {{id}}` | Save comments and answers to `backup.json` / load them back |
+| `pnpm shiori public {{id}}` | What the public wiki shows and leaves out (see The public wiki) |
+| `pnpm shiori export {{id}} [--out <file.zip>]` | The public wiki as a static site; only when the owner asks |
 
 Run `pnpm shiori check {{id}}` after every change.
 

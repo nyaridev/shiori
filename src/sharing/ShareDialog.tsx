@@ -7,6 +7,7 @@ import { api } from "../lib/api.ts";
 import { isGuest } from "../lib/base.ts";
 import { ago, left } from "../lib/time.ts";
 import { Badge, Button, Callout, Dialog, DialogContent, DialogTrigger, Input, Segmented, Select } from "../ui/index.ts";
+import { PublicSummary } from "./PublicSummary.tsx";
 import { useShares } from "./useShares.ts";
 import "./share.css";
 
@@ -19,6 +20,7 @@ const DURATIONS: { value: ShareDuration; label: string }[] = [
 const KINDS: { value: ShareKind; label: string }[] = [
   { value: "view", label: "Can read" },
   { value: "comment", label: "Can read and comment" },
+  { value: "public", label: "Public wiki" },
 ];
 const SHEET_RIGHTS: { value: "look" | "edit"; label: string }[] = [
   { value: "look", label: "Can look" },
@@ -40,6 +42,7 @@ function kindLabel(s: ShareInfo): { label: string; tone: "accent" | "neutral" } 
       label: `Sheet · ${s.target?.title ?? ""}${s.edit ? " · can change" : ""}`,
       tone: s.edit ? "accent" : "neutral",
     };
+  if (s.kind === "public") return { label: "Public wiki · read only", tone: "accent" };
   return s.kind === "comment" ? { label: "Read and comment", tone: "accent" } : { label: "Read", tone: "neutral" };
 }
 const WRITES: Record<ShareKind, [string, string]> = {
@@ -47,6 +50,7 @@ const WRITES: Record<ShareKind, [string, string]> = {
   comment: ["comment", "comments"],
   board: ["report", "reports"],
   sheet: ["change", "changes"],
+  public: ["view", "views"],
 };
 
 /** The name the owner signs with for guests, remembered in this browser so it survives restarts. */
@@ -103,7 +107,14 @@ function ShareBody({ wikiId, target }: { wikiId: string; target?: ShareTargetOf 
     return () => clearInterval(timer);
   }, []);
 
-  if (unavailable) return <Callout tone="warning">{unavailable}</Callout>;
+  // The public wiki's preview and export need no link, so they work in dev too.
+  if (unavailable)
+    return (
+      <div className="sh-share">
+        <Callout tone="warning">{unavailable}</Callout>
+        {!target && <PublicSummary wikiId={wikiId} />}
+      </div>
+    );
   if (!state) return <p className="sh-share-quiet">Loading…</p>;
 
   // On a board or sheet: its own links. On the wiki: all of the wiki's, boards' and sheets' too.
@@ -201,6 +212,7 @@ function NewLink({
   const [host, setHost] = useState(() => savedHost() || state.host);
   const [busy, setBusy] = useState(false);
   const id = useId();
+  const isPublic = !target && kind === "public";
 
   /** A changed name applies to every link at once. */
   const renameHost = () => {
@@ -233,9 +245,19 @@ function NewLink({
       {!target && (
         <div className="sh-share-field">
           <span className="sh-share-label">People with the link</span>
-          <Segmented label="What guests can do" value={kind} onChange={setKind} options={KINDS} />
+          <Segmented
+            label="What guests can do"
+            value={kind}
+            onChange={(k) => {
+              setKind(k);
+              // A public wiki is meant to stay up while Shiori runs.
+              if (k === "public") setDuration("session");
+            }}
+            options={KINDS}
+          />
         </div>
       )}
+      {isPublic && <PublicSummary wikiId={wikiId} />}
       {target?.kind === "sheet" && (
         <div className="sh-share-field">
           <span className="sh-share-label">People with the link</span>
@@ -261,26 +283,29 @@ function NewLink({
             onChange={(e) => setLabel(e.target.value)}
           />
         </div>
-        <div className="sh-share-field">
-          <label className="sh-share-label" htmlFor={`${id}-host`}>
-            Your name for guests
-          </label>
-          <Input
-            id={`${id}-host`}
-            value={host}
-            maxLength={32}
-            onChange={(e) => setHost(e.target.value)}
-            onBlur={renameHost}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") renameHost();
-            }}
-          />
-        </div>
+        {!isPublic && (
+          <div className="sh-share-field">
+            <label className="sh-share-label" htmlFor={`${id}-host`}>
+              Your name for guests
+            </label>
+            <Input
+              id={`${id}-host`}
+              value={host}
+              maxLength={32}
+              onChange={(e) => setHost(e.target.value)}
+              onBlur={renameHost}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") renameHost();
+              }}
+            />
+          </div>
+        )}
       </div>
       <div className="sh-share-actions">
         <span className="sh-share-quiet">
-          Guests see your {target?.kind === "sheet" ? "changes" : target?.kind === "board" ? "notes" : "comments"}{" "}
-          signed {state.host}.
+          {isPublic
+            ? "Anyone with the link reads the public pages. No names, no comments."
+            : `Guests see your ${target?.kind === "sheet" ? "changes" : target?.kind === "board" ? "notes" : "comments"} signed ${state.host}.`}
         </span>
         <Button variant="solid" icon="link" disabled={busy} onClick={() => void create()}>
           Create link
@@ -322,34 +347,43 @@ function LinkCard({
       </div>
       {!up && <p className="sh-share-quiet">This address works on this PC only until the tunnel is up.</p>}
 
-      <h4 className="sh-share-subheading">
-        Guests <span className="sh-share-quiet">{share.guests.length || "none yet"}</span>
-        {share.blockedIps > 0 && (
-          <Badge tone="bad">
-            {share.blockedIps} address{share.blockedIps === 1 ? "" : "es"} blocked
-          </Badge>
-        )}
-      </h4>
-      {share.guests.length > 0 && (
-        <ul className="sh-share-guests">
-          {share.guests.map((g) => (
-            <li key={g.id} data-blocked={g.blocked || undefined}>
-              <span className="sh-share-guest">{g.name}</span>
-              {g.blocked && <Badge tone="bad">Blocked</Badge>}
-              <span className="sh-share-quiet">
-                seen {ago(g.lastSeen)} · {g.writes} {g.writes === 1 ? one : many}
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                icon={g.blocked ? "undo" : "block"}
-                onClick={() => void act(() => api.blockGuest(share.id, g.id, !g.blocked))}
-              >
-                {g.blocked ? "Let back in" : "Block"}
-              </Button>
-            </li>
-          ))}
-        </ul>
+      {share.kind === "public" ? (
+        <p className="sh-share-quiet">
+          {share.views ? `${share.views} page ${share.views === 1 ? one : many} so far` : "No readers yet"} · only the
+          public pages, nothing private
+        </p>
+      ) : (
+        <>
+          <h4 className="sh-share-subheading">
+            Guests <span className="sh-share-quiet">{share.guests.length || "none yet"}</span>
+            {share.blockedIps > 0 && (
+              <Badge tone="bad">
+                {share.blockedIps} address{share.blockedIps === 1 ? "" : "es"} blocked
+              </Badge>
+            )}
+          </h4>
+          {share.guests.length > 0 && (
+            <ul className="sh-share-guests">
+              {share.guests.map((g) => (
+                <li key={g.id} data-blocked={g.blocked || undefined}>
+                  <span className="sh-share-guest">{g.name}</span>
+                  {g.blocked && <Badge tone="bad">Blocked</Badge>}
+                  <span className="sh-share-quiet">
+                    seen {ago(g.lastSeen)} · {g.writes} {g.writes === 1 ? one : many}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={g.blocked ? "undo" : "block"}
+                    onClick={() => void act(() => api.blockGuest(share.id, g.id, !g.blocked))}
+                  >
+                    {g.blocked ? "Let back in" : "Block"}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
       {recent.length > 0 && (
         <details className="sh-share-activity">

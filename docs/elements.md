@@ -153,6 +153,39 @@ Hidden text.
 :::
 ```
 
+## Spoilers
+
+The ending :spoiler[was a dream all along]. Readers click the blurred words to see them.
+
+:::spoiler[How the story ends]
+Hidden until opened, like details, and marked as a spoiler.
+:::
+
+```md
+The ending :spoiler[was a dream all along].
+
+:::spoiler[How the story ends]
+Hidden until opened.
+:::
+```
+
+## Private
+
+:::private[Game code]
+Damage comes from `MobConfig.Damage`; never in the public wiki.
+:::
+
+A block or :private[a few words] the public wiki (ADR-0011) leaves out. The app shows them, marked. The note in
+the brackets says why, for the people working on the wiki.
+
+```md
+:::private[Game code]
+What only the team sees.
+:::
+
+Spawns every :private[90 seconds, from SpawnService] few minutes.
+```
+
 ## Questions
 
 ::question{id=q1}

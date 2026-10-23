@@ -71,34 +71,77 @@ export async function serveFile(c: Context, root: string, encoded: string, { cac
   const width = Number(c.req.query("w") ?? 0);
   if (width && !WIDTHS.includes(width as (typeof WIDTHS)[number])) return c.json({ error: "unknown width" }, 400);
   const resized = width > 0 && ext !== ".svg";
-  // The ETag changes when the file does, so a browser asks again cheaply and gets a 304 until then.
-  const etag = `"${createHash("sha1")
-    .update(`${rel}|${stat.size}|${stat.mtimeMs}|${resized ? width : "original"}`)
-    .digest("hex")
-    .slice(0, 24)}"`;
+  const etag = `"${tagOf(rel, stat, resized ? width : "original")}"`;
   const headers = { "cache-control": "no-cache", etag };
   if (c.req.header("if-none-match")?.replace(/^W\//, "") === etag) return c.body(null, 304, headers);
   if (!resized) return c.body(readFileSync(full), 200, { ...headers, "content-type": type });
+  const out = await resizedCopy(root, full, rel, stat, width, cache);
+  return out
+    ? c.body(new Uint8Array(out), 200, { ...headers, "content-type": "image/webp" })
+    : // Not a picture sharp can read: send the original, as the page asked for a picture.
+      c.body(readFileSync(full), 200, { ...headers, "content-type": type });
+}
 
-  const file = cache ? join(dataDir(root, "cache", "pictures"), `${etag.slice(1, -1)}.webp`) : null;
-  if (file && existsSync(file)) return c.body(readFileSync(file), 200, { ...headers, "content-type": "image/webp" });
-  let job = converting.get(etag);
+/** The ETag of a picture as served: it changes when the file does. */
+const tagOf = (rel: string, stat: { size: number; mtimeMs: number }, size: number | "original") =>
+  createHash("sha1").update(`${rel}|${stat.size}|${stat.mtimeMs}|${size}`).digest("hex").slice(0, 24);
+
+/** A WebP copy at most `width` wide, made once and kept in the wiki's `data/cache/`; null when sharp can't read it. */
+async function resizedCopy(
+  root: string,
+  full: string,
+  rel: string,
+  stat: { size: number; mtimeMs: number },
+  width: number,
+  cache = true,
+): Promise<Buffer | null> {
+  const tag = tagOf(rel, stat, width);
+  const file = cache ? join(dataDir(root, "cache", "pictures"), `${tag}.webp`) : null;
+  if (file && existsSync(file)) return readFileSync(file);
+  let job = converting.get(tag);
   if (!job) {
-    job = resize(full, width, ext === ".gif").finally(() => converting.delete(etag));
-    converting.set(etag, job);
+    job = resize(full, width, extname(rel).toLowerCase() === ".gif").finally(() => converting.delete(tag));
+    converting.set(tag, job);
   }
   let out: Buffer;
   try {
     out = await job;
   } catch {
-    // Not a picture sharp can read: send the original, as the page asked for a picture.
-    return c.body(readFileSync(full), 200, { ...headers, "content-type": type });
+    return null;
   }
   if (file && !existsSync(file)) {
     writeFileSync(`${file}.tmp`, out);
     renameSync(`${file}.tmp`, file);
   }
-  return c.body(new Uint8Array(out), 200, { ...headers, "content-type": "image/webp" });
+  return out;
+}
+
+/** A wiki picture Shiori may serve (`rel` from the wiki root, not encoded), or null: what `serveFile` would refuse. */
+export function pictureAt(root: string, rel: string): { full: string; type: string; size: number } | null {
+  const full = inside(root, rel);
+  const type = TYPES[extname(rel).toLowerCase()];
+  if (!full || !type || rel.split("/").some((p) => p.startsWith(".") || p === "data")) return null;
+  if (!existsSync(full)) return null;
+  const stat = statSync(full);
+  if (!stat.isFile() || stat.size > MAX_PICTURE_BYTES) return null;
+  return { full, type, size: stat.size };
+}
+
+/**
+ * A picture for the public wiki (ADR-0011): SVGs as they are, anything else as WebP at most `width` wide, which also
+ * leaves out the camera's metadata. Null when it isn't a picture Shiori serves.
+ */
+export async function publicPicture(
+  root: string,
+  rel: string,
+  width: number,
+): Promise<{ body: Uint8Array; type: string } | null> {
+  const found = pictureAt(root, rel);
+  if (!found) return null;
+  if (found.type === "image/svg+xml") return { body: readFileSync(found.full), type: found.type };
+  const out = await resizedCopy(root, found.full, rel, statSync(found.full), width);
+  // Not a picture sharp can read: the original, which browsers still show.
+  return out ? { body: new Uint8Array(out), type: "image/webp" } : { body: readFileSync(found.full), type: found.type };
 }
 
 /** What `pnpm shiori check` says about a wiki's media: videos and sounds it may not carry, pictures that are too big. */

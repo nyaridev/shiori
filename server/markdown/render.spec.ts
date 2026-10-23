@@ -30,6 +30,30 @@ describe("renderMarkdown", () => {
     expect(problems).toEqual([]);
   });
 
+  it("marks private blocks and words, and spoilers, block or inline (ADR-0011)", () => {
+    const { hast, problems } = renderMarkdown(
+      [
+        ":::private[Game code]",
+        "Spawned by the server.",
+        ":::",
+        "",
+        "Every :private[90 s] minute. The end :spoiler[was a dream].",
+        "",
+        ":::spoiler[Ending]",
+        "It was.",
+        ":::",
+      ].join("\n"),
+      ctx,
+    );
+    const [block, inline] = find(hast, "sh-private");
+    expect(block.properties).toEqual({ note: "Game code" });
+    expect(inline.properties).toEqual({ inline: "" });
+    const [word, spoiler] = find(hast, "sh-spoiler");
+    expect(word.properties).toEqual({ inline: "" });
+    expect(spoiler.properties).toEqual({ title: "Ending" });
+    expect(problems).toEqual([]);
+  });
+
   it("hands a mermaid fence to the app as a diagram, with its source", () => {
     const { hast, problems } = renderMarkdown("```mermaid\nflowchart LR\n  a --> b\n```\n\n```mermaid\n```", ctx);
     const diagrams = find(hast, "sh-diagram");

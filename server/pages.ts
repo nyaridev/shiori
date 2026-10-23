@@ -27,6 +27,12 @@ export interface PageFile {
   tags?: string[];
   /** The page's own facts, for tables of pages (`::table{pages}`): its infobox rows and frontmatter of its own. */
   fields?: Record<string, string>;
+  /** A panel page (a dashboard); the public wiki leaves these out (ADR-0011). */
+  panel?: boolean;
+  /** Its own say on the public wiki: in (`true`), out (`false`), or as wiki.json's `public.pages` decides. */
+  public?: boolean;
+  /** Infobox rows and fields the public wiki leaves out. */
+  private?: string[];
 }
 
 /** Frontmatter keys Shiori reads; any other key is one of the page's own fields. */
@@ -129,6 +135,9 @@ export function listPages(wiki: Wiki): PageFile[] {
       type: fm.type,
       tags: fm.tags ?? [],
       fields: fieldsOf(fm),
+      ...(fm.panel ? { panel: true } : {}),
+      ...(fm.public !== undefined ? { public: fm.public } : {}),
+      ...(fm.private?.length ? { private: fm.private } : {}),
     };
   });
 }

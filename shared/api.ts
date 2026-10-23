@@ -378,9 +378,10 @@ export type LiveEvent =
 
 /**
  * What a share link lets a guest do: read the wiki (`view`), also comment (`comment`) (ADR-0003); or, with no wiki at
- * all, report on one test board (`board`) or see and maybe edit one data sheet (`sheet`) (ADR-0010).
+ * all, report on one test board (`board`) or see and maybe edit one data sheet (`sheet`) (ADR-0010); or read the
+ * public wiki (`public`, ADR-0011): only its public pages, as a static site, with no name, comments or app.
  */
-export type ShareKind = "view" | "comment" | "board" | "sheet";
+export type ShareKind = "view" | "comment" | "board" | "sheet" | "public";
 
 /** The board or sheet a `board` or `sheet` link opens. */
 export interface ShareTarget {
@@ -457,6 +458,42 @@ export interface ShareInfo {
   /** Client addresses blocked for going over the limits. */
   blockedIps: number;
   activity: ShareActivity[];
+  /** A `public` link: how many pages readers opened through it. */
+  views?: number;
+}
+
+// ── The public wiki (ADR-0011) ──────────────────────────────────────────────────────────────────────────────────
+
+/** What the public wiki left out, counted over the whole wiki. */
+export interface PublicRemoved {
+  /** `:::private` blocks and `:private[…]` words. */
+  private: number;
+  /** Code blocks (`public.code` is off). */
+  code: number;
+  /** Questions and suggestions placed on pages. */
+  questions: number;
+  /** Infobox rows, table columns and rows, stats and sheet columns with a private label. */
+  fields: number;
+  /** Pictures that are private or missing. */
+  pictures: number;
+  /** Links to pages that aren't public, kept as plain text (cards to them are dropped). */
+  links: number;
+  /** The app's own blocks: live lists, designs, roadmaps, page statuses, unknown elements. */
+  elements: number;
+}
+
+/** `GET /api/wikis/:id/public`: what goes public and what stays home. */
+export interface PublicReport {
+  title: string;
+  pages: { path: string; title: string; file: string }[];
+  /** Pages that stay out (not listed, `public: false`, the home page, panel pages). */
+  privatePages: number;
+  /** The page whose text is the front page. */
+  front: { path: string; title: string } | null;
+  removed: PublicRemoved;
+  pictures: number;
+  /** Anything in wiki.json's `public` that names nothing, or a picture that can't go. */
+  problems: string[];
 }
 
 /** Someone who joined through a link, as the owner sees them. */
