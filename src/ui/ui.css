@@ -189,8 +189,9 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 20px;
-  padding: 0 7px;
+  /* One line is 20px tall; in a narrow table column the words wrap and the badge grows taller around them. */
+  min-height: 20px;
+  padding: 3px 7px;
   border-radius: var(--r-sm);
   background: color-mix(in oklab, var(--tone) 12%, transparent);
   color: color-mix(in oklab, var(--tone) 75%, var(--text));
@@ -199,10 +200,11 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   vertical-align: 0.1em;
-  line-height: 1;
+  line-height: 1.15;
 }
 .sh-badge::before {
   content: "";
+  flex: none;
   width: 5px;
   height: 5px;
   border-radius: 50%;

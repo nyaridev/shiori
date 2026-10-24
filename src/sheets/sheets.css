@@ -25,12 +25,13 @@
   border-collapse: collapse;
   font-size: var(--t-sm);
 }
-.sh-sheet th,
-.sh-sheet td {
+/* `table.` outweighs the article's own table cells (`.sh-prose td`) when the sheet sits on a page. */
+table.sh-sheet th,
+table.sh-sheet td {
   padding: var(--s-2) var(--s-2);
   border-bottom: var(--bw) solid var(--border);
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
   overflow-wrap: break-word;
 }
 /* Numbers stay on one line; text and headings wrap. */
@@ -65,8 +66,17 @@
 .sh-sheet tbody tr:last-child td {
   border-bottom: 0;
 }
-/* A value someone changed: marked, so it stands out from the defaults. */
-.sh-sheet td[data-changed] {
+/* On a page the article's table look (its border, corners and margin) would draw a second frame inside the sheet's
+   box: the box is the only frame. */
+.sh-prose table.sh-sheet {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+/* A value someone changed: marked, so it stands out from the defaults, even under the article's row hover. */
+.sh-sheet td[data-changed],
+.sh-prose table.sh-sheet tbody tr td[data-changed] {
   background: var(--accent-soft);
 }
 .sh-sheet-edit.is-saving {

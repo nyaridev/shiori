@@ -47,10 +47,11 @@
   border-radius: var(--r-lg);
   background: var(--surface);
 }
+/* The kind sits in the middle of its chips: their row, or the rows they wrap onto. */
 .sh-related-group {
   display: grid;
   grid-template-columns: 9rem 1fr;
-  align-items: baseline;
+  align-items: center;
   gap: var(--s-3);
 }
 .sh-related-kind {

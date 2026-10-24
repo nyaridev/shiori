@@ -2,24 +2,30 @@
    References, a changelog for History, and navboxes. */
 
 /* ── Citations: a small number in a pill that previews the reference in a tooltip ─────────────────────────── */
+/* Sized from the text around it, not from `sup`'s smaller font, so the number stays readable in a table. The pill is
+   a circle for one digit and grows for more, with the number in its middle. */
 .sh-cite {
   position: relative;
-  margin-left: 1px;
+  margin-left: 2px;
+  font-size: 0.7em;
   line-height: 0;
+  vertical-align: 0.55em;
   scroll-margin-top: var(--s-7);
 }
 .sh-cite > a {
-  display: inline-block;
-  min-width: 1.45em;
-  padding: 0.25em 0.35em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 1.6em;
+  height: 1.6em;
+  padding: 0 0.4em;
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent-ink);
-  font-size: 0.68em;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  text-align: center;
   text-decoration: none;
   transition: background var(--fast) var(--ease);
 }
