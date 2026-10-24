@@ -1,6 +1,6 @@
 // Answers to a page's open questions (ADR-0002), stored in the wiki's `data/wiki.db` next to the comments. People
 // answer in the app; agents read them in `pnpm shiori inbox` and write the decision into the page's frontmatter.
-import type { Answer } from "../shared/api.ts";
+import type { Answer, AnswerPick } from "../shared/api.ts";
 import { newUid } from "./ids.ts";
 import { authorColumns, authoredOf, dbFor } from "./threads.ts";
 
@@ -9,6 +9,7 @@ interface AnswerRow {
   page: string;
   question: string;
   choice: string | null;
+  choices: string | null;
   body: string;
   author: "user" | "guest";
   guest_id: string | null;
@@ -24,6 +25,7 @@ const toAnswer = (r: AnswerRow): Answer => ({
   page: r.page,
   question: r.question,
   choice: r.choice,
+  ...(r.choices === null ? {} : { choices: JSON.parse(r.choices) as string[] }),
   body: r.body,
   ...authoredOf(r),
   author: r.author,
@@ -45,6 +47,10 @@ export function listAnswers(root: string, filter: { page?: string } = {}): Answe
   return (rows as unknown as AnswerRow[]).map(toAnswer);
 }
 
+/** What an answer picked, as its `choice` and `choices` columns: one option, or a list on a `multiple` question. */
+export const pickColumns = (pick: AnswerPick): [string | null, string | null] =>
+  Array.isArray(pick) ? [null, JSON.stringify(pick)] : [pick, null];
+
 /**
  * Someone's answer to a question. Each person has one answer per question: answering again changes it (the owner's,
  * or that guest's), so the agent reads what they think now.
@@ -53,11 +59,12 @@ export function addAnswer(
   root: string,
   page: string,
   question: string,
-  choice: string | null,
+  pick: AnswerPick,
   body: string,
   by: Answerer = "user",
 ): Answer {
   const db = dbFor(root);
+  const [choice, choices] = pickColumns(pick);
   const at = new Date().toISOString();
   const [author, guestId, guestName] = authorColumns(by);
   const mine = db
@@ -66,8 +73,9 @@ export function addAnswer(
     )
     .get(page, question, author, guestId ?? "") as { id: number } | undefined;
   if (mine) {
-    db.prepare("update answers set choice = ?, body = ?, guest_name = ?, updated_at = ? where id = ?").run(
+    db.prepare("update answers set choice = ?, choices = ?, body = ?, guest_name = ?, updated_at = ? where id = ?").run(
       choice,
+      choices,
       body,
       guestName,
       at,
@@ -77,9 +85,9 @@ export function addAnswer(
   }
   const { lastInsertRowid } = db
     .prepare(
-      "insert into answers (page, question, choice, body, author, guest_id, guest_name, created_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "insert into answers (page, question, choice, choices, body, author, guest_id, guest_name, created_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
-    .run(page, question, choice, body, ...authorColumns(by), at, newUid(), at);
+    .run(page, question, choice, choices, body, ...authorColumns(by), at, newUid(), at);
   return toAnswer(db.prepare("select * from answers where id = ?").get(lastInsertRowid) as unknown as AnswerRow);
 }
 

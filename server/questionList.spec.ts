@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Answer, QuestionPage, QuestionsWaiting, WikiIndex } from "../shared/api.ts";
@@ -74,6 +74,25 @@ describe("the question list", () => {
     expect(ids(await list("status=decided"))).toEqual(["q4", "q2"]);
     expect((await list("status=decided")).items[0].decidedOn).toBe("2026-10-22");
     expect(ids(await list("status=all"))).toEqual(["q3", "q1", "s1", "q4", "q2"]);
+  });
+
+  it("gives each question its page's breadcrumb, without the home page", async () => {
+    questions();
+    mkdirSync(join(alpha(), "pages", "systems", "tools"), { recursive: true });
+    writeFileSync(join(alpha(), "pages", "systems", "index.md"), "---\ntitle: Systems\n---\nAll of them.");
+    writeFileSync(
+      join(alpha(), "pages", "systems", "tools", "axes.md"),
+      "---\ntitle: Axes and chopping\nquestions:\n  - id: a1\n    text: How many axes?\n---\nAxes.",
+    );
+    s.emit({ type: "pages", wiki: "alpha" });
+    const items = (await list()).items;
+    const axes = items.find((q) => q.id === "a1");
+    expect(axes?.page.title).toBe("Axes and chopping");
+    expect(axes?.trail.map((t) => [t.path, t.title, t.isPage])).toEqual([
+      ["systems", "Systems", true],
+      ["systems/tools", "Tools", false],
+    ]);
+    expect(items.find((q) => q.id === "q1")?.trail).toEqual([]);
   });
 
   it("sends a page at a time, never more than 50", async () => {

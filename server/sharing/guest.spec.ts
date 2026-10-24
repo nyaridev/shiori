@@ -41,7 +41,7 @@ function wiki(id: string) {
   writeFileSync(join(root, "pages", "index.md"), "Home of the wiki.");
   writeFileSync(
     join(root, "pages", "plan.md"),
-    "---\ntitle: Plan\nquestions:\n  - id: q1\n    text: Which first?\n    options: [Steam, itch.io]\n---\nThe plan.",
+    "---\ntitle: Plan\nquestions:\n  - id: q1\n    text: Which first?\n    options: [Steam, itch.io]\n  - id: q2\n    text: Where?\n    options: [Steam, itch.io, Epic]\n    multiple: true\n---\nThe plan.",
   );
   return root;
 }
@@ -303,6 +303,15 @@ describe("guests", () => {
     expect((await bo.post("/api/wikis/alpha/answers", { page: "plan", question: "q1", choice: "Epic" })).status).toBe(
       400,
     );
+    // A multiple question takes a list of its options; a one-pick one doesn't.
+    const many = await bo.post("/api/wikis/alpha/answers", {
+      page: "plan",
+      question: "q2",
+      choices: ["Epic", "Steam"],
+    });
+    expect(await many.json()).toMatchObject({ choice: null, choices: ["Steam", "Epic"], mine: true });
+    const one = { page: "plan", question: "q1", choices: ["Steam"] };
+    expect((await bo.post("/api/wikis/alpha/answers", one)).status).toBe(400);
     expect((await bo.post("/api/wikis/alpha/threads", { page: "nowhere", quote, body: "Hi" })).status).toBe(404);
   });
 

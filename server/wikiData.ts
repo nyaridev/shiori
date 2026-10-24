@@ -1,7 +1,7 @@
 // What the owner's app and the guest server (ADR-0003) both read about a wiki: its pages, its rendered corpus, its
 // detail and index. Cached in memory and dropped when files change; every change also bumps a version, which guests
 // poll instead of server-sent events.
-import type { PageData, PageLink, WikiDetail, WikiIndex } from "../shared/api.ts";
+import type { AnswerPick, PageData, PageLink, WikiDetail, WikiIndex } from "../shared/api.ts";
 import { buildCorpus, type Corpus } from "./corpus.ts";
 import { iconSet } from "./icons.ts";
 import type { Live } from "./live.ts";
@@ -119,18 +119,23 @@ export function createWikiData(live: Live) {
 export type WikiData = ReturnType<typeof createWikiData>;
 
 /**
- * Why an answer can't be taken, or null when it can: answers only go to a question the page asks, while it's open,
- * with one of its options when it has some.
+ * What an answer picked, or why it can't be taken: answers only go to a question the page asks, while it's open,
+ * with one of its options when it has some, or any number of them (`choices`) on a `multiple` one.
  */
-export function answerProblem(
+export function answerPick(
   page: PageData | undefined,
-  input: { question: string; choice: string | null; body: string },
-): { error: string; status: 400 | 404 | 409 } | null {
+  input: { question: string; choice: string | null; choices?: string[]; body: string },
+): { error: string; status: 400 | 404 | 409 } | { pick: AnswerPick } {
   const q = page?.questions.find((x) => x.id === input.question);
   if (!q) return { error: "no such question", status: 404 };
   if (q.status !== "open") return { error: "this question is already decided", status: 409 };
-  if (input.choice !== null && !q.options.includes(input.choice))
-    return { error: "not one of the options", status: 400 };
-  if (input.choice === null && !input.body) return { error: "pick an option or write an answer", status: 400 };
-  return null;
+  if (input.choices && (!q.multiple || input.choice !== null))
+    return { error: "this question takes one option", status: 400 };
+  const picked = input.choices ?? (input.choice === null ? [] : [input.choice]);
+  if (picked.some((o) => !q.options.includes(o))) return { error: "not one of the options", status: 400 };
+  // A multiple one keeps its picks as a list, in the page's order, even when only one was picked.
+  const ordered = q.options.filter((o) => picked.includes(o));
+  const pick: AnswerPick = q.multiple ? (ordered.length ? ordered : null) : input.choice;
+  if (pick === null && !input.body) return { error: "pick an option or write an answer", status: 400 };
+  return { pick };
 }

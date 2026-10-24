@@ -1,7 +1,7 @@
 // `pnpm shiori rename` (ADR-0002): moves a page, or a section with everything under it, and keeps the wiki whole. Every
 // page's links are checked against the old layout; a link whose target moved, or that no longer resolves from its own
 // page's new folder, is rewritten to the new path. Wikilinks that find a page by its title keep working and stay as
-// written. Comments and answers move with their pages. Code blocks are never touched.
+// written. Comments, answers and what's written in pages' forms move with their pages. Code blocks are never touched.
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join, posix } from "node:path";
 import type { Root } from "mdast";
@@ -9,6 +9,7 @@ import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 import { visit } from "unist-util-visit";
+import { moveFormRows } from "./forms.ts";
 import { resolveFile, resolvePageLink } from "./markdown/links.ts";
 import { WIKILINK } from "./markdown/wikilinks.ts";
 import { listPages, type PageFile, pageFinder, pathOf } from "./pages.ts";
@@ -228,6 +229,8 @@ export function applyRename(wiki: Wiki, plan: RenamePlan): { threads: number; an
       answers += Number(
         db.prepare("update answers set page = ?, updated_at = ? where page = ?").run(to, at, from).changes,
       );
+      // What the owner wrote in the page's forms (ADR-0015) moves too.
+      moveFormRows(db, from, to, at);
     }
     db.exec("commit");
   } catch (error) {

@@ -2,7 +2,7 @@
 // contents and comment threads. The home page has a banner instead of the head and its boxes in columns; its rail is a
 // drawer. A panel page (`panel: true`) is laid out the same way, with a banner of its own (PanelHero.tsx).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router";
+import { useLocation, useSearchParams } from "react-router";
 import type { PageData, PageEntry, WikiDetail } from "../../shared/api.ts";
 import { isPageComment } from "../../shared/quote.ts";
 import { type Anchors, CommentLayer } from "../comments/CommentLayer.tsx";
@@ -10,6 +10,9 @@ import { scrollToRange } from "../comments/ThreadList.tsx";
 import { useThreads } from "../comments/useThreads.ts";
 import { Callout } from "../ui/index.ts";
 import { openFoot } from "./FootFold.tsx";
+import { FormView } from "./forms/FormView.tsx";
+import { PageTabs } from "./forms/PageTabs.tsx";
+import { usePageForms } from "./forms/useForms.ts";
 import { HomeBoxesContext } from "./home/blocks.tsx";
 import { HomeHero } from "./home/HomeHero.tsx";
 import { PanelHero } from "./home/PanelHero.tsx";
@@ -93,6 +96,11 @@ export function PageArea({
   const home = path === "";
   // A panel page is laid out like the home page, with a banner of its own.
   const panel = !home && !!page.panel;
+  // The page's forms (ADR-0015), as tabs beside it: the owner's only, and only on plain pages.
+  const forms = usePageForms(wiki.id, path, !home && !panel);
+  const [params] = useSearchParams();
+  const view = forms.forms.length ? params.get("view") : null;
+  const form = view ? forms.forms.find((f) => f.name === view) : undefined;
   const onProblems = () => setShowProblems((s) => !s);
   return (
     <PageContext.Provider value={context}>
@@ -109,7 +117,14 @@ export function PageArea({
         ) : panel ? (
           <PanelHero wiki={wiki} page={page} problems={problems.length} onProblems={onProblems} />
         ) : (
-          <PageHead wiki={wiki} page={page} problems={problems.length} onProblems={onProblems} changed={changed} />
+          <PageHead
+            wiki={wiki}
+            page={page}
+            problems={problems.length}
+            onProblems={onProblems}
+            changed={changed}
+            tabs={<PageTabs wikiId={wiki.id} path={path} forms={forms.forms} current={form?.name ?? null} />}
+          />
         )}
         <div className="sh-page-body">
           {showProblems && (
@@ -121,29 +136,33 @@ export function PageArea({
               </ul>
             </Callout>
           )}
-          {page.layout ? (
-            // The wiki's layout arranges the page's parts (ADR-0006); comments anchor in all of them.
-            <div ref={article} data-article="">
-              <LayoutView wiki={wiki} page={page} layout={page.layout} />
-            </div>
-          ) : (
-            <div ref={article} className="sh-prose" data-article="">
-              {!panel && <PageInfobox page={page} />}
-              <HomeBoxesContext.Provider value={home}>
-                <Markdown hast={body} />
-              </HomeBoxesContext.Provider>
-            </div>
-          )}
-          <CommentLayer
-            container={article}
-            contentKey={page.hast}
-            threads={threads}
-            active={active}
-            hovered={hovered}
-            onActivate={setActive}
-            onAnchors={onAnchors}
-          />
-          <PageFoot wikiId={wiki.id} page={page} index={index} />
+          {form && <FormView key={`${path}:${form.name}`} wikiId={wiki.id} path={path} form={form} />}
+          {/* Under a form the page stays, hidden, so its comments keep their places. */}
+          <div hidden={!!form} className="sh-page-view">
+            {page.layout ? (
+              // The wiki's layout arranges the page's parts (ADR-0006); comments anchor in all of them.
+              <div ref={article} data-article="">
+                <LayoutView wiki={wiki} page={page} layout={page.layout} />
+              </div>
+            ) : (
+              <div ref={article} className="sh-prose" data-article="">
+                {!panel && <PageInfobox page={page} />}
+                <HomeBoxesContext.Provider value={home}>
+                  <Markdown hast={body} />
+                </HomeBoxesContext.Provider>
+              </div>
+            )}
+            <CommentLayer
+              container={article}
+              contentKey={page.hast}
+              threads={threads}
+              active={active}
+              hovered={hovered}
+              onActivate={setActive}
+              onAnchors={onAnchors}
+            />
+            <PageFoot wikiId={wiki.id} page={page} index={index} />
+          </div>
         </div>
       </main>
       <PageRail

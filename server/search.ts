@@ -3,7 +3,15 @@
 // in the title, then headings, then the summary and tags, then the text, and more at the start of a word. Accents
 // and case don't matter. The best section of each page is the hit, with a snippet around the match.
 import type { Element, ElementContent, Root, RootContent } from "hast";
-import type { Answer, NoteHit, PageData, SearchFilter, SearchHit, Thread } from "../shared/api.ts";
+import {
+  type Answer,
+  type NoteHit,
+  type PageData,
+  picksOf,
+  type SearchFilter,
+  type SearchHit,
+  type Thread,
+} from "../shared/api.ts";
 import type { PageStatus } from "../shared/schema.ts";
 
 export interface Section {
@@ -283,7 +291,7 @@ export function notesOf(
       path: a.page,
       ref: a.question,
       open: isOpen(a.page, a.question),
-      text: [a.choice, a.body].filter(Boolean).join(" · "),
+      text: [...picksOf(a), a.body].filter(Boolean).join(" · "),
     })),
   ];
 }

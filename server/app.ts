@@ -15,6 +15,7 @@ import { getBoard } from "./boards.ts";
 import { designRoutes } from "./designRoutes.ts";
 import { PICTURE_MIME } from "./designs.ts";
 import { serveFile } from "./files.ts";
+import { ownerFormRoutes } from "./formRoutes.ts";
 import { forgetGit, gitInfo } from "./git.ts";
 import { historyOf, versionOf } from "./history.ts";
 import type { Live } from "./live.ts";
@@ -41,7 +42,7 @@ import {
   setStatus,
 } from "./threads.ts";
 import { isToolboxFile, kitsOf, renderElements } from "./toolbox.ts";
-import { answerProblem, createWikiData, type WikiData } from "./wikiData.ts";
+import { answerPick, createWikiData, type WikiData } from "./wikiData.ts";
 
 // An empty `exact` is a comment on the whole page.
 const quoteSchema = z.strictObject({ exact: z.string().max(4000), prefix: z.string(), suffix: z.string() });
@@ -49,6 +50,8 @@ const newAnswerSchema = z.strictObject({
   page: z.string(),
   question: z.string().min(1),
   choice: z.string().min(1).nullable().default(null),
+  /** The options picked on a `multiple` question, instead of `choice`. */
+  choices: z.array(z.string().min(1)).max(100).optional(),
   body: z.string().trim().default(""),
 });
 /** Pictures attached to a new comment: files uploaded first, through the attachments route. */
@@ -254,10 +257,10 @@ export function buildApp({
     if (w instanceof Response) return w;
     const body = newAnswerSchema.safeParse(await c.req.json().catch(() => null));
     if (!body.success) return c.json({ error: "bad request" }, 400);
-    const { page, question, choice, body: note } = body.data;
-    const problem = answerProblem(corpusOf(w).pages.get(page), { question, choice, body: note });
-    if (problem) return c.json({ error: problem.error }, problem.status);
-    return c.json(addAnswer(w.root, page, question, choice, note), 201);
+    const { page, question, choice, choices, body: note } = body.data;
+    const checked = answerPick(corpusOf(w).pages.get(page), { question, choice, choices, body: note });
+    if ("error" in checked) return c.json({ error: checked.error }, checked.status);
+    return c.json(addAnswer(w.root, page, question, checked.pick, note), 201);
   });
 
   app.get("/api/wikis/:id/threads", (c) => {
@@ -439,6 +442,11 @@ export function buildApp({
   // Test boards (ADR-0010).
   app.route("/api/wikis/:id/boards", ownerBoardRoutes(wikiOr404));
   app.route("/api/wikis/:id/sheets", ownerSheetRoutes(wikiOr404));
+  // Page forms (ADR-0015): the owner's only.
+  app.route(
+    "/api/wikis/:id/forms",
+    ownerFormRoutes(wikiOr404, (w, path) => corpusOf(w).pages.get(path)),
+  );
 
   // Designs (ADR-0006): the owner may change every one.
   app.use("/api/wikis/:id/designs/*", async (c, next) =>

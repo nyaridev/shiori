@@ -1,12 +1,12 @@
 // A question a page asks (ADR-0002), or a suggestion the agent made for it: the same card, amber for a question about
-// what's there and green for an idea to add or improve. Pick an option and/or write a note, and the agent sees it in
-// its inbox. Each
+// what's there and green for an idea to add or improve. Pick an option (or any number of them on a `multiple` one)
+// and/or write a note, and the agent sees it in its inbox. Each
 // person has one answer, which they can change while the question is open; the card says whether it's still waiting
 // for the agent. Options show how many people picked them. Once the agent writes the decision into the page, the
 // card shows it. Everything but the question and the decision is `data-noquote`: answers and counts change, and
 // comments anchor to the page's own words.
 import { type ReactNode, useId, useState } from "react";
-import type { Answer, Question } from "../../../shared/api.ts";
+import { type Answer, type AnswerPick, picksOf, type Question } from "../../../shared/api.ts";
 import { authorName, canComment, useGuest } from "../../guest/GuestContext.ts";
 import { ago } from "../../lib/time.ts";
 import { Badge, type BadgeTone, Button, IconButton, Textarea } from "../../ui/index.ts";
@@ -36,7 +36,7 @@ export function QuestionCard({ question }: { question: Question }) {
     <QuestionCardView
       question={question}
       answers={ctx?.answers.filter((a) => a.question === question.id) ?? []}
-      onAnswer={ctx ? (choice, body) => ctx.answer(question.id, choice, body) : undefined}
+      onAnswer={ctx ? (pick, body) => ctx.answer(question.id, pick, body) : undefined}
       onHide={ctx?.hideAnswer}
       readOnly={ctx?.readOnly}
     />
@@ -47,7 +47,7 @@ interface ViewProps {
   question: Question;
   answers: Answer[];
   /** Sends the viewer's answer; none where there's nowhere to send it. */
-  onAnswer?: (choice: string | null, body: string) => Promise<unknown>;
+  onAnswer?: (pick: AnswerPick, body: string) => Promise<unknown>;
   /** The owner hides a guest's answer, or shows it again. */
   onHide?: (id: number, hidden: boolean) => Promise<unknown>;
   readOnly?: boolean;
@@ -75,12 +75,15 @@ export function QuestionCardView({
 }: ViewProps) {
   const guest = useGuest();
   const mine: Answer | undefined = answers.find((a) => (guest ? a.mine : a.author === "user"));
+  // A `multiple` question takes any number of its options; any other, one.
+  const multiple = !!question.multiple && question.options.length > 0;
+  const minePicks = (a = mine) => (a ? picksOf(a).slice(0, multiple ? undefined : 1) : []);
   const [editing, setEditing] = useState(!!startEditing && !!mine);
-  const [choice, setChoice] = useState<string | null>(startEditing ? (mine?.choice ?? null) : null);
+  const [picked, setPicked] = useState<string[]>(startEditing ? minePicks() : []);
   const [note, setNote] = useState(startEditing ? (mine?.body ?? "") : "");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const decided = question.status === "resolved";
-  const canSend = !!onAnswer && (choice !== null || note.trim().length > 0) && state !== "sending";
+  const canSend = !!onAnswer && (picked.length > 0 || note.trim().length > 0) && state !== "sending";
   const writes = canComment(guest) && !readOnly;
   const textId = useId();
   const showForm = !decided && writes && (!mine || editing);
@@ -88,10 +91,14 @@ export function QuestionCardView({
   // Everyone else's answers; yours shows above, with its state.
   const others = answers.filter((a) => a !== mine);
   const picks = new Map<string, number>();
-  for (const a of answers) if (a.choice && !a.hidden) picks.set(a.choice, (picks.get(a.choice) ?? 0) + 1);
+  for (const a of answers) if (!a.hidden) for (const o of picksOf(a)) picks.set(o, (picks.get(o) ?? 0) + 1);
+  const mineSet = new Set(mine ? picksOf(mine) : []);
+
+  const toggle = (o: string) =>
+    setPicked((p) => (p.includes(o) ? p.filter((x) => x !== o) : multiple ? [...p, o] : [o]));
 
   const change = () => {
-    setChoice(mine?.choice ?? null);
+    setPicked(minePicks());
     setNote(mine?.body ?? "");
     setEditing(true);
   };
@@ -100,8 +107,10 @@ export function QuestionCardView({
     if (!onAnswer || !canSend) return;
     setState("sending");
     try {
-      await onAnswer(choice, note.trim());
-      setChoice(null);
+      // A multiple one sends its picks as a list, in the page's order.
+      const pick = multiple ? question.options.filter((o) => picked.includes(o)) : (picked[0] ?? null);
+      await onAnswer(pick, note.trim());
+      setPicked([]);
       setNote("");
       setEditing(false);
       setState("sent");
@@ -120,9 +129,9 @@ export function QuestionCardView({
       aria-labelledby={textId}
     >
       {from && (
-        <p className="sh-question-from" data-noquote="">
+        <div className="sh-question-from" data-noquote="">
           {from}
-        </p>
+        </div>
       )}
       <header className="sh-question-head">
         <span className="sh-question-kicker" data-noquote="">
@@ -139,6 +148,7 @@ export function QuestionCardView({
               Decide by {dayLabel(question.due)}
             </Badge>
           )}
+          {!decided && multiple && !showForm && <Badge title="People can pick more than one option">Pick any</Badge>}
           {!decided && answers.length > 0 && (
             <Badge tone="accent">
               {answers.length} answer{answers.length === 1 ? "" : "s"}
@@ -157,7 +167,7 @@ export function QuestionCardView({
         <div className="sh-question-mine" data-noquote="">
           <span className="sh-question-mine-text">
             <span className="sh-question-by">Your answer</span>
-            {mine.choice && <span className="sh-question-choice">{mine.choice}</span>}
+            <Picks answer={mine} />
             {mine.body && <span>{mine.body}</span>}
           </span>
           <span className="sh-question-mine-state">
@@ -180,15 +190,16 @@ export function QuestionCardView({
       {showForm && (
         <div className="sh-question-form" data-noquote="">
           {question.options.length > 0 && (
-            <fieldset className="sh-question-options">
-              <legend className="sh-sr-only">Options</legend>
+            <fieldset className="sh-question-options" data-multiple={multiple || undefined}>
+              {/* The markers show it on screen: round for one, square for any. */}
+              <legend className="sh-sr-only">{multiple ? "Pick any" : "Pick one"}</legend>
               {question.options.map((o) => (
                 <button
                   key={o}
                   type="button"
                   className="sh-question-option"
-                  aria-pressed={choice === o}
-                  onClick={() => setChoice((c) => (c === o ? null : o))}
+                  aria-pressed={picked.includes(o)}
+                  onClick={() => toggle(o)}
                 >
                   {o}
                   {!!picks.get(o) && (
@@ -211,9 +222,7 @@ export function QuestionCardView({
             }}
           />
           <div className="sh-question-actions">
-            <span className="sh-question-hint">
-              {state === "failed" ? "Couldn't send. Try again." : "Answers go to the agent's inbox."}
-            </span>
+            {state === "failed" && <span className="sh-question-hint">Couldn't send. Try again.</span>}
             <span className="sh-question-buttons">
               {editing && (
                 <Button
@@ -239,7 +248,7 @@ export function QuestionCardView({
       {!showForm && question.options.length > 0 && picks.size > 0 && (
         <ul className="sh-question-tally" aria-label="Picks so far" data-noquote="">
           {question.options.map((o) => (
-            <li key={o} data-mine={mine?.choice === o || undefined}>
+            <li key={o} data-mine={mineSet.has(o) || undefined}>
               {o}
               <span className="sh-question-count">{picks.get(o) ?? 0}</span>
             </li>
@@ -252,7 +261,7 @@ export function QuestionCardView({
           {others.map((a) => (
             <li key={a.id} data-hidden={a.hidden || undefined}>
               {(guest || a.author === "guest") && <span className="sh-question-by">{authorName(guest, a)}</span>}
-              {a.choice && <span className="sh-question-choice">{a.choice}</span>}
+              <Picks answer={a} />
               {a.body && <span>{a.body}</span>}
               <time dateTime={a.updatedAt ?? a.createdAt}>
                 {ago(a.updatedAt ?? a.createdAt)}
@@ -274,4 +283,13 @@ export function QuestionCardView({
       )}
     </section>
   );
+}
+
+/** The options an answer picked, one chip each. */
+export function Picks({ answer }: { answer: Answer }) {
+  return picksOf(answer).map((o) => (
+    <span key={o} className="sh-question-choice">
+      {o}
+    </span>
+  ));
 }

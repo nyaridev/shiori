@@ -12,8 +12,11 @@ const decisionSchema = z.object({
   id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/i, "use letters, digits and dashes, as q1"),
   text: z.string().min(1),
   options: z.array(z.union([z.string(), z.number()]).transform(String)).optional(),
+  /** People may pick any number of the options instead of one (`pnpm shiori check` wants options with it). */
+  multiple: z.boolean().optional(),
   status: z.enum(["open", "resolved"]).default("open"),
-  answer: z.string().optional(),
+  /** The decision: a line of text, or for a `multiple` one, the options picked as a list. */
+  answer: z.union([z.string(), z.array(z.union([z.string(), z.number()]).transform(String)).min(1)]).optional(),
   /** When it should be decided by. */
   due: day.optional(),
   /** When the agent decided it, for the decisions timeline. */
@@ -281,13 +284,13 @@ export const FRONTMATTER_FIELDS: { key: keyof Frontmatter; what: string; example
   { key: "toc", what: "false hides “On this page” (for short pages).", example: "toc: false" },
   {
     key: "questions",
-    what: "Open decisions, with an optional due date. People answer them on the page; the agent writes back status: resolved, answer and the day it decided.",
+    what: "Open decisions, with an optional due date. People pick one option, or any number of them with multiple: true (which needs options), and/or write a note. The agent writes back status: resolved, answer (a list of options for a multiple one) and the day it decided.",
     example:
-      'questions:\n  - id: q1\n    text: "Steam or itch.io first?"\n    options: [Steam, itch.io]\n    due: 2026-11-15\n  - id: q2\n    text: "Weekly or monthly updates?"\n    status: resolved\n    answer: "Weekly, on Fridays"\n    decided: 2026-10-20',
+      'questions:\n  - id: q1\n    text: "Steam or itch.io first?"\n    options: [Steam, itch.io]\n    due: 2026-11-15\n  - id: q2\n    text: "Which systems go in v1?"\n    options: [Trees, Shop, Weather, Pets]\n    multiple: true\n  - id: q3\n    text: "Weekly or monthly updates?"\n    status: resolved\n    answer: "Weekly, on Fridays"\n    decided: 2026-10-20\n  - id: q4\n    text: "Which stores at launch?"\n    options: [Steam, itch.io, Epic]\n    multiple: true\n    status: resolved\n    answer: [Steam, itch.io]\n    decided: 2026-10-21',
   },
   {
     key: "suggestions",
-    what: "The agent's ideas for the page, written while reviewing it: what to add or improve. Same fields as questions; they show in green, below the questions.",
+    what: "The agent's ideas for the page, written while reviewing it: what to add or improve. Same fields as questions, multiple: true included; they show in green, below the questions.",
     example: 'suggestions:\n  - id: s1\n    text: "Add a weekly leaderboard?"\n    options: [Yes, Later, No]',
   },
   {

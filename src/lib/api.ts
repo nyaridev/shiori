@@ -1,5 +1,6 @@
 import type {
   Answer,
+  AnswerPick,
   DesignCollection,
   DesignGroupInfo,
   DesignInfo,
@@ -29,6 +30,7 @@ import type {
   WikiDetail,
   WikiIndex,
 } from "../../shared/api.ts";
+import type { FieldValue, FormValueInfo, PageForm } from "../../shared/form.ts";
 import type { Quote } from "../../shared/quote.ts";
 import { isGuest, withBase } from "./base.ts";
 
@@ -100,10 +102,15 @@ export const api = {
     request<{ answers: Answer[] }>(
       `/api/wikis/${enc(id)}/answers${page === undefined ? "" : `?page=${enc(page)}`}`,
     ).then((r) => r.answers),
-  answer: (id: string, page: string, question: string, choice: string | null, body: string) =>
+  /** Sends the viewer's answer: one option, or a list of them on a `multiple` question. */
+  answer: (id: string, page: string, question: string, pick: AnswerPick, body: string) =>
     request<Answer>(`/api/wikis/${enc(id)}/answers`, {
       method: "POST",
-      body: JSON.stringify({ page, question, choice, body }),
+      body: JSON.stringify(
+        Array.isArray(pick)
+          ? { page, question, choice: null, choices: pick, body }
+          : { page, question, choice: pick, body },
+      ),
     }),
   elements: () => request<PageData>("/api/dev/elements"),
   /** The toolbox: the kits a wiki can use, and the element reference linked to its pages. */
@@ -147,6 +154,16 @@ export const api = {
     }),
   hideAnswer: (id: string, answer: number, hidden: boolean) =>
     request<Answer>(`/api/wikis/${enc(id)}/answers/${answer}`, { method: "PATCH", body: JSON.stringify({ hidden }) }),
+  /** A page's forms (ADR-0015) with what's written in them; the owner only. */
+  forms: (id: string, page: string) =>
+    request<{ forms: PageForm[] }>(`/api/wikis/${enc(id)}/forms?page=${enc(page)}`).then((r) => r.forms),
+  /** Writes one field of a page's form. `keepalive` lets it finish while the page closes. */
+  setFormValue: (id: string, form: string, page: string, field: string, value: FieldValue, keepalive = false) =>
+    request<{ value: FormValueInfo | null }>(`/api/wikis/${enc(id)}/forms/${enc(form)}`, {
+      method: "PUT",
+      body: JSON.stringify({ page, field, value }),
+      keepalive,
+    }).then((r) => r.value),
   /** The public wiki (ADR-0011): what goes public and what stays home. Its preview and export are plain URLs. */
   publicReport: (id: string) => request<PublicReport>(`/api/wikis/${enc(id)}/public`),
   /** Share links (ADR-0003), for the owner's Share dialog. */

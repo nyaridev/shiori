@@ -39,6 +39,7 @@ function rowsOf(corpus: Corpus, root: string, asker: Asker): Row[] {
       rows.push({
         ...q,
         page: { path: p.path, title: p.title, icon: p.icon, isPage: true },
+        trail: p.trail.filter((t) => t.path),
         answers: counts.get(key) ?? 0,
         ...(own ? { mine: own } : {}),
         ...(q.status === "resolved" ? { decidedOn: q.decided ?? at.slice(0, 10) } : {}),

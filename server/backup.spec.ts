@@ -30,18 +30,20 @@ describe("backups", () => {
     setStatus(a, second.id, "resolved");
     addAnswer(a, "plan", "q1", "Steam", "Most players are there");
     const hidden = addAnswer(a, "plan", "q1", "itch.io", "", { guest: "g1", name: "Ana" });
+    addAnswer(a, "plan", "v1", ["Trees", "Shop"], "");
     // What the owner hid stays hidden.
     setHidden(a, (listThreads(a)[1].messages.at(-1) as { id: number }).id, true);
     setAnswerHidden(a, hidden.id, true);
 
     const written = writeBackup(a);
-    expect(written).toMatchObject({ file: join(a, BACKUP_FILE), threads: 2, answers: 2 });
+    expect(written).toMatchObject({ file: join(a, BACKUP_FILE), threads: 2, answers: 3 });
     expect(existsSync(written.file)).toBe(true);
 
     importData(b, readBackup(a));
     expect(listThreads(b)).toEqual(listThreads(a));
     expect(listAnswers(b)).toEqual(listAnswers(a));
     expect(listAnswers(b)[1].hidden).toBe(true);
+    expect(listAnswers(b)[2]).toMatchObject({ choice: null, choices: ["Trees", "Shop"] });
     expect(listThreads(b)[1].messages[2].hidden).toBe(true);
     // New comments continue after the restored ids.
     expect(createThread(b, "", { exact: "x", prefix: "", suffix: "" }, "New").id).toBe(3);

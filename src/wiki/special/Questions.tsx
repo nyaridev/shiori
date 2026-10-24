@@ -3,16 +3,16 @@
 // answer right there. A card they answer stays where it was until they leave the page; when they come back it's
 // under "Recently answered". The server filters, sorts and cuts both lists into pages, so a wiki with thousands of
 // questions sends only the ones on screen. Everything the viewer picks (view, tab, search, page) is in the URL.
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import type { Answer, QuestionItem, QuestionPage, QuestionQuery } from "../../../shared/api.ts";
+import type { Answer, AnswerPick, QuestionItem, QuestionPage, QuestionQuery } from "../../../shared/api.ts";
 import { canComment, useGuest } from "../../guest/GuestContext.ts";
 import { api } from "../../lib/api.ts";
 import { ago } from "../../lib/time.ts";
-import { Badge, Button, Input, Pagination, Segmented } from "../../ui/index.ts";
+import { Badge, Button, Icon, Input, Pagination, Segmented } from "../../ui/index.ts";
 import { pageHref } from "../PageHead.tsx";
 import { PageIcon } from "../PageIcon.tsx";
-import { dayLabel, QuestionCardView } from "../questions/QuestionCard.tsx";
+import { dayLabel, Picks, QuestionCardView } from "../questions/QuestionCard.tsx";
 import { useQuestions } from "../questions/useQuestions.ts";
 
 /** Rows on a page of the overview, cards on a page of the answer view, rows of "Recently answered". */
@@ -22,6 +22,30 @@ const RECENT = 10;
 
 const keyOf = (q: { page: { path: string }; id: string }) => `${q.page.path}#${q.id}`;
 const questionHref = (wikiId: string, q: QuestionItem) => `${pageHref(wikiId, q.page.path)}#question-${q.id}`;
+/** Where a card's question is from: its page's breadcrumb, the page itself last, in bold. */
+function From({ wikiId, item }: { wikiId: string; item: QuestionItem }) {
+  return (
+    <nav className="sh-q-from" aria-label="Page">
+      {item.trail.map((step) => (
+        <Fragment key={step.path}>
+          {step.isPage ? (
+            <Link to={pageHref(wikiId, step.path)} className="sh-q-crumb">
+              {step.title}
+            </Link>
+          ) : (
+            <span className="sh-q-crumb">{step.title}</span>
+          )}
+          <Icon name="chevronRight" size={12} />
+        </Fragment>
+      ))}
+      <Link to={questionHref(wikiId, item)} className="sh-q-crumb" aria-current="page">
+        <PageIcon icon={item.page.icon} fallback="page" className="sh-icon-gap" />
+        {item.page.title}
+      </Link>
+    </nav>
+  );
+}
+
 const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 /** The list's settings in the URL: `set` changes some and drops the page numbers they make wrong. */
@@ -242,7 +266,7 @@ function Overview({ wikiId, q, onSearch }: { wikiId: string; q: string; onSearch
                 <span className="sh-special-summary">
                   <PageIcon icon={item.page.icon} fallback="page" className="sh-icon-gap" />
                   {item.page.title}
-                  {item.options.length > 0 && ` · ${item.options.join(" / ")}`}
+                  {item.options.length > 0 && ` · ${item.options.join(" / ")}${item.multiple ? " (pick any)" : ""}`}
                 </span>
               </li>
             ))}
@@ -315,8 +339,8 @@ function AnswerView({
   const onPage = useCallback((p: number) => set({ p: p > 1 ? String(p) : null }), [set]);
   const list = useRef<HTMLOListElement>(null);
 
-  const answer = (item: QuestionItem) => async (choice: string | null, body: string) => {
-    const a = await api.answer(wikiId, item.page.path, item.id, choice, body);
+  const answer = (item: QuestionItem) => async (pick: AnswerPick, body: string) => {
+    const a = await api.answer(wikiId, item.page.path, item.id, pick, body);
     add(keyOf(item), a);
     queue.reload();
   };
@@ -383,12 +407,7 @@ function AnswerView({
                     onAnswer={answer(item)}
                     onHide={hide}
                     onSent={() => next(key)}
-                    from={
-                      <Link to={questionHref(wikiId, item)} className="sh-q-from">
-                        <PageIcon icon={item.page.icon} fallback="page" className="sh-icon-gap" />
-                        {item.page.title}
-                      </Link>
-                    }
+                    from={<From wikiId={wikiId} item={item} />}
                   />
                 </li>
               );
@@ -463,17 +482,12 @@ function Recent({
                     answers={answers}
                     startEditing
                     onCancel={() => setChanging(null)}
-                    onAnswer={async (choice, body) => {
-                      add(key, await api.answer(wikiId, item.page.path, item.id, choice, body));
+                    onAnswer={async (pick, body) => {
+                      add(key, await api.answer(wikiId, item.page.path, item.id, pick, body));
                       recent.reload();
                     }}
                     onSent={() => setChanging(null)}
-                    from={
-                      <Link to={questionHref(wikiId, item)} className="sh-q-from">
-                        <PageIcon icon={item.page.icon} fallback="page" className="sh-icon-gap" />
-                        {item.page.title}
-                      </Link>
-                    }
+                    from={<From wikiId={wikiId} item={item} />}
                   />
                 </li>
               );
@@ -496,7 +510,7 @@ function Recent({
                 )}
                 <span className="sh-q-mine">
                   <span className="sh-question-by">You</span>
-                  {mine?.choice && <span className="sh-question-choice">{mine.choice}</span>}
+                  {mine && <Picks answer={mine} />}
                   {mine?.body && <span>{mine.body}</span>}
                   {!open && item.answer && <span className="sh-special-answer">→ {item.answer}</span>}
                 </span>

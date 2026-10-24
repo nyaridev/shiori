@@ -2,7 +2,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, posix } from "node:path";
 import { visit } from "unist-util-visit";
-import type { NavNode, PageData, PageLink } from "../shared/api.ts";
+import type { NavNode, PageData, PageLink, Question } from "../shared/api.ts";
 import { type Frontmatter, frontmatterSchema, issues, type PageStatus } from "../shared/schema.ts";
 import { ICON_NAME, iconSet } from "./icons.ts";
 import { FRONT_LAYOUT, type Layouts, loadLayouts } from "./layouts.ts";
@@ -97,6 +97,20 @@ function iconOf(wiki: Wiki, pageDir: string, raw: string | undefined, problems?:
     return undefined;
   }
   return fileUrl(wiki.id, rel);
+}
+
+type Decision = NonNullable<Frontmatter["questions"]>[number];
+
+/** A question or suggestion from the frontmatter as the app shows it: a decided list of options becomes text too. */
+function decisionOf({ answer, ...q }: Decision, kind: Question["kind"]): Question {
+  const listed = Array.isArray(answer);
+  return {
+    ...q,
+    kind,
+    options: q.options ?? [],
+    ...(answer === undefined ? {} : { answer: listed ? answer.join(", ") : answer }),
+    ...(listed ? { chosen: answer } : {}),
+  };
 }
 
 export const pathOf = (rel: string) => rel.replace(/\.md$/, "").replace(/(^|\/)index$/, "");
@@ -350,12 +364,16 @@ export function renderPage(
   // Questions ask about what's there; suggestions (the agent's, from reviewing the page) propose what to add or improve.
   // Both are answered the same way, so their ids share one namespace.
   const questions = [
-    ...(fm.questions ?? []).map((q) => ({ ...q, kind: "question" as const, options: q.options ?? [] })),
-    ...(fm.suggestions ?? []).map((q) => ({ ...q, kind: "suggestion" as const, options: q.options ?? [] })),
+    ...(fm.questions ?? []).map((q) => decisionOf(q, "question")),
+    ...(fm.suggestions ?? []).map((q) => decisionOf(q, "suggestion")),
   ];
   const ids = questions.map((q) => q.id);
   for (const id of new Set(ids.filter((id, i) => ids.indexOf(id) !== i))) {
     problems.push(`frontmatter: questions and suggestions: "${id}" is used twice`);
+  }
+  for (const q of questions) {
+    if (q.multiple && !q.options.length)
+      problems.push(`frontmatter: ${q.kind}s: "${q.id}" has multiple: true but no options to pick from`);
   }
   for (const id of placedQuestions) {
     if (!ids.includes(id))

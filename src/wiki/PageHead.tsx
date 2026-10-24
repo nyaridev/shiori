@@ -1,6 +1,6 @@
 // The top of a page: where it sits in the wiki, its title, and what state it's in. A page with a `banner` gets a hero
 // with that picture. (The home page has its own hero: home/HomeHero.tsx.)
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import { Link } from "react-router";
 import type { PageData, PageLink, WikiDetail } from "../../shared/api.ts";
 import { picture } from "../lib/base.ts";
@@ -121,6 +121,7 @@ export function PageHead({
   problems,
   onProblems,
   changed,
+  tabs,
 }: {
   wiki: WikiDetail;
   page: PageData;
@@ -128,6 +129,8 @@ export function PageHead({
   onProblems: () => void;
   /** Sections that changed since the viewer's last visit. */
   changed?: Set<string>;
+  /** The page's tabs, on the head's bottom line: the page and its forms (ADR-0015). */
+  tabs?: ReactNode;
 }) {
   return (
     <header
@@ -153,6 +156,7 @@ export function PageHead({
           <Badge tone="warn">{problems}</Badge> page problem{problems === 1 ? "" : "s"}
         </Button>
       )}
+      {tabs}
     </header>
   );
 }

@@ -55,22 +55,33 @@ function gridSchema<B extends z.ZodType<{ type: string }>>(block: B) {
   });
 }
 
-/** The problems with a layout's grid: rows of different lengths, areas without a block or not a rectangle. */
-function checkGrid(layout: { areas: string[][]; blocks: Record<string, unknown> }, ctx: z.RefinementCtx) {
-  const columns = layout.areas[0].length;
-  if (layout.areas.some((row) => row.length !== columns))
+/**
+ * The problems with a grid of areas: rows of different lengths, areas without a part (a block, a field) or not a
+ * rectangle, and parts in no area. `key` names the record of parts in the file, `what` one part.
+ */
+export function checkAreas(
+  areas: string[][],
+  parts: Record<string, unknown>,
+  ctx: z.RefinementCtx,
+  { key = "blocks", what = "block" } = {},
+) {
+  const columns = areas[0].length;
+  if (areas.some((row) => row.length !== columns))
     ctx.addIssue({ code: "custom", path: ["areas"], message: `every row needs ${columns} areas, like the first` });
-  const used = new Set(layout.areas.flat());
+  const used = new Set(areas.flat());
   for (const area of used) {
-    if (!layout.blocks[area]) ctx.addIssue({ code: "custom", path: ["blocks"], message: `"${area}" has no block` });
+    if (!parts[area]) ctx.addIssue({ code: "custom", path: [key], message: `"${area}" has no ${what}` });
     // An area's cells must make a rectangle, or the grid can't place it.
-    if (!bounds(layout.areas, area).rectangle)
+    if (!bounds(areas, area).rectangle)
       ctx.addIssue({ code: "custom", path: ["areas"], message: `"${area}" isn't a rectangle` });
   }
-  for (const area of Object.keys(layout.blocks))
+  for (const area of Object.keys(parts))
     if (!used.has(area))
-      ctx.addIssue({ code: "custom", path: ["blocks", area], message: `"${area}" isn't in any row of areas` });
+      ctx.addIssue({ code: "custom", path: [key, area], message: `"${area}" isn't in any row of areas` });
 }
+
+const checkGrid = (layout: { areas: string[][]; blocks: Record<string, unknown> }, ctx: z.RefinementCtx) =>
+  checkAreas(layout.areas, layout.blocks, ctx);
 
 export const layoutSchema = gridSchema(blockSchema)
   .extend({

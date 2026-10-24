@@ -1,0 +1,46 @@
+{
+  "title": "Profile",
+  "description": "Everything you know about this character, in your own words. The agent reads it and writes the page.",
+  "pages": ["world/characters/*"],
+  "areas": [
+    ["look", "look"],
+    ["role", "age"],
+    ["personality", "voice"],
+    ["story", "story"],
+    ["abilities", "abilities"],
+    ["notes", "notes"]
+  ],
+  "fields": {
+    "look": {
+      "type": "pictures",
+      "label": "Look",
+      "hint": "Sketches, references and colours: anything that shows how they look.",
+      "max": 12
+    },
+    "role": { "type": "line", "label": "Role", "placeholder": "Guide, shopkeeper, rival…" },
+    "age": { "type": "number", "label": "Age", "min": 0, "unit": "years" },
+    "personality": { "type": "text", "label": "Personality", "rows": 4 },
+    "voice": { "type": "text", "label": "Voice", "hint": "How they talk, words they use.", "rows": 4 },
+    "story": {
+      "type": "text",
+      "label": "Story",
+      "hint": "Where they come from, what they want, their secrets.",
+      "rows": 10
+    },
+    "abilities": {
+      "type": "list",
+      "label": "Abilities",
+      "item": "Ability",
+      "areas": [
+        ["name", "cooldown"],
+        ["description", "description"]
+      ],
+      "fields": {
+        "name": { "type": "line", "label": "Name" },
+        "cooldown": { "type": "number", "label": "Cooldown", "min": 0, "unit": "s" },
+        "description": { "type": "text", "label": "What it does", "rows": 3 }
+      }
+    },
+    "notes": { "type": "text", "label": "Anything else", "rows": 4 }
+  }
+}

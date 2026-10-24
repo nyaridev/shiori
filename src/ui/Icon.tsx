@@ -6,6 +6,8 @@ const PATHS = {
   chevronLeft: "m14.5 6-6 6 6 6",
   chevronRight: "m9.5 6 6 6-6 6",
   chevronDown: "m6 9.5 6 6 6-6",
+  chevronUp: "m6 14.5 6-6 6 6",
+  lock: "M7 11V8a5 5 0 0 1 10 0v3M6 11h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1Z",
   arrowLeft: "M19 12H5m6-6-6 6 6 6",
   arrowRight: "M5 12h14m-6-6 6 6-6 6",
   link: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1",

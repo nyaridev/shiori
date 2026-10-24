@@ -1,0 +1,50 @@
+{
+  "title": "Creature sheet",
+  "description": "How this creature looks, fights and behaves. The agent reads it and writes the page.",
+  "pages": ["world/creatures/*"],
+  "areas": [
+    ["look", "look"],
+    ["health", "damage"],
+    ["habitat", "behaviour"],
+    ["lore", "lore"],
+    ["attacks", "attacks"],
+    ["drops", "drops"]
+  ],
+  "fields": {
+    "look": { "type": "pictures", "label": "Look", "max": 8 },
+    "health": { "type": "number", "label": "Health", "min": 0 },
+    "damage": { "type": "number", "label": "Damage", "min": 0 },
+    "habitat": { "type": "line", "label": "Where it lives" },
+    "behaviour": {
+      "type": "choice",
+      "label": "Behaviour",
+      "options": ["Shy", "Curious", "Territorial", "Aggressive", "In packs", "At night"],
+      "multiple": true
+    },
+    "lore": { "type": "text", "label": "Lore", "rows": 6 },
+    "attacks": {
+      "type": "list",
+      "label": "Attacks",
+      "item": "Attack",
+      "areas": [
+        ["name", "damage"],
+        ["description", "description"]
+      ],
+      "fields": {
+        "name": { "type": "line", "label": "Name" },
+        "damage": { "type": "number", "label": "Damage", "min": 0 },
+        "description": { "type": "text", "label": "How it works", "rows": 3 }
+      }
+    },
+    "drops": {
+      "type": "list",
+      "label": "Drops",
+      "item": "Drop",
+      "areas": [["item", "chance"]],
+      "fields": {
+        "item": { "type": "line", "label": "Item" },
+        "chance": { "type": "number", "label": "Chance", "min": 0, "max": 100, "unit": "%" }
+      }
+    }
+  }
+}

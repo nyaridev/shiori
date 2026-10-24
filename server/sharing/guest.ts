@@ -44,7 +44,7 @@ import {
   visible,
   visibleThreads,
 } from "../threads.ts";
-import { answerProblem, type WikiData } from "../wikiData.ts";
+import { answerPick, type WikiData } from "../wikiData.ts";
 import { boardRoutes } from "./boards.ts";
 import type { GuestKit, TargetEnv } from "./kit.ts";
 import { LIMITS } from "./limits.ts";
@@ -97,6 +97,7 @@ const newAnswerSchema = z.strictObject({
   page: pagePath,
   question: text(100).min(1),
   choice: text(200).min(1).nullable().default(null),
+  choices: z.array(text(200).min(1)).max(50).optional(),
   body: body(false).default(""),
 });
 const reactionSchema = z.strictObject({ emoji: z.enum(REACTIONS), on: z.boolean() });
@@ -637,10 +638,10 @@ export function buildGuestApp({
     const w = c.get("wiki");
     const parsed = newAnswerSchema.safeParse(await json(c));
     if (!parsed.success) return c.json({ error: "bad request" }, 400);
-    const { page, question, choice, body: note } = parsed.data;
-    const problem = answerProblem(data.corpusOf(w).pages.get(page), { question, choice, body: note });
-    if (problem) return c.json({ error: problem.error }, problem.status);
-    const a = addAnswer(w.root, page, question, choice, note, me(c));
+    const { page, question, choice, choices, body: note } = parsed.data;
+    const checked = answerPick(data.corpusOf(w).pages.get(page), { question, choice, choices, body: note });
+    if ("error" in checked) return c.json({ error: checked.error }, checked.status);
+    const a = addAnswer(w.root, page, question, checked.pick, note, me(c));
     shares.log(c.get("share"), c.get("me").name, `answered ${question} on ${page || "the home page"}`);
     return c.json(answerFor(a, c.get("me")), 201);
   });

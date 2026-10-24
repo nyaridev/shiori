@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import type { Answer } from "../../../shared/api.ts";
+import type { Answer, AnswerPick } from "../../../shared/api.ts";
 import { api } from "../../lib/api.ts";
 import { useLive } from "../../lib/live.ts";
 import { useResource } from "../../lib/useResource.ts";
@@ -14,8 +14,8 @@ export function useAnswers(wikiId: string, page: string) {
     if (e.type === "threads" && e.wiki === wikiId) reload();
   });
   const answer = useCallback(
-    async (question: string, choice: string | null, body: string) => {
-      await api.answer(wikiId, page, question, choice, body);
+    async (question: string, pick: AnswerPick, body: string) => {
+      await api.answer(wikiId, page, question, pick, body);
       reload();
     },
     [wikiId, page, reload],

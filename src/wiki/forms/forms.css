@@ -1,0 +1,306 @@
+/* Page forms (ADR-0015): the tabs under a page's head, and a form's fields in its grid of areas. */
+
+/* The tabs sit on the head's bottom line; the open one is underlined in the accent. */
+.sh-page-tabs {
+  display: flex;
+  gap: var(--s-1);
+  margin: var(--s-4) 0 calc(-1 * (var(--s-5) + var(--bw)));
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sh-page-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--s-2) var(--s-3);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 560;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.sh-page-tab:hover {
+  color: var(--text);
+}
+.sh-page-tab .sh-icon {
+  opacity: 0.6;
+}
+.sh-page-tab[aria-current="page"] {
+  color: var(--text);
+}
+.sh-page-tab[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: var(--s-2);
+  right: var(--s-2);
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.sh-page-tab[data-stale] {
+  font-style: italic;
+}
+.sh-page-head[data-hero] .sh-page-tabs {
+  margin-bottom: calc(-1 * var(--s-5));
+}
+
+.sh-form {
+  display: grid;
+  gap: var(--s-4);
+}
+.sh-form-head {
+  display: grid;
+  gap: var(--s-2);
+}
+.sh-form-description {
+  margin: 0;
+  color: var(--text);
+}
+.sh-form-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-4);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-form-status span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.sh-form-status [data-tone="bad"] {
+  color: var(--tone-bad);
+}
+
+/* The form's grid: areas from its file (checked names), stacked in reading order on narrow screens. Areas side by
+   side are as tall as each other: labels line up at the top, and each field's box fills down to the same bottom
+   edge (a text box grows, anything else sits at the bottom), whatever hints the fields have. */
+.sh-form-grid {
+  display: grid;
+  grid-template-areas: var(--form-areas);
+  grid-template-columns: var(--form-columns);
+  gap: var(--s-4);
+  align-items: stretch;
+}
+.sh-form-area {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sh-form > .sh-form-grid > .sh-form-area {
+  padding: var(--s-4);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+@media (max-width: 860px) {
+  .sh-form-grid {
+    grid-template-areas: none;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sh-form-area {
+    grid-area: auto !important;
+  }
+}
+
+.sh-form-field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+/* A group's legend is its label, above its controls. */
+.sh-form-field > legend {
+  margin-bottom: var(--s-2);
+  padding: 0;
+}
+.sh-form-field > :last-child {
+  margin-top: auto;
+}
+.sh-form-field > .sh-textarea-wrap {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.sh-form-field > .sh-textarea-wrap > .sh-textarea {
+  flex: 1;
+  max-height: 70vh;
+}
+.sh-form-label {
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-size: var(--t-md);
+  font-weight: 650;
+}
+.sh-form-entry .sh-form-label {
+  font-family: var(--font-body);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+.sh-form-hint {
+  margin: calc(-1 * var(--s-1)) 0 0;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-form-readonly,
+.sh-form-text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.sh-form-problem {
+  margin: 0;
+  color: var(--tone-bad);
+  font-size: var(--t-xs);
+}
+
+.sh-form-number {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.sh-form-number .sh-field {
+  max-width: 12rem;
+}
+.sh-form-unit {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.sh-form-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.sh-form-chip {
+  padding: 4px var(--s-3);
+  border: var(--bw) solid var(--border);
+  border-radius: 999px;
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--t-sm);
+  cursor: pointer;
+}
+.sh-form-chip:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--accent) 50%, var(--border));
+}
+.sh-form-chip[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 18%, var(--raised));
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.sh-form-chip:disabled {
+  cursor: default;
+}
+
+.sh-form-pictures {
+  display: grid;
+  gap: var(--s-3);
+}
+.sh-form-pictures ul,
+.sh-form-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-form-pictures li {
+  position: relative;
+  display: grid;
+  gap: var(--s-1);
+}
+.sh-form-pictures img,
+.sh-form-thumbs img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+}
+.sh-form-pictures li > .sh-icon-button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
+}
+.sh-form-pictures li .sh-field {
+  font-size: var(--t-xs);
+}
+.sh-form-caption {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.sh-form-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+}
+.sh-form-add .sh-form-hint {
+  margin: 0;
+}
+
+.sh-form-list {
+  display: grid;
+  gap: var(--s-3);
+}
+.sh-form-entry {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4) var(--s-4);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--raised);
+}
+.sh-form-entry > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+.sh-form-entry-name {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.sh-form-entry-tools {
+  display: flex;
+  gap: 2px;
+}
+.sh-form-entry .sh-form-grid {
+  gap: var(--s-3);
+}
+.sh-form-add-entry {
+  justify-self: start;
+}
+
+.sh-form-leftovers {
+  display: grid;
+  gap: var(--s-3);
+  padding-top: var(--s-4);
+  border-top: var(--bw) solid var(--border);
+}
+.sh-form-leftovers pre {
+  overflow: auto;
+  font-size: var(--t-xs);
+}
+.sh-form-thumbs {
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+}

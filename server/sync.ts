@@ -8,8 +8,10 @@ import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { hostname } from "node:os";
 import { join } from "node:path";
+import { pickColumns } from "./answers.ts";
 import { type Backup, backupSchema, exportData, insertPlayData, writer } from "./backup.ts";
 import { deleteBoardRows, removePictures } from "./boards.ts";
+import { mergeFormRows } from "./forms.ts";
 import { dataDir } from "./paths.ts";
 import { authorColumns, dbFor } from "./threads.ts";
 
@@ -44,7 +46,7 @@ export const syncFileOf = (m: Machine) => `${SYNC_DIR}/${m.name}-${m.id}.json`;
 
 export interface Merged {
   /** Items this PC didn't have. */
-  added: { threads: number; messages: number; answers: number; reports: number; edits: number };
+  added: { threads: number; messages: number; answers: number; reports: number; edits: number; forms: number };
   /** Items another PC changed more recently. */
   updated: number;
 }
@@ -125,11 +127,11 @@ export function mergeData(root: string, data: Backup, into: Merged = emptyMerge(
       const local = find("answers", a.uid);
       if (!local) {
         db.prepare(
-          "insert into answers (page, question, choice, body, author, guest_id, guest_name, created_at, hidden, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "insert into answers (page, question, choice, choices, body, author, guest_id, guest_name, created_at, hidden, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         ).run(
           a.page,
           a.question,
-          a.choice,
+          ...pickColumns(a.choices ?? a.choice),
           a.body,
           ...authorColumns(writer(a)),
           a.createdAt,
@@ -140,18 +142,16 @@ export function mergeData(root: string, data: Backup, into: Merged = emptyMerge(
         into.added.answers++;
       } else if (changed > local.updated_at) {
         // Someone changed their answer, or the owner hid it.
-        db.prepare("update answers set page = ?, choice = ?, body = ?, hidden = ?, updated_at = ? where id = ?").run(
-          a.page,
-          a.choice,
-          a.body,
-          a.hidden ? 1 : 0,
-          changed,
-          local.id,
-        );
+        db.prepare(
+          "update answers set page = ?, choice = ?, choices = ?, body = ?, hidden = ?, updated_at = ? where id = ?",
+        ).run(a.page, ...pickColumns(a.choices ?? a.choice), a.body, a.hidden ? 1 : 0, changed, local.id);
         into.updated++;
       }
     }
     mergePlayData(db, data, into, pictures);
+    const forms = mergeFormRows(db, data.formValues, data.formReads);
+    into.added.forms += forms.added;
+    into.updated += forms.updated;
     db.exec("commit");
   } catch (error) {
     db.exec("rollback");
@@ -225,7 +225,7 @@ function mergePlayData(db: ReturnType<typeof dbFor>, data: Backup, into: Merged,
 }
 
 const emptyMerge = (): Merged => ({
-  added: { threads: 0, messages: 0, answers: 0, reports: 0, edits: 0 },
+  added: { threads: 0, messages: 0, answers: 0, reports: 0, edits: 0, forms: 0 },
   updated: 0,
 });
 
@@ -264,8 +264,8 @@ export function syncFiles(root: string): FilesSynced {
   }
 
   // The file changes only when the data does, so a sync with nothing new makes no commit.
-  const { threads, answers, boards, reports, sheetEdits, purged } = exportData(root);
-  const content = { threads, answers, boards, reports, sheetEdits, purged };
+  const { threads, answers, boards, reports, sheetEdits, purged, formValues, formReads } = exportData(root);
+  const content = { threads, answers, boards, reports, sheetEdits, purged, formValues, formReads };
   const file = join(root, own);
   let previous: unknown = null;
   try {
@@ -277,6 +277,8 @@ export function syncFiles(root: string): FilesSynced {
       reports: old.reports ?? [],
       sheetEdits: old.sheetEdits ?? [],
       purged: old.purged ?? [],
+      formValues: old.formValues ?? [],
+      formReads: old.formReads ?? [],
     };
   } catch {}
   const wrote = JSON.stringify(previous) !== JSON.stringify(content);

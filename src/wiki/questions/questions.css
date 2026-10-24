@@ -68,6 +68,9 @@
   gap: var(--s-2);
 }
 .sh-question-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
   padding: 5px var(--s-3);
   border: var(--bw) solid color-mix(in oklab, var(--q-tone) 60%, var(--border-strong));
   border-radius: var(--r-md);
@@ -89,6 +92,25 @@
   border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--text);
+}
+/* A round mark on a one-pick question, a square one on a pick-any one, filled once picked. */
+.sh-question-option::before {
+  content: "";
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: var(--bw) solid color-mix(in oklab, var(--q-tone) 70%, var(--border-strong));
+  border-radius: 999px;
+  background: var(--surface);
+  box-sizing: border-box;
+}
+.sh-question-options[data-multiple] .sh-question-option::before {
+  border-radius: 3px;
+}
+.sh-question-option[aria-pressed="true"]::before {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--surface);
 }
 .sh-question-actions {
   display: flex;
@@ -149,6 +171,7 @@
 }
 .sh-question-buttons {
   display: flex;
+  margin-left: auto;
   gap: var(--s-1);
 }
 /* How many people picked an option: a small count beside it. */
@@ -165,6 +188,9 @@
   font-size: var(--t-xs);
   font-weight: 650;
   line-height: 1;
+}
+.sh-question-option .sh-question-count {
+  margin-left: 0;
 }
 .sh-question-option[aria-pressed="true"] .sh-question-count {
   background: color-mix(in oklab, var(--accent) 30%, transparent);

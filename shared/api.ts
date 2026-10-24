@@ -129,15 +129,20 @@ export interface Question {
   id: string;
   text: string;
   options: string[];
+  /** People pick any number of the options; without it, one. */
+  multiple?: boolean;
   status: "open" | "resolved";
+  /** The decision as text (a list of options joined with ", "). */
   answer?: string;
+  /** The options a `multiple` one was decided on, when its `answer` is a list. */
+  chosen?: string[];
   /** When it should be decided by (`2026-11-15`). */
   due?: string;
   /** When the agent decided it. */
   decided?: string;
 }
 
-/** Someone's answer to a question: an option they picked and/or a note. */
+/** Someone's answer to a question: what they picked (one option, or several on a `multiple` one) and/or a note. */
 /** What two PCs with the same wiki merge by (`pnpm shiori sync`): an id that never collides, and when it last changed. */
 export interface Synced {
   uid?: string;
@@ -150,14 +155,26 @@ export interface Answer extends Authored, Synced {
   id: number;
   page: string;
   question: string;
+  /** The option picked on a one-pick question; null on a `multiple` one, or with only a note. */
   choice: string | null;
+  /** The options picked on a `multiple` question, in the page's order. Answers from before it have none. */
+  choices?: string[];
   body: string;
   createdAt: string;
 }
 
+/** What an answer picks: one option, a list of them on a `multiple` question, or none (only a note). */
+export type AnswerPick = string | string[] | null;
+
+/** Every option an answer picked: its `choices`, or its one `choice`. */
+export const picksOf = (a: Pick<Answer, "choice" | "choices">): string[] =>
+  a.choices ?? (a.choice === null ? [] : [a.choice]);
+
 /** A question in the wiki-wide list (Special:Questions), with its page and how many answers it has. */
 export interface QuestionEntry extends Question {
   page: PageLink;
+  /** The sections above its page, from the top down (the home page left out), for a breadcrumb. */
+  trail: PageLink[];
   answers: number;
 }
 

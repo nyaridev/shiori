@@ -8,6 +8,7 @@ import { buildCorpus } from "../server/corpus.ts";
 import { designPlace, type Group, listGroups } from "../server/designGroups.ts";
 import { type Design, getDesign, listDesigns, updateDesign } from "../server/designs.ts";
 import { mediaProblems } from "../server/files.ts";
+import { filledForms, formProblems, unread } from "../server/forms.ts";
 import { journalProblems } from "../server/journal.ts";
 import { listKits, newPage } from "../server/kits.ts";
 import { loadLayouts } from "../server/layouts.ts";
@@ -19,11 +20,12 @@ import { allSheetProblems } from "../server/sheets.ts";
 import { syncWiki } from "../server/sync.ts";
 import { copyTemplate } from "../server/template.ts";
 import { addMessage, closeAll, getThread, listThreads, setStatus, waitingForAgent } from "../server/threads.ts";
-import type { Answer, Authored, PageData, Question, Thread } from "../shared/api.ts";
+import { type Answer, type Authored, type PageData, picksOf, type Question, type Thread } from "../shared/api.ts";
 import { DEFAULT_PALETTE, NEW_WIKI_PALETTES, PALETTE_NAMES, type PaletteName } from "../shared/palettes.ts";
 import { isPageComment } from "../shared/quote.ts";
 import { wikiIdSchema } from "../shared/schema.ts";
 import { boards, report, reports } from "./boards.ts";
+import { forms } from "./forms.ts";
 import { journal } from "./journal.ts";
 import { exportPublic, publicProblems, showPublic } from "./public.ts";
 import { sheet, sheets } from "./sheets.ts";
@@ -59,6 +61,10 @@ const HELP = `Shiori CLI
   pnpm shiori designs <id> groups [collection]       The groups people sorted designs into, as a tree
   pnpm shiori designs <id> done <collection>/<id> --page <path> [--note "…"]
                                                    The design became that page; the person sees the note
+  pnpm shiori forms <id>                             Page forms (forms/*.json, ADR-0015) and the pages whose forms
+                                                   the owner wrote in since the agent read them
+  pnpm shiori forms <id> <page> [form]               Everything written in a page's forms, pictures as files
+  pnpm shiori forms <id> read <page> [form]          Mark them read, once the page says what's in them
   pnpm shiori boards <id>                            Test boards (ADR-0010): testers' bug, change and idea reports
   pnpm shiori boards <id> trash|restore <board>      Move a board to the trash and back (ADR-0014); the app
                                                    deletes it 30 days later, or the owner does from the trash
@@ -172,11 +178,15 @@ function printAnswers(wiki: Wiki, { page, question, answers }: ReturnType<typeof
   console.log(`
 ? ${wiki.id} › ${page.path || "(home)"}  ${page.file}  ${question.kind}s: ${question.id}`);
   const label = question.kind === "suggestion" ? "suggest: " : "question:";
-  console.log(`  ${label} ${question.text}${question.options.length ? `  [${question.options.join(" / ")}]` : ""}`);
+  const options = question.options.length
+    ? `  [${question.options.join(" / ")}]${question.multiple ? " (pick any)" : ""}`
+    : "";
+  console.log(`  ${label} ${question.text}${options}`);
   for (const a of answers) {
     const when = a.createdAt.slice(0, 16).replace("T", " ");
     const by = a.author === "guest" ? `  by guest "${a.name}"` : "";
-    console.log(`  answer:   ${[a.choice && `«${a.choice}»`, a.body].filter(Boolean).join(" ")}  (${when})${by}`);
+    const picked = picksOf(a).map((o) => `«${o}»`);
+    console.log(`  answer:   ${[...picked, a.body].filter(Boolean).join(" ")}  (${when})${by}`);
   }
 }
 
@@ -251,6 +261,7 @@ const commands: Record<string, () => void> = {
       const layouts = loadLayouts(w);
       problems.push(...layouts.problems);
       problems.push(...publicProblems(w, pages));
+      problems.push(...formProblems(w.root, pages));
       for (const p of pages)
         for (const msg of renderPage(w, pages, p.path, layouts)?.problems ?? []) problems.push(`${p.file} ${msg}`);
       count += problems.length;
@@ -270,7 +281,16 @@ const commands: Record<string, () => void> = {
     let n = 0;
     let q = 0;
     let guests = false;
+    let written = 0;
     for (const w of targets) {
+      const fresh = filledForms(w.root).filter(unread);
+      if (fresh.length) {
+        console.log(
+          `${w.id}: the owner wrote in ${fresh.length} page form${fresh.length === 1 ? "" : "s"} (${fresh.map((f) => f.page).join(", ")}). Read them with \`pnpm shiori forms ${w.id}\`.
+`,
+        );
+        written += fresh.length;
+      }
       for (const t of waitingForAgent(listThreads(w.root, { status: "open" }))) {
         printThread(w, t);
         guests ||= t.messages.some((m) => m.author === "guest");
@@ -282,7 +302,7 @@ const commands: Record<string, () => void> = {
         q++;
       }
     }
-    if (!n && !q) console.log("Inbox empty.");
+    if (!n && !q && !written) console.log("Inbox empty.");
     if (guests) console.log(`\n${GUEST_NOTE}`);
     if (n)
       console.log(
@@ -291,7 +311,8 @@ const commands: Record<string, () => void> = {
     if (q) {
       console.log(
         `\n${q} question${q === 1 ? "" : "s"} or suggestion${q === 1 ? "" : "s"} answered. Decide, then write it into` +
-          " the page's frontmatter: its `status: resolved`, `answer: …` and `decided: <today>`. Don't change the" +
+          " the page's frontmatter: its `status: resolved`, `answer: …` (a `multiple: true` one may list several" +
+          " options, `answer: [A, B]`) and `decided: <today>`. Don't change the" +
           " page's text for it: what the answer asks for goes into the page's `## Incoming changes`, private, until" +
           " it's built (the wiki's AGENTS.md → Incoming changes).",
       );
@@ -500,6 +521,7 @@ const commands: Record<string, () => void> = {
   reports: () => reports(wikiById(args[0]), args[1], values.all, fail),
   report: () => report(wikiById(args[0]), args[1], values.status, values.note, fail),
   sheets: () => sheets(wikiById(args[0])),
+  forms: () => forms(wikiById(args[0]), args.slice(1), fail),
   sheet: () =>
     sheet(
       wikiById(args[0]),

@@ -1,12 +1,13 @@
-// Backups of a wiki's data (comments, answers, boards and sheet edits) as `backup.json` in the wiki folder: readable
+// Backups of a wiki's data (comments, answers, boards, sheet edits and page forms) as `backup.json` in the wiki folder: readable
 // text beside the committed database (ADR-0014), and the way to load the data on a fresh database. Only the CLI writes
 // it: the app itself never writes outside `data/`.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { REACTIONS } from "../shared/api.ts";
-import { listAnswers } from "./answers.ts";
+import { listAnswers, pickColumns } from "./answers.ts";
 import { allReports, listBoards, listPurged } from "./boards.ts";
+import { allFormRows, mergeFormRows } from "./forms.ts";
 import { slashes } from "./paths.ts";
 import { allEdits } from "./sheets.ts";
 import { authorColumns, dbFor, fillUids, listThreads, type Writer } from "./threads.ts";
@@ -66,6 +67,8 @@ export const backupSchema = z.object({
       page: z.string(),
       question: z.string(),
       choice: z.string().nullable(),
+      /** A `multiple` question's picks; backups from before them have none. */
+      choices: z.array(z.string()).optional(),
       body: z.string(),
       author: z.enum(["user", "guest"]).default("user"),
       ...guestFields,
@@ -129,6 +132,13 @@ export const backupSchema = z.object({
       }),
     )
     .default([]),
+  // Page forms (ADR-0015): one row per field of a page's form, its value as JSON. Older files have none.
+  formValues: z
+    .array(
+      z.object({ page: z.string(), form: z.string(), field: z.string(), value: z.string(), updatedAt: z.string() }),
+    )
+    .default([]),
+  formReads: z.array(z.object({ page: z.string(), form: z.string(), readAt: z.string() })).default([]),
 });
 export type Backup = z.infer<typeof backupSchema>;
 
@@ -145,6 +155,7 @@ export function exportData(root: string): Backup {
     reports: allReports(root, { removed: true }).map(({ mine: _, ...r }) => ({ ...r, uid: r.uid as string })),
     sheetEdits: allEdits(root),
     purged: listPurged(root),
+    ...allFormRows(root),
   };
 }
 
@@ -240,7 +251,7 @@ export function importData(root: string, data: Backup, { replace = false } = {})
   db.exec("begin");
   try {
     db.exec(
-      "delete from messages; delete from threads; delete from answers; delete from boards; delete from reports; delete from sheet_edits; delete from purged;",
+      "delete from messages; delete from threads; delete from answers; delete from boards; delete from reports; delete from sheet_edits; delete from purged; delete from form_values; delete from form_reads;",
     );
     const thread = db.prepare(
       "insert into threads (id, page, quote, status, created_at, resolved_at, removed_at, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -249,7 +260,7 @@ export function importData(root: string, data: Backup, { replace = false } = {})
       "insert into messages (id, thread_id, author, guest_id, guest_name, body, created_at, edited_at, hidden, reactions, images, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     const answer = db.prepare(
-      "insert into answers (id, page, question, choice, body, author, guest_id, guest_name, created_at, hidden, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "insert into answers (id, page, question, choice, choices, body, author, guest_id, guest_name, created_at, hidden, uid, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     for (const t of data.threads) {
       thread.run(
@@ -283,7 +294,7 @@ export function importData(root: string, data: Backup, { replace = false } = {})
         a.id,
         a.page,
         a.question,
-        a.choice,
+        ...pickColumns(a.choices ?? a.choice),
         a.body,
         ...authorColumns(writer(a)),
         a.createdAt,
@@ -292,6 +303,7 @@ export function importData(root: string, data: Backup, { replace = false } = {})
         a.updatedAt ?? null,
       );
     insertPlayData(db, data, { keepIds: true });
+    mergeFormRows(db, data.formValues, data.formReads);
     fillUids(db);
     db.exec("commit");
   } catch (error) {

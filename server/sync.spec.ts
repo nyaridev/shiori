@@ -87,6 +87,7 @@ describe("sync files, later changes", () => {
     };
     const t = createThread(a, "plan", quote, "Ship it?");
     addAnswer(a, "plan", "q1", "Steam", "");
+    addAnswer(a, "plan", "v1", ["Trees"], "");
     carry(a, b, syncFiles(a).file);
     syncFiles(b);
 
@@ -94,11 +95,15 @@ describe("sync files, later changes", () => {
     const there = listThreads(b).find((x) => x.uid === t.uid);
     react(b, there?.messages[0].id ?? 0, "👍", "user", true);
     addAnswer(b, "plan", "q1", "itch.io", "Changed my mind");
+    addAnswer(b, "plan", "v1", ["Trees", "Shop"], "");
     carry(b, a, syncFiles(b).file);
     syncFiles(a);
 
     expect(listThreads(a)[0].messages[0].reactions).toEqual([{ emoji: "👍", by: [{ author: "user" }] }]);
-    expect(listAnswers(a).map((x) => [x.choice, x.body])).toEqual([["itch.io", "Changed my mind"]]);
+    expect(listAnswers(a).map((x) => [x.choice, x.choices, x.body])).toEqual([
+      ["itch.io", undefined, "Changed my mind"],
+      [null, ["Trees", "Shop"], ""],
+    ]);
   });
 
   it("carry an edited message to the other PC", () => {

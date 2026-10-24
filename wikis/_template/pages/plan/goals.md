@@ -18,6 +18,10 @@ questions:
   - id: first-number
     text: "Which number do we watch first?"
     options: [Users, Returning, Feedback calls]
+  - id: first-channels
+    text: "Where do we look for the first users?"
+    options: [Forums, Discord, Friends and family, Small ads]
+    multiple: true
 suggestions:
   - id: baseline
     text: "Write down today's numbers as a baseline next to each target?"

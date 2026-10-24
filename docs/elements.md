@@ -191,8 +191,9 @@ Spawns every :private[90 seconds, from SpawnService] few minutes.
 ::question{id=q1}
 
 Open decisions, answered on the page. List them in the frontmatter; people pick an option and/or write a note, and
-the answers wait in the agent's inbox (`pnpm shiori inbox`). The agent decides and writes it back as
-`status: resolved` with the `answer`. `::question{id=…}` places one in the text; the rest collect under "Questions"
+the answers wait in the agent's inbox (`pnpm shiori inbox`). People pick one option, or any number of them when the
+entry has `multiple: true` (it needs `options`). The agent decides and writes it back as `status: resolved` with the
+`answer`; a `multiple` one may list several options, `answer: [Trees, Shop]`. `::question{id=…}` places one in the text; the rest collect under "Questions"
 at the bottom of the page, and Special:Questions lists them across the wiki. (Here on the reference page there's no
 frontmatter, so it shows a placeholder.)
 
@@ -203,6 +204,10 @@ questions:
     text: "Which platform do we launch on first?"
     options: [Steam, itch.io, Both]
   - id: q2
+    text: "Which systems go in the first version?"
+    options: [Trees, Shop, Weather, Pets]
+    multiple: true
+  - id: q3
     text: "Who designs the logo?"
     status: resolved
     answer: "Nari, by the end of the month"

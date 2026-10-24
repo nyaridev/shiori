@@ -136,6 +136,26 @@ const MIGRATIONS = [
      kind text not null check (kind in ('board', 'report')),
      purged_at text not null
    );`,
+  // Page forms (ADR-0015, forms.ts): one row per field of a page's form, its value as JSON (a cleared field is
+  // 'null', so clearing reaches other PCs too); and when the agent last read each page's form.
+  `create table form_values (
+     id integer primary key,
+     page text not null,
+     form text not null,
+     field text not null,
+     value text not null,
+     updated_at text not null,
+     unique (page, form, field)
+   );
+   create table form_reads (
+     page text not null,
+     form text not null,
+     read_at text not null,
+     primary key (page, form)
+   );`,
+  // Questions where people pick any number of options (`multiple: true`): JSON, the options picked, in the page's
+  // order. Null on one-pick answers, which keep using `choice`.
+  `alter table answers add column choices text;`,
 ];
 
 /** Gives rows made before uids (or restored from an old backup) theirs, and an `updated_at`. */
