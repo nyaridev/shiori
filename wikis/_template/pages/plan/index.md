@@ -13,8 +13,8 @@ infobox:
   Progress: ':progress{value="25"}'
 questions:
   - id: q1
-    text: "The first version should do one thing well. Which feature do we build it around?"
-    options: [The simplest one, The most fun one, The one people asked for]
+    text: "When two features compete for the same week, which one wins?"
+    options: ["The one that's simplest to build", "The one people asked for", "The one closest to the main goal"]
   - id: q2
     text: "How often do we share progress with the people following the project?"
     status: resolved

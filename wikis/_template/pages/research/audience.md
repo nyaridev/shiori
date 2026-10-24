@@ -10,9 +10,6 @@ suggestions:
   - id: personas
     text: "Turn the audience into two or three short personas, each with a name, a goal and what stops them today, so each decision can be checked against a person?"
     options: [Yes, Later, No]
-  - id: where-to-reach
-    text: "For each audience group, add the one place they can be reached first (a forum, a subreddit, a Discord), with a link?"
-    options: [Yes, No]
   - id: competitor-gaps
     text: "The table of alternatives lists what people use today instead of this project. Add a column saying what each one is missing, the gap this project could fill?"
     options: [Yes, Later, No]

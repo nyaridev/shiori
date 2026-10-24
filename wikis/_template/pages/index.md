@@ -8,9 +8,9 @@ questions:
     text: "Who exactly is the first version for? Describe one kind of person in a line: who they are, and the problem they have that this solves."
   - id: done
     text: "What must version one do before it ships? List the few things it can't launch without, one line each; everything else waits for a later version."
-  - id: working
-    text: "Once version one is out, which sign tells us it's working and worth more time?"
-    options: [People come back, People pay, People tell a friend]
+  - id: time
+    text: "How much time goes into the project each week, everyone together? It sets how big version one can be."
+    options: ["A few hours", "About a day", "Half the week or more"]
 ---
 
 ::::boxes
@@ -69,4 +69,4 @@ into the plan.
 
 ::question{id=done}
 
-::question{id=working}
+::question{id=time}

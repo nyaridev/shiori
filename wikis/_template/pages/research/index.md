@@ -8,8 +8,9 @@ type: "Research"
 tags: [research]
 banner: "/assets/grove.svg"
 questions:
-  - id: where-to-look
-    text: "Where would you look first for people who have the problem this project solves? Name one or two places (a forum, a group, a shop), with a link if you have one."
+  - id: research-first
+    text: "Two things are still to find out: how much people would pay (or how often they'd come back), and which platform the audience uses most. Which do we find out first?"
+    options: ["What people would pay, or how often they'd come back", "Which platform they use most"]
 suggestions:
   - id: interview-script
     text: "Add a short interview script to the Research page (five or six questions), so every conversation with a possible user asks the same things and the answers can be compared?"
@@ -60,4 +61,4 @@ research page and it shows here.
 - [ ] Which platform does the audience use most?
 - [x] Are there similar projects? (Yes: see [Audience & market](audience).)
 
-::question{id=where-to-look}
+::question{id=research-first}

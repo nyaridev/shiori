@@ -59,7 +59,8 @@ their content with the project's own, rename or delete what doesn't fit, and add
   - **Suggestions** are yours: what to add or improve. **After you write or change a page, review it and give it 3 to
     6 suggestions**, more for a bigger or more complex page: a missing mechanic, a rule that could be clearer, a
     system that could connect to another, a risk worth planning for. Make each one concrete and answerable, with
-    options when that helps (`[Yes, Later, No]`). Replace stale ones instead of piling up.
+    options when that helps (`[Yes, Later, No]`). Replace stale ones instead of piling up, and give fewer when the
+    rest is already decided or asked elsewhere: a repeat is worse than a short list.
   - **Each one stands on its own.** People answer them days or weeks apart, from the Questions page or the inbox,
     often without reading the page, and different people answer different ones. Nobody remembers the earlier round.
     Write each one so it can be answered from its own text:
@@ -79,6 +80,20 @@ their content with the project's own, rename or delete what doesn't fit, and add
     *"You've played Chop A Forest, Grow a Garden, Anime Dice, Sol's RNG and Steal An Egg. Which one thing from each
     should My Tree Farm copy? One line per game, like 'Grow a Garden: the seed shop that restocks every 5 minutes in
     every server'."*
+  - **Ask each thing once, in one place.** Before adding one, read every question and suggestion in the wiki, open
+    and resolved, on every page (Tools → Questions and suggestions lists them; `pnpm shiori inbox` shows the answers
+    still waiting), and check the new one against them:
+    - **Already decided** (resolved, or written on a page): don't ask it again. Ask only what's still open inside it,
+      and say what's decided ("Infusion slots are decided: 1, plus 2 from upgrades, plus 2 for Robux. Does a bought
+      slot count for one tree or for every tree?").
+    - **Already asked on another page:** don't add a second one. Ask it once, on the page that owns the system, and
+      let the other pages link there in their text.
+    - **Overlapping:** merge them into one, or split them so each asks a different part. Several yes-or-no ideas on
+      one theme become one `multiple: true` suggestion ("What should the playtesters get? Pick every one that fits.").
+    - **Already answered:** never remove or reword an entry whose answer is waiting, since that loses the answer.
+      Answered entries that repeat each other become one decision, and one Incoming changes item on the page that
+      owns the system, when they're resolved.
+    - **After adding a round,** read the whole set once more for repeats before you finish.
   - **Pick one or pick any.** People pick one option, unless the entry has `multiple: true`: then they pick any
     number of its options at once ("Which systems go in v1?"), and the inbox lists every one they picked. Use it
     only when several answers can all be true together, and only with `options` (`pnpm shiori check` says so).
