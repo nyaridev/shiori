@@ -9,12 +9,16 @@
   color: var(--text-soft);
   font-size: var(--t-sm);
 }
-/* Wide sheets scroll sideways inside their box, never the page. */
+/* Wide sheets scroll sideways inside their box, never the page. Their cells wrap first, so a sheet fits its box and
+   scrolls only when its columns can't get any narrower. */
 .sh-sheet-scroll {
   max-width: 100%;
   border: var(--bw) solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
+}
+.sh-scroll.sh-sheet-scroll[data-axis="x"] > .sh-scroll-frame > .sh-scroll-view > .sh-scroll-content {
+  width: auto;
 }
 .sh-sheet {
   width: 100%;
@@ -23,10 +27,14 @@
 }
 .sh-sheet th,
 .sh-sheet td {
-  padding: var(--s-2) var(--s-3);
+  padding: var(--s-2) var(--s-2);
   border-bottom: var(--bw) solid var(--border);
   text-align: left;
   vertical-align: top;
+  overflow-wrap: break-word;
+}
+/* Numbers stay on one line; text and headings wrap. */
+.sh-sheet td[data-type="number"] {
   white-space: nowrap;
 }
 .sh-sheet thead th {
@@ -61,9 +69,6 @@
 .sh-sheet td[data-changed] {
   background: var(--accent-soft);
 }
-.sh-sheet-edit {
-  min-width: 120px;
-}
 .sh-sheet-edit.is-saving {
   opacity: 0.6;
 }
@@ -72,12 +77,40 @@
   align-items: center;
   gap: var(--s-1);
 }
+/* A field is as wide as its value (and never tiny), then fills its column, so a column is as wide as its longest
+   value rather than a fixed width. */
 .sh-sheet-field .sh-field {
-  min-width: 80px;
-  padding-block: 4px;
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 3.5em;
+  min-height: 0;
+  padding: 4px var(--s-2);
+  field-sizing: content;
 }
+/* Text fields wrap like the cells around them and grow taller instead of wider. */
+.sh-sheet-field .sh-textarea-wrap {
+  flex: 1 1 auto;
+  min-width: 7em;
+}
+.sh-sheet-field .sh-sheet-text {
+  width: 100%;
+  min-height: 0;
+  max-height: none;
+  padding-bottom: 4px;
+}
+.sh-sheet-field .sh-textarea-grip {
+  display: none;
+}
+/* Numbers are typed, not stepped: no spin arrows, so a column of numbers stays narrow. */
 .sh-sheet-edit[data-type="number"] .sh-field {
+  appearance: textfield;
   text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.sh-sheet-edit[data-type="number"] .sh-field::-webkit-inner-spin-button,
+.sh-sheet-edit[data-type="number"] .sh-field::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
 }
 .sh-sheet-default {
   display: block;

@@ -35,14 +35,31 @@
   font-size: var(--t-xl);
 }
 /* On a plain page each `##` section (Section.tsx) reads like a wiki's: the heading over a thin line, with the
-   section's tools at the line's end, and the text under it. No box: a section folds away under its heading. Beside a
-   floating infobox it stops at the infobox's edge. */
+   section's tools at the line's end, and the text under it. No box: a section folds away under its heading. */
 .sh-prose .sh-section {
   display: flow-root;
   margin: var(--s-6) 0 0;
 }
-/* Wide content (tables, tiles, galleries) would be squeezed beside the infobox: its section starts below it. */
-.sh-prose .sh-section:has(table, .sh-stats, .sh-cards, .sh-gallery, .sh-compare, .sh-columns) {
+/* Beside the floating infobox only the text before the first section wraps, and it takes the full width once it's
+   past the infobox. Sections and wide content (tables, sheets, tiles, galleries, diagrams, code) would be squeezed
+   into a narrow column there, so they start below it, at full width. */
+.sh-prose .sh-section,
+.sh-prose
+  > :is(
+    .sh-table-wrap,
+    .sh-data,
+    .sh-sheet-block,
+    .sh-stats,
+    .sh-cards,
+    .sh-gallery,
+    .sh-compare,
+    .sh-columns,
+    .sh-diagram,
+    .sh-code-block,
+    .sh-embed,
+    .sh-boxes
+  ),
+.sh-prose > :has(table) {
   clear: both;
 }
 .sh-section-head {
@@ -263,8 +280,10 @@
   margin: var(--s-3) 0;
   border-radius: var(--r-md);
 }
-/* Cells wrap as far as they can before the table scrolls, so its box is the page's width, not the table's. */
-.sh-table-wrap .sh-scroll-content {
+/* Cells wrap as far as they can before the table scrolls, so its box is the page's width, not the table's. The
+   second selector outweighs the scroll area's own `max-content`. */
+.sh-table-wrap .sh-scroll-content,
+.sh-scroll.sh-table-wrap[data-axis="x"] > .sh-scroll-frame > .sh-scroll-view > .sh-scroll-content {
   width: auto;
 }
 /* A block inside a scroll area doesn't scroll itself. */

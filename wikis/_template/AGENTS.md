@@ -47,6 +47,10 @@ their content with the project's own, rename or delete what doesn't fit, and add
     Supplier: "[Supplier notes](/research/suppliers)"
   ```
 
+  Only the text before the first `##` wraps beside the infobox. Sections, tables, sheets and other wide blocks start
+  below it at full width. So give a page with an infobox an intro of a paragraph or two before its first section,
+  table or sheet; otherwise the space beside the infobox stays empty.
+
 - `banner: "/assets/wide.png"` puts a wide picture behind the page head. `toc: false` hides "On this page".
 - `related:` lists pages this one relates to, by wikilink name, each with an optional free-text `kind`
   (`- to: Audience & market` / `kind: Competitor of`). They show in a box at the bottom, or where `::related` is.

@@ -20,8 +20,10 @@ tests and a review.
 **Sections are panels** (`src/wiki/markdown/sections.ts`, `Section.tsx`). A plain page's `##` sections are wrapped
 client-side as `sh-section` elements: the heading on a title strip with the section's tools, then the body. The
 strip's tools are `data-noquote`, so comment anchors only cover the page's words. Layout pages (ADR-0006) keep plain
-sections inside their areas. A section folds (per viewer, in localStorage, animated); sections with wide content
-(tables, tiles, galleries) start below a floating infobox.
+sections inside their areas. A section folds (per viewer, in localStorage, animated). Beside a floating infobox
+only the text before the first section wraps; every section, and wide content before the first one (tables,
+sheets, tiles, galleries, diagrams, code), starts below the infobox at full width. (At first only sections with wide
+content did: a section of text kept a narrow column for its whole height, and a sheet in the intro was squeezed.)
 
 **Changed since your last visit, per viewer** (`src/wiki/seen.ts`). Each browser keeps, per wiki and page, the page's
 `updatedAt` and a fingerprint (FNV-1a of the text) of each section when the reader last had it open. Opening the page

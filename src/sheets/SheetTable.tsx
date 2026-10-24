@@ -6,7 +6,7 @@ import { type KeyboardEvent, useEffect, useState } from "react";
 import { type Cell, checkValue, type SheetCell, type SheetColumn, type SheetView } from "../../shared/sheet.ts";
 import { ApiError } from "../lib/api.ts";
 import { ago } from "../lib/time.ts";
-import { Checkbox, cx, IconButton, Input, ScrollArea, Select } from "../ui/index.ts";
+import { Checkbox, cx, IconButton, Input, ScrollArea, Select, Textarea } from "../ui/index.ts";
 import type { SetCell } from "./api.ts";
 import "./sheets.css";
 
@@ -142,13 +142,17 @@ function EditCell({
     setProblem(await onSet(raw));
     setSaving(false);
   };
-  // A number or text field saves when it's left or on Enter; Escape puts it back.
+  // A number or text field saves when it's left or on Enter (a text field wraps but holds one line); Escape puts it
+  // back.
   const commit = () => {
     if (draft === String(cell.value ?? "")) return setProblem(null);
     void save(col.type === "number" ? (draft.trim() === "" ? Number.NaN : Number(draft)) : draft);
   };
-  const keys = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") e.currentTarget.blur();
+  const keys = (e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
     if (e.key === "Escape") {
       setDraft(String(cell.value ?? ""));
       setProblem(null);
@@ -175,14 +179,24 @@ function EditCell({
             onChange={(v) => void save(v)}
             options={col.options.map((o) => ({ value: o, label: o }))}
           />
+        ) : col.type === "text" ? (
+          <Textarea
+            rows={1}
+            className="sh-sheet-text"
+            maxLength={col.maxLength ?? 200}
+            value={draft}
+            aria-label={col.label ?? col.id}
+            onChange={(e) => setDraft(e.target.value.replace(/\s*\n\s*/g, " "))}
+            onBlur={commit}
+            onKeyDown={keys}
+          />
         ) : (
           <Input
-            type={col.type === "number" ? "number" : "text"}
-            inputMode={col.type === "number" ? "decimal" : undefined}
-            min={col.type === "number" ? col.min : undefined}
-            max={col.type === "number" ? col.max : undefined}
-            step={col.type === "number" ? (col.step ?? 1) : undefined}
-            maxLength={col.type === "text" ? (col.maxLength ?? 200) : undefined}
+            type="number"
+            inputMode="decimal"
+            min={col.min}
+            max={col.max}
+            step={col.step ?? 1}
             value={draft}
             aria-label={col.label ?? col.id}
             onChange={(e) => setDraft(e.target.value)}
@@ -199,9 +213,11 @@ function EditCell({
           />
         )}
       </div>
-      <span className="sh-sheet-default">
-        {problem ?? (changed ? `default ${show(cell.default, col)}${cell.by ? ` · ${cell.by.name}` : ""}` : " ")}
-      </span>
+      {(problem || changed) && (
+        <span className="sh-sheet-default">
+          {problem ?? `default ${show(cell.default, col)}${cell.by ? ` · ${cell.by.name}` : ""}`}
+        </span>
+      )}
     </td>
   );
 }
