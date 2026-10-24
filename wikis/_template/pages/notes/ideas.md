@@ -8,19 +8,19 @@ tags: [notes]
 type: "Backlog"
 questions:
   - id: next-idea
-    text: "Which idea do we try next?"
+    text: "The backlog has three ideas ready to try: a behind-the-scenes series, a community challenge and a premium version. Which one do we try next?"
     options: [A behind-the-scenes series, A community challenge, A premium version]
   - id: missing
-    text: "What idea is missing from this list?"
+    text: "What idea is missing from the backlog? One line: the idea, and why it might work."
 suggestions:
   - id: scoring
-    text: "Score ideas by effort and impact, so the backlog sorts itself?"
+    text: "Give every idea in the backlog an effort score and an impact score (1 to 3 each), so the backlog sorts itself by what pays off most for the least work?"
     options: [Yes, Later, No]
   - id: idea-owner
-    text: "Note who suggested each idea, so we can ask them more?"
+    text: "Add who suggested each idea in the backlog, so we know whom to ask when we pick it up?"
     options: [Yes, No]
   - id: monthly-cleanup
-    text: "Review the backlog once a month and park what nobody mentions?"
+    text: "Once a month, move the backlog ideas nobody has mentioned since the last review to a Parked list, so the backlog shows only live ideas?"
     options: [Yes, Later, No]
 ---
 

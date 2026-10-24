@@ -5,11 +5,11 @@ icon: home
 status: active
 questions:
   - id: first-for
-    text: "Who exactly is the first version for?"
+    text: "Who exactly is the first version for? Describe one kind of person in a line: who they are, and the problem they have that this solves."
   - id: done
-    text: "What does \"done\" look like for version one?"
+    text: "What must version one do before it ships? List the few things it can't launch without, one line each; everything else waits for a later version."
   - id: working
-    text: "How will we know it's working?"
+    text: "Once version one is out, which sign tells us it's working and worth more time?"
     options: [People come back, People pay, People tell a friend]
 ---
 

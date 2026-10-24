@@ -16,21 +16,21 @@ related:
     kind: Measured with
 questions:
   - id: first-number
-    text: "Which number do we watch first?"
+    text: "Early on we can only watch one number closely. Which one: how many people try it, how many come back, or how many agree to a feedback call?"
     options: [Users, Returning, Feedback calls]
   - id: first-channels
-    text: "Where do we look for the first users?"
+    text: "Where do we look for the first users? Pick every place worth trying in the first month."
     options: [Forums, Discord, Friends and family, Small ads]
     multiple: true
 suggestions:
   - id: baseline
-    text: "Write down today's numbers as a baseline next to each target?"
+    text: "Write today's number next to each goal's target, so we can see how far each one has moved since we started?"
     options: [Yes, Later, No]
   - id: review-date
-    text: "Add a review date to each goal, so stale goals get noticed?"
+    text: "Give each goal a date to look at it again, so a goal nobody works on any more gets noticed and changed or dropped?"
     options: [Yes, No]
   - id: leading-metric
-    text: "Track one early signal per goal (a sign-up, a reply) before the big number moves?"
+    text: "Big numbers move slowly. Give each goal one early sign we can count every week (a sign-up, a reply to an email), so we know sooner whether it's working?"
     options: [Yes, Later, No]
 ---
 

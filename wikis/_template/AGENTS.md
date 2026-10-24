@@ -55,11 +55,30 @@ their content with the project's own, rename or delete what doesn't fit, and add
   they can change; the answers wait in `pnpm shiori inbox`. They show at the bottom, questions first (amber) and
   suggestions under them (green), or where `::question{id=…}` / `::suggestion{id=…}` places them.
   - **Questions** ask about what the page describes now: a decision about the current system, feature or plan that
-    you can't make alone ("Steam or itch.io first?").
+    you can't make alone ("The demo is ready in March. Release it on Steam or on itch.io first?").
   - **Suggestions** are yours: what to add or improve. **After you write or change a page, review it and give it 3 to
     6 suggestions**, more for a bigger or more complex page: a missing mechanic, a rule that could be clearer, a
     system that could connect to another, a risk worth planning for. Make each one concrete and answerable, with
     options when that helps (`[Yes, Later, No]`). Replace stale ones instead of piling up.
+  - **Each one stands on its own.** People answer them days or weeks apart, from the Questions page or the inbox,
+    often without reading the page, and different people answer different ones. Nobody remembers the earlier round.
+    Write each one so it can be answered from its own text:
+    - **Name things in full:** the system, item, page or game, never "it", "the five", "above", "as you said" or an
+      earlier answer.
+    - **Give what's needed to decide,** in a sentence or two before the ask: what exists or is decided now, the
+      numbers, and the problem it solves or why it matters.
+    - **Ask one thing,** and end with the question itself.
+    - **Options are full answers** that say what each one means ("Auto-swing at the nearest tree", not "Auto"). With
+      `[Yes, Later, No]`, the text says exactly what Yes adds or changes.
+    - **Prefer options to an open question.** An open one says what kind of answer helps ("a number of minutes",
+      "one line per game: the game, then the one thing to copy").
+    - **Two to four sentences.** One that needs more is too big: split it, or put the background on the page and ask
+      a narrower question.
+
+    Too vague: *"You've played all five. What did each one do best that we should borrow?"* Stands on its own:
+    *"You've played Chop A Forest, Grow a Garden, Anime Dice, Sol's RNG and Steal An Egg. Which one thing from each
+    should My Tree Farm copy? One line per game, like 'Grow a Garden: the seed shop that restocks every 5 minutes in
+    every server'."*
   - **Pick one or pick any.** People pick one option, unless the entry has `multiple: true`: then they pick any
     number of its options at once ("Which systems go in v1?"), and the inbox lists every one they picked. Use it
     only when several answers can all be true together, and only with `options` (`pnpm shiori check` says so).

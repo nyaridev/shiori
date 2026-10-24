@@ -13,21 +13,21 @@ infobox:
   Progress: ':progress{value="25"}'
 questions:
   - id: q1
-    text: "What's the one core feature of the first version?"
+    text: "The first version should do one thing well. Which feature do we build it around?"
     options: [The simplest one, The most fun one, The one people asked for]
   - id: q2
-    text: "How often do we share progress?"
+    text: "How often do we share progress with the people following the project?"
     status: resolved
     answer: "Once a week, every Friday"
 suggestions:
   - id: weekly-review
-    text: "Add a short weekly review to this page: what moved, what's stuck, what's next?"
+    text: "Add a short weekly review to the Plan page (three lines: what moved, what's stuck, what's next), so anyone can catch up in a minute?"
     options: [Yes, Later, No]
   - id: owners
-    text: "Give each item in \"This week\" an owner, so it's clear who picks it up?"
+    text: "Put a person's name on each task in the Plan page's \"This week\" list, so it's clear who picks each one up?"
     options: [Yes, No]
   - id: risk-levels
-    text: "Rate each risk as low, medium or high, so the big ones stand out?"
+    text: "Rate each risk in the Plan page's risk table as low, medium or high, so the big ones stand out at a glance?"
     options: [Yes, Later, No]
 ---
 

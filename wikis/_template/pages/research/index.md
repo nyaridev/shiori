@@ -9,16 +9,16 @@ tags: [research]
 banner: "/assets/grove.svg"
 questions:
   - id: where-to-look
-    text: "Where would you look first for people who need this?"
+    text: "Where would you look first for people who have the problem this project solves? Name one or two places (a forum, a group, a shop), with a link if you have one."
 suggestions:
   - id: interview-script
-    text: "Add a short interview script, so every conversation asks the same core questions?"
+    text: "Add a short interview script to the Research page (five or six questions), so every conversation with a possible user asks the same things and the answers can be compared?"
     options: [Yes, Later, No]
   - id: confidence
-    text: "Mark each finding with how sure we are (a hunch, a few sources, solid)?"
+    text: "Mark each research finding with how sure we are of it (a hunch, a few sources, or solid), so nobody builds on a guess by mistake?"
     options: [Yes, No]
   - id: sources-log
-    text: "Keep a dated log of sources, so findings can be traced and refreshed?"
+    text: "Keep a dated list of every research source, so each finding can be traced back and re-checked when it gets old?"
     options: [Yes, Later, No]
 ---
 

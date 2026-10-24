@@ -7,13 +7,13 @@ panel: true
 tags: [plan]
 suggestions:
   - id: buffer
-    text: "Leave a buffer week before launch for fixes and polish?"
+    text: "Add an empty week to the roadmap just before launch, kept free for the fixes and polish that always turn up late?"
     options: [Yes, No]
   - id: public-roadmap
-    text: "Share a simpler version of this roadmap with the first users?"
+    text: "Share a short version of the roadmap (the milestones and their goals, no tasks) with the first users, so they know what's coming?"
     options: [Yes, Later, No]
   - id: dates
-    text: "Put a target date on each milestone instead of a week range?"
+    text: "Each milestone has a week range now. Give each one a target date instead, so it's clear when one is late?"
     options: [Yes, Later, No]
 ---
 

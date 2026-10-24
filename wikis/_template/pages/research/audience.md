@@ -8,13 +8,13 @@ tags: [research, audience]
 type: "Research"
 suggestions:
   - id: personas
-    text: "Turn the audience into two or three short personas with names and goals?"
+    text: "Turn the audience into two or three short personas, each with a name, a goal and what stops them today, so each decision can be checked against a person?"
     options: [Yes, Later, No]
   - id: where-to-reach
-    text: "Add where each group can be reached first, with one link each?"
+    text: "For each audience group, add the one place they can be reached first (a forum, a subreddit, a Discord), with a link?"
     options: [Yes, No]
   - id: competitor-gaps
-    text: "Add a column for what each alternative is missing?"
+    text: "The table of alternatives lists what people use today instead of this project. Add a column saying what each one is missing, the gap this project could fill?"
     options: [Yes, Later, No]
 ---
 

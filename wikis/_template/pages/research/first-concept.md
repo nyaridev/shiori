@@ -13,7 +13,7 @@ infobox:
   Next step: "Decide what it becomes first"
 questions:
   - id: next
-    text: "What should the first concept become first?"
+    text: "This sketch has no place in the project yet. Should it get a page of its own, become a task in the plan, or be parked for later?"
     options: [A page of its own, Part of the plan, Parked for later]
 ---
 
