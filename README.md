@@ -64,5 +64,4 @@ pnpm check
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE). Use it, change it and share it for free, for anything noncommercial. You may
-not sell it or use it to make money.
+MIT. See [LICENSE](LICENSE).
